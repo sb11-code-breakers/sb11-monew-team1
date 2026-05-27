@@ -1,8 +1,8 @@
 package com.sprint.mission.monew.domain.user.controller;
 
 import com.sprint.mission.monew.domain.user.controller.api.UserApi;
-import com.sprint.mission.monew.domain.user.dto.UserDto;
 import com.sprint.mission.monew.domain.user.dto.UserRegisterRequest;
+import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,10 +23,10 @@ public class UserController implements UserApi {
 
   @PostMapping
   @Override
-  public ResponseEntity<UserDto> register(@Valid @RequestBody UserRegisterRequest request) {
+  public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRegisterRequest request) {
     log.debug("회원가입 요청: email={}", request.email());
 
-    UserDto response = userService.register(request);
+    UserResponse response = userService.create(request);
 
     log.info("회원가입 응답: id={}, email={}", response.id(), response.email());
     return ResponseEntity.ok(response);

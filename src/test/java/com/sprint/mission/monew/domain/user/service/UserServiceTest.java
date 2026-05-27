@@ -7,8 +7,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
-import com.sprint.mission.monew.domain.user.dto.UserDto;
 import com.sprint.mission.monew.domain.user.dto.UserRegisterRequest;
+import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
@@ -29,7 +29,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class UserServiceTest {
 
   @InjectMocks
-  private UserServiceImpl userService;
+  private UserService userService;
 
   @Mock
   private UserRepository userRepository;
@@ -52,39 +52,39 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("성공 시 저장된 사용자 반환")
-    void 성공_시_저장된_사용자_반환() {
-      // given
-      User user = User.create("test@test.com", "테스터", "encodedPassword");
-      UserDto userDto = new UserDto(
-          UUID.randomUUID(), "test@test.com", "테스터", Instant.now()
-      );
-
-      given(userRepository.existsByEmail(request.email())).willReturn(false);
-      given(passwordEncoder.encode(request.password())).willReturn("encodedPassword");
-      given(userRepository.save(any(User.class))).willReturn(user);
-      given(userMapper.toDto(user)).willReturn(userDto);
-
-      // when
-      UserDto result = userService.register(request);
-
-      // then
-      assertThat(result).isNotNull();
-      assertThat(result.email()).isEqualTo("test@test.com");
-      assertThat(result.nickname()).isEqualTo("테스터");
-    }
-
-    @Test
     @DisplayName("이메일 중복 시 예외 발생")
     void 이메일_중복_시_예외_발생() {
       // given
       given(userRepository.existsByEmail(request.email())).willReturn(true);
 
       // when & then
-      assertThatThrownBy(() -> userService.register(request))
+      assertThatThrownBy(() -> userService.create(request))
           .isInstanceOf(UserEmailDuplicateException.class);
 
       then(userRepository).should(never()).save(any(User.class));
+    }
+
+    @Test
+    @DisplayName("성공 시 저장된 사용자 반환")
+    void 성공_시_저장된_사용자_반환() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      UserResponse userResponse = new UserResponse(
+          UUID.randomUUID(), "test@test.com", "테스터", Instant.now()
+      );
+
+      given(userRepository.existsByEmail(request.email())).willReturn(false);
+      given(passwordEncoder.encode(request.password())).willReturn("encodedPassword");
+      given(userRepository.save(any(User.class))).willReturn(user);
+      given(userMapper.toResponse(user)).willReturn(userResponse);
+
+      // when
+      UserResponse result = userService.create(request);
+
+      // then
+      assertThat(result).isNotNull();
+      assertThat(result.email()).isEqualTo("test@test.com");
+      assertThat(result.nickname()).isEqualTo("테스터");
     }
   }
 }

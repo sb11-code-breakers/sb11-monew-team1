@@ -8,8 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sprint.mission.monew.domain.user.dto.UserDto;
 import com.sprint.mission.monew.domain.user.dto.UserRegisterRequest;
+import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import java.time.Instant;
@@ -39,28 +39,6 @@ class UserControllerTest {
   class 회원가입 {
 
     @Test
-    @DisplayName("성공 시 200 반환")
-    void 성공_시_200_반환() throws Exception {
-      // given
-      UserRegisterRequest request = new UserRegisterRequest(
-          "test@test.com", "테스터", "password123"
-      );
-      UserDto response = new UserDto(
-          UUID.randomUUID(), "test@test.com", "테스터", Instant.now()
-      );
-
-      given(userService.register(any())).willReturn(response);
-
-      // when & then
-      mockMvc.perform(post("/api/users")
-              .contentType(APPLICATION_JSON)
-              .content(objectMapper.writeValueAsString(request)))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.email").value("test@test.com"))
-          .andExpect(jsonPath("$.nickname").value("테스터"));
-    }
-
-    @Test
     @DisplayName("이메일 형식이 잘못되면 400 반환")
     void 이메일_형식이_잘못되면_400_반환() throws Exception {
       // given
@@ -83,7 +61,7 @@ class UserControllerTest {
           "test@test.com", "테스터", "password123"
       );
 
-      given(userService.register(any()))
+      given(userService.create(any()))
           .willThrow(UserEmailDuplicateException.withEmail("test@test.com"));
 
       // when & then
@@ -91,6 +69,28 @@ class UserControllerTest {
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("성공 시 200 반환")
+    void 성공_시_200_반환() throws Exception {
+      // given
+      UserRegisterRequest request = new UserRegisterRequest(
+          "test@test.com", "테스터", "password123"
+      );
+      UserResponse response = new UserResponse(
+          UUID.randomUUID(), "test@test.com", "테스터", Instant.now()
+      );
+
+      given(userService.create(any())).willReturn(response);
+
+      // when & then
+      mockMvc.perform(post("/api/users")
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.email").value("test@test.com"))
+          .andExpect(jsonPath("$.nickname").value("테스터"));
     }
   }
 }

@@ -1,8 +1,8 @@
 package com.sprint.mission.monew.domain.user.controller.api;
 
 import com.sprint.mission.monew.common.dto.ErrorResponse;
-import com.sprint.mission.monew.domain.user.dto.UserDto;
 import com.sprint.mission.monew.domain.user.dto.UserRegisterRequest;
+import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,7 +19,7 @@ public interface UserApi {
   @Operation(summary = "회원가입", description = "새로운 사용자를 등록합니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "200", description = "회원가입 성공",
-          content = @Content(schema = @Schema(implementation = UserDto.class))),
+          content = @Content(schema = @Schema(implementation = UserResponse.class))),
       @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "409", description = "이메일 중복",
@@ -27,5 +27,5 @@ public interface UserApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
-  ResponseEntity<UserDto> register(@Valid @RequestBody UserRegisterRequest request);
+  ResponseEntity<UserResponse> create(@Valid @RequestBody UserRegisterRequest request);
 }
