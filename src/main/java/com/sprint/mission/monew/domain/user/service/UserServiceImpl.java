@@ -7,10 +7,12 @@ import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateExceptio
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 @Service
@@ -23,7 +25,10 @@ public class UserServiceImpl implements UserService {
   @Transactional
   @Override
   public UserDto register(UserRegisterRequest request) {
+    log.debug("회원가입 시도: email={}", request.email());
+
     if (userRepository.existsByEmail(request.email())) {
+      log.warn("회원가입 실패 - 이메일 중복: email={}", request.email());
       throw UserEmailDuplicateException.withEmail(request.email());
     }
 
@@ -34,6 +39,7 @@ public class UserServiceImpl implements UserService {
     );
 
     User saved = userRepository.save(user);
+    log.info("회원가입 완료: id={}, email={}", saved.getId(), saved.getEmail());
     return userMapper.toDto(saved);
   }
 }
