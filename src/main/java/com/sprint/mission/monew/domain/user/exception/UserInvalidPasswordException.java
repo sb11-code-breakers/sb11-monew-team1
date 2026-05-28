@@ -9,7 +9,7 @@ public class UserInvalidPasswordException extends UserException {
     super(ErrorCode.USER_INVALID_PASSWORD, details);
   }
 
-  public static UserInvalidPasswordException withEmail(String email) {
-    return new UserInvalidPasswordException(Map.of("email", email));
+  public static UserInvalidPasswordException withoutDetail() {
+    return new UserInvalidPasswordException(Map.of());
   }
 }
