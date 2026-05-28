@@ -3,8 +3,6 @@ package com.sprint.mission.monew.domain.user.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.sprint.mission.monew.domain.user.entity.User;
-import java.time.Instant;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
