@@ -47,7 +47,7 @@ public class UserService {
   public UserResponse login(UserLoginRequest request) {
     log.debug("로그인 시도");
 
-    User user = userRepository.findByEmail(request.email())
+    User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
         .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
 
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
