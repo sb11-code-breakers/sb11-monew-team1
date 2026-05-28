@@ -46,7 +46,7 @@ class UserServiceTest {
 
   @Nested
   @DisplayName("회원가입")
-  class 회원가입 {
+  class Create {
 
     private UserCreateRequest request;
 
@@ -97,7 +97,7 @@ class UserServiceTest {
 
   @Nested
   @DisplayName("로그인")
-  class 로그인 {
+  class Login {
 
     private UserLoginRequest request;
 
@@ -110,7 +110,8 @@ class UserServiceTest {
     @DisplayName("존재하지 않는 이메일이면 예외 발생")
     void 존재하지_않는_이메일이면_예외_발생() {
       // given
-      given(userRepository.findByEmail(request.email())).willReturn(Optional.empty());
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.empty());
 
       // when & then
       assertThatThrownBy(() -> userService.login(request))
@@ -122,7 +123,8 @@ class UserServiceTest {
     void 비밀번호가_틀리면_예외_발생() {
       // given
       User user = User.create("test@test.com", "테스터", "encodedPassword");
-      given(userRepository.findByEmail(request.email())).willReturn(Optional.of(user));
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
       given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
 
       // when & then
@@ -138,7 +140,8 @@ class UserServiceTest {
       UserResponse userResponse = new UserResponse(
           UUID.randomUUID(), "test@test.com", "테스터", Instant.now()
       );
-      given(userRepository.findByEmail(request.email())).willReturn(Optional.of(user));
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
       given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(true);
       given(userMapper.toResponse(user)).willReturn(userResponse);
 
