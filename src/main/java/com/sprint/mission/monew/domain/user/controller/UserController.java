@@ -2,6 +2,7 @@ package com.sprint.mission.monew.domain.user.controller;
 
 import com.sprint.mission.monew.domain.user.controller.api.UserApi;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
+import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import jakarta.validation.Valid;
@@ -31,5 +32,11 @@ public class UserController implements UserApi {
 
     log.info("회원가입 성공: id={}", response.id());
     return ResponseEntity.status(HttpStatus.CREATED).body(response);
+  }
+
+  @PostMapping("/login")
+  @Override
+  public ResponseEntity<UserResponse> login(@Valid @RequestBody UserLoginRequest request) {
+    return null;
   }
 }

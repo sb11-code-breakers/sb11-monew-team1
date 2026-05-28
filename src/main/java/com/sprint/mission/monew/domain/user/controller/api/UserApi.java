@@ -2,6 +2,7 @@ package com.sprint.mission.monew.domain.user.controller.api;
 
 import com.sprint.mission.monew.common.dto.ErrorResponse;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
+import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -28,4 +29,17 @@ public interface UserApi {
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request);
+
+  @Operation(summary = "로그인", description = "이메일과 비밀번호로 로그인합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "로그인 성공",
+          content = @Content(schema = @Schema(implementation = UserResponse.class))),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "401", description = "이메일 또는 비밀번호 불일치",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<UserResponse> login(@Valid @RequestBody UserLoginRequest request);
 }
