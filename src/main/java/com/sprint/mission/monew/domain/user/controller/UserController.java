@@ -37,6 +37,11 @@ public class UserController implements UserApi {
   @PostMapping("/login")
   @Override
   public ResponseEntity<UserResponse> login(@Valid @RequestBody UserLoginRequest request) {
-    return null;
+    log.debug("로그인 요청 수신");
+
+    UserResponse response = userService.login(request);
+
+    log.info("로그인 성공: id={}", response.id());
+    return ResponseEntity.ok(response);
   }
 }

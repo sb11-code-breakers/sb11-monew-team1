@@ -13,7 +13,6 @@ import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
-import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import java.time.Instant;
 import java.util.UUID;
@@ -125,7 +124,7 @@ class UserControllerTest {
       );
 
       given(userService.login(any()))
-          .willThrow(UserNotFoundException.withEmail("test@test.com"));
+          .willThrow(UserInvalidPasswordException.withEmail("test@test.com"));
 
       // when & then
       mockMvc.perform(post("/api/users/login")
