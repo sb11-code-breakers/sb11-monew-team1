@@ -58,7 +58,7 @@ public class UserController implements UserApi {
       @Valid @RequestBody UserUpdateRequest request) {
     log.debug("닉네임 수정 요청 수신");
 
-    UserResponse response = userService.update(userId, request);
+    UserResponse response = userService.update(userId, requestUserId, request);
 
     log.info("닉네임 수정 성공: id={}", userId);
     return ResponseEntity.ok(response);
