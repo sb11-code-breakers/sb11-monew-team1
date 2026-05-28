@@ -30,4 +30,8 @@ public class User extends BaseSoftDeletableEntity {
     user.password = password;
     return user;
   }
+
+  public void updateNickname(String nickname) {
+    this.nickname = nickname;
+  }
 }

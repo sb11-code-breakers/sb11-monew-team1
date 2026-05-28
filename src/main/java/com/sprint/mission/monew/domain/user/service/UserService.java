@@ -7,6 +7,7 @@ import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
+import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.util.UUID;
@@ -59,7 +60,12 @@ public class UserService {
     return userMapper.toResponse(user);
   }
 
+  @Transactional
   public UserResponse update(UUID userId, UserUpdateRequest request) {
-    return null;
+    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+
+    user.updateNickname(request.nickname());
+    return userMapper.toResponse(user);
   }
 }
