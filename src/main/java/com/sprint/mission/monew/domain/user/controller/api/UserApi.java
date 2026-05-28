@@ -3,6 +3,7 @@ package com.sprint.mission.monew.domain.user.controller.api;
 import com.sprint.mission.monew.common.dto.ErrorResponse;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -11,8 +12,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 @Tag(name = "User", description = "사용자 API")
 public interface UserApi {
@@ -42,4 +46,20 @@ public interface UserApi {
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   ResponseEntity<UserResponse> login(@Valid @RequestBody UserLoginRequest request);
+
+  @Operation(summary = "닉네임 수정", description = "사용자의 닉네임을 수정합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "닉네임 수정 성공",
+          content = @Content(schema = @Schema(implementation = UserResponse.class))),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "404", description = "사용자 없음",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<UserResponse> update(
+      @PathVariable UUID userId,
+      @RequestHeader("Monew-Request-User-ID") UUID requestUserId,
+      @Valid @RequestBody UserUpdateRequest request);
 }

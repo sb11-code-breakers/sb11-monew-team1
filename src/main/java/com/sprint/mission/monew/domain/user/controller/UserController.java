@@ -3,15 +3,20 @@ package com.sprint.mission.monew.domain.user.controller;
 import com.sprint.mission.monew.domain.user.controller.api.UserApi;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,5 +48,14 @@ public class UserController implements UserApi {
 
     log.info("로그인 성공: id={}", response.id());
     return ResponseEntity.ok(response);
+  }
+
+  @PatchMapping("/{userId}")
+  @Override
+  public ResponseEntity<UserResponse> update(
+      @PathVariable UUID userId,
+      @RequestHeader("Monew-Request-User-ID") UUID requestUserId,
+      @Valid @RequestBody UserUpdateRequest request) {
+    return null;
   }
 }
