@@ -5,6 +5,8 @@ import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
+import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
+import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +45,13 @@ public class UserService {
   }
 
   public UserResponse login(UserLoginRequest request) {
-    return null;
+    User user = userRepository.findByEmail(request.email())
+        .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
+
+    if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+      throw UserInvalidPasswordException.withEmail(request.email());
+    }
+
+    return userMapper.toResponse(user);
   }
 }
