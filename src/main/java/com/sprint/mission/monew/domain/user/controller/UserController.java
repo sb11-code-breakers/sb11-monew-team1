@@ -56,6 +56,11 @@ public class UserController implements UserApi {
       @PathVariable UUID userId,
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId,
       @Valid @RequestBody UserUpdateRequest request) {
-    return null;
+    log.debug("닉네임 수정 요청 수신");
+
+    UserResponse response = userService.update(userId, request);
+
+    log.info("닉네임 수정 성공: id={}", userId);
+    return ResponseEntity.ok(response);
   }
 }
