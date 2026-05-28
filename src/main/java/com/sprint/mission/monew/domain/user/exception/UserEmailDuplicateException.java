@@ -10,6 +10,12 @@ public class UserEmailDuplicateException extends UserException {
   }
 
   public static UserEmailDuplicateException withEmail(String email) {
-    return new UserEmailDuplicateException(Map.of("email", email));
+    return new UserEmailDuplicateException(Map.of("email", mask(email)));
+  }
+
+  private static String mask(String email) {
+    int at = email.indexOf("@");
+    if (at <= 1) return "***";
+    return email.charAt(0) + "***" + email.substring(at);
   }
 }
