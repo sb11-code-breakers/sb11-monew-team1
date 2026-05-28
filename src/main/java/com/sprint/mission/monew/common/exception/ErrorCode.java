@@ -26,6 +26,7 @@ public enum ErrorCode {
 
   // Article
   ARTICLE_NOT_FOUND(HttpStatus.NOT_FOUND, "뉴스 기사를 찾을 수 없습니다."),
+  ARTICLE_INVALID_CURSOR(HttpStatus.BAD_REQUEST, "커서 값의 형식이 올바르지 않습니다."),
 
   // Comment
   COMMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "댓글을 찾을 수 없습니다."),

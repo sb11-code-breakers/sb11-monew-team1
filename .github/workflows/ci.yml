@@ -94,3 +94,16 @@ jobs:
     steps:
       - name: CI skipped
         run: echo "CI skipped — no code changes"
+
+  result:
+    name: CI Result
+    needs: [test, skip]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check CI result
+        run: |
+          if [[ "${{ needs.test.result }}" == "failure" || "${{ needs.test.result }}" == "cancelled" ]]; then
+            exit 1
+          fi

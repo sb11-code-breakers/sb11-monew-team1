@@ -24,7 +24,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @WebMvcTest(GlobalExceptionHandlerTest.FakeController.class)
@@ -63,6 +65,12 @@ class GlobalExceptionHandlerTest {
     void serverError() {
       throw new RuntimeException("unexpected error");
     }
+
+    @GetMapping("/missing-header")
+    void missingHeader(@RequestHeader("X-Required-Header") String header) {}
+
+    @GetMapping("/missing-param")
+    void missingParam(@RequestParam String requiredParam) {}
   }
 
   record BodyRequest(String name) {}
@@ -194,6 +202,36 @@ class GlobalExceptionHandlerTest {
           .perform(get("/test/client-abort"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$").doesNotExist());
+    }
+  }
+
+  @Nested
+  @DisplayName("400 — 필수 헤더 누락")
+  class MissingHeader {
+
+    @Test
+    @DisplayName("필수 헤더 누락 시 400 반환")
+    void 필수_헤더_누락_시_400_반환() throws Exception {
+      mockMvc
+          .perform(get("/test/missing-header"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+          .andExpect(jsonPath("$.details['X-Required-Header']").doesNotExist());
+    }
+  }
+
+  @Nested
+  @DisplayName("400 — 필수 파라미터 누락")
+  class MissingParam {
+
+    @Test
+    @DisplayName("필수 쿼리 파라미터 누락 시 400 반환")
+    void 필수_쿼리_파라미터_누락_시_400_반환() throws Exception {
+      mockMvc
+          .perform(get("/test/missing-param"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+          .andExpect(jsonPath("$.details.requiredParam").value("필수 파라미터입니다"));
     }
   }
 
