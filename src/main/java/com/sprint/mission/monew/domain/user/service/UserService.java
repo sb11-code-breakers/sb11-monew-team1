@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.user.service;
 
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
+import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
@@ -39,5 +40,9 @@ public class UserService {
     User saved = userRepository.save(user);
     log.info("회원가입 완료: id={}", saved.getId());
     return userMapper.toResponse(saved);
+  }
+
+  public UserResponse login(UserLoginRequest request) {
+    return null;
   }
 }
