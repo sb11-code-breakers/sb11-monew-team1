@@ -47,10 +47,12 @@ class UserControllerTest {
     @Test
     @DisplayName("이메일 형식이 잘못되면 400 반환")
     void 이메일_형식이_잘못되면_400_반환() throws Exception {
+      // given
       UserCreateRequest request = new UserCreateRequest(
           "invalid-email", "테스터", "password123"
       );
 
+      // when & then
       mockMvc.perform(post("/api/users")
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
@@ -60,6 +62,7 @@ class UserControllerTest {
     @Test
     @DisplayName("이메일 중복 시 409 반환")
     void 이메일_중복_시_409_반환() throws Exception {
+      // given
       UserCreateRequest request = new UserCreateRequest(
           "test@test.com", "테스터", "password123"
       );
@@ -67,6 +70,7 @@ class UserControllerTest {
       given(userService.create(any()))
           .willThrow(UserEmailDuplicateException.withEmail("test@test.com"));
 
+      // when & then
       mockMvc.perform(post("/api/users")
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
@@ -76,6 +80,7 @@ class UserControllerTest {
     @Test
     @DisplayName("성공 시 201 반환")
     void 성공_시_201_반환() throws Exception {
+      // given
       UserCreateRequest request = new UserCreateRequest(
           "test@test.com", "테스터", "password123"
       );
@@ -85,6 +90,7 @@ class UserControllerTest {
 
       given(userService.create(any())).willReturn(response);
 
+      // when & then
       mockMvc.perform(post("/api/users")
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
@@ -101,10 +107,12 @@ class UserControllerTest {
     @Test
     @DisplayName("이메일 형식이 잘못되면 400 반환")
     void 이메일_형식이_잘못되면_400_반환() throws Exception {
+      // given
       UserLoginRequest request = new UserLoginRequest(
           "invalid-email", "password123"
       );
 
+      // when & then
       mockMvc.perform(post("/api/users/login")
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
@@ -114,6 +122,7 @@ class UserControllerTest {
     @Test
     @DisplayName("존재하지 않는 이메일이면 401 반환")
     void 존재하지_않는_이메일이면_401_반환() throws Exception {
+      // given
       UserLoginRequest request = new UserLoginRequest(
           "test@test.com", "password123"
       );
@@ -121,6 +130,7 @@ class UserControllerTest {
       given(userService.login(any()))
           .willThrow(UserInvalidPasswordException.withoutDetail());
 
+      // when & then
       mockMvc.perform(post("/api/users/login")
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
@@ -130,6 +140,7 @@ class UserControllerTest {
     @Test
     @DisplayName("비밀번호가 틀리면 401 반환")
     void 비밀번호가_틀리면_401_반환() throws Exception {
+      // given
       UserLoginRequest request = new UserLoginRequest(
           "test@test.com", "wrongpassword"
       );
@@ -137,6 +148,7 @@ class UserControllerTest {
       given(userService.login(any()))
           .willThrow(UserInvalidPasswordException.withoutDetail());
 
+      // when & then
       mockMvc.perform(post("/api/users/login")
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
@@ -146,6 +158,7 @@ class UserControllerTest {
     @Test
     @DisplayName("성공 시 200 반환")
     void 성공_시_200_반환() throws Exception {
+      // given
       UserLoginRequest request = new UserLoginRequest(
           "test@test.com", "password123"
       );
@@ -155,6 +168,7 @@ class UserControllerTest {
 
       given(userService.login(any())).willReturn(response);
 
+      // when & then
       mockMvc.perform(post("/api/users/login")
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
@@ -171,8 +185,10 @@ class UserControllerTest {
     @Test
     @DisplayName("닉네임이 빈 값이면 400 반환")
     void 닉네임이_빈_값이면_400_반환() throws Exception {
+      // given
       UserUpdateRequest request = new UserUpdateRequest("");
 
+      // when & then
       mockMvc.perform(patch("/api/users/{userId}", UUID.randomUUID())
               .header("Monew-Request-User-ID", UUID.randomUUID())
               .contentType(APPLICATION_JSON)
@@ -183,11 +199,13 @@ class UserControllerTest {
     @Test
     @DisplayName("다른 사용자가 수정하면 403 반환")
     void 다른_사용자가_수정하면_403_반환() throws Exception {
+      // given
       UserUpdateRequest request = new UserUpdateRequest("새닉네임");
 
       given(userService.update(any(), any(), any()))
           .willThrow(UserAccessDeniedException.forUser(UUID.randomUUID()));
 
+      // when & then
       mockMvc.perform(patch("/api/users/{userId}", UUID.randomUUID())
               .header("Monew-Request-User-ID", UUID.randomUUID())
               .contentType(APPLICATION_JSON)
@@ -198,11 +216,13 @@ class UserControllerTest {
     @Test
     @DisplayName("존재하지 않는 사용자면 404 반환")
     void 존재하지_않는_사용자면_404_반환() throws Exception {
+      // given
       UserUpdateRequest request = new UserUpdateRequest("새닉네임");
 
       given(userService.update(any(), any(), any()))
           .willThrow(UserNotFoundException.withId(UUID.randomUUID()));
 
+      // when & then
       mockMvc.perform(patch("/api/users/{userId}", UUID.randomUUID())
               .header("Monew-Request-User-ID", UUID.randomUUID())
               .contentType(APPLICATION_JSON)
@@ -213,6 +233,7 @@ class UserControllerTest {
     @Test
     @DisplayName("성공 시 200 반환")
     void 성공_시_200_반환() throws Exception {
+      // given
       UUID userId = UUID.randomUUID();
       UserUpdateRequest request = new UserUpdateRequest("새닉네임");
       UserResponse response = new UserResponse(
@@ -221,6 +242,7 @@ class UserControllerTest {
 
       given(userService.update(any(), any(), any())).willReturn(response);
 
+      // when & then
       mockMvc.perform(patch("/api/users/{userId}", userId)
               .header("Monew-Request-User-ID", userId)
               .contentType(APPLICATION_JSON)
