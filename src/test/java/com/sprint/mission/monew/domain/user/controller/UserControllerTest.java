@@ -3,6 +3,7 @@ package com.sprint.mission.monew.domain.user.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -11,11 +12,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
+import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
-import com.sprint.mission.monew.domain.user.service.UserService;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
-
+import com.sprint.mission.monew.domain.user.service.UserService;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +41,7 @@ class UserControllerTest {
 
   @Nested
   @DisplayName("POST /api/users — 회원가입")
-  class 회원가입 {
+  class Create {
 
     @Test
     @DisplayName("이메일 형식이 잘못되면 400 반환")
@@ -100,7 +101,7 @@ class UserControllerTest {
 
   @Nested
   @DisplayName("POST /api/users/login — 로그인")
-  class 로그인 {
+  class Login {
 
     @Test
     @DisplayName("이메일 형식이 잘못되면 400 반환")
@@ -118,21 +119,21 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 이메일이면 404 반환")
-    void 존재하지_않는_이메일이면_404_반환() throws Exception {
+    @DisplayName("존재하지 않는 이메일이면 401 반환")
+    void 존재하지_않는_이메일이면_401_반환() throws Exception {
       // given
       UserLoginRequest request = new UserLoginRequest(
           "test@test.com", "password123"
       );
 
       given(userService.login(any()))
-          .willThrow(UserNotFoundException.withEmail("test@test.com"));
+          .willThrow(UserInvalidPasswordException.withoutDetail());
 
       // when & then
       mockMvc.perform(post("/api/users/login")
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
-          .andExpect(status().isNotFound());
+          .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -173,6 +174,63 @@ class UserControllerTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.email").value("test@test.com"))
           .andExpect(jsonPath("$.nickname").value("테스터"));
+    }
+  }
+
+  @Nested
+  @DisplayName("PATCH /api/users/{userId} — 닉네임 수정")
+  class Update {
+
+    @Test
+    @DisplayName("닉네임이 빈 값이면 400 반환")
+    void 닉네임이_빈_값이면_400_반환() throws Exception {
+      // given
+      UserUpdateRequest request = new UserUpdateRequest("");
+
+      // when & then
+      mockMvc.perform(patch("/api/users/{userId}", UUID.randomUUID())
+              .header("Monew-Request-User-ID", UUID.randomUUID())
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자면 404 반환")
+    void 존재하지_않는_사용자면_404_반환() throws Exception {
+      // given
+      UserUpdateRequest request = new UserUpdateRequest("새닉네임");
+
+      given(userService.update(any(), any()))
+          .willThrow(UserNotFoundException.withId(UUID.randomUUID()));
+
+      // when & then
+      mockMvc.perform(patch("/api/users/{userId}", UUID.randomUUID())
+              .header("Monew-Request-User-ID", UUID.randomUUID())
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("성공 시 200 반환")
+    void 성공_시_200_반환() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      UserUpdateRequest request = new UserUpdateRequest("새닉네임");
+      UserResponse response = new UserResponse(
+          userId, "test@test.com", "새닉네임", Instant.now()
+      );
+
+      given(userService.update(any(), any())).willReturn(response);
+
+      // when & then
+      mockMvc.perform(patch("/api/users/{userId}", userId)
+              .header("Monew-Request-User-ID", UUID.randomUUID())
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.nickname").value("새닉네임"));
     }
   }
 }
