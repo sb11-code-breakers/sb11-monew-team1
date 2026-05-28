@@ -14,7 +14,7 @@ import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
-import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
+import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
@@ -117,7 +117,7 @@ class UserServiceTest {
 
       // when & then
       assertThatThrownBy(() -> userService.login(request))
-          .isInstanceOf(UserNotFoundException.class);
+          .isInstanceOf(UserLoginFailedException.class);
     }
 
     @Test
@@ -131,7 +131,7 @@ class UserServiceTest {
 
       // when & then
       assertThatThrownBy(() -> userService.login(request))
-          .isInstanceOf(UserInvalidPasswordException.class);
+          .isInstanceOf(UserLoginFailedException.class);
     }
 
     @Test

@@ -15,7 +15,7 @@ import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
-import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
+import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import java.time.Instant;
@@ -128,7 +128,7 @@ class UserControllerTest {
       );
 
       given(userService.login(any()))
-          .willThrow(UserInvalidPasswordException.withoutDetail());
+          .willThrow(UserLoginFailedException.withEmail());
 
       // when & then
       mockMvc.perform(post("/api/users/login")
@@ -146,7 +146,7 @@ class UserControllerTest {
       );
 
       given(userService.login(any()))
-          .willThrow(UserInvalidPasswordException.withoutDetail());
+          .willThrow(UserLoginFailedException.withPassword());
 
       // when & then
       mockMvc.perform(post("/api/users/login")
@@ -214,18 +214,17 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 이메일이면 404 반환")
-    void 존재하지_않는_이메일이면_404_반환() throws Exception {
+    @DisplayName("존재하지 않는 사용자면 404 반환")
+    void 존재하지_않는_사용자면_404_반환() throws Exception {
       // given
-      UserLoginRequest request = new UserLoginRequest(
-          "test@test.com", "password123"
-      );
+      UserUpdateRequest request = new UserUpdateRequest("새닉네임");
 
-      given(userService.login(any()))
-          .willThrow(UserNotFoundException.withEmail("test@test.com"));
+      given(userService.update(any(), any(), any()))
+          .willThrow(UserNotFoundException.withId(UUID.randomUUID()));
 
       // when & then
-      mockMvc.perform(post("/api/users/login")
+      mockMvc.perform(patch("/api/users/{userId}", UUID.randomUUID())
+              .header("Monew-Request-User-ID", UUID.randomUUID())
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isNotFound());
