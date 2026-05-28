@@ -82,6 +82,9 @@ class UserServiceTest {
       UserResponse result = userService.create(request);
 
       // then
+      then(passwordEncoder).should().encode(request.password());
+      then(userRepository).should().save(any(User.class));
+      then(userMapper).should().toResponse(user);
       assertThat(result).isNotNull();
       assertThat(result.email()).isEqualTo("test@test.com");
       assertThat(result.nickname()).isEqualTo("테스터");

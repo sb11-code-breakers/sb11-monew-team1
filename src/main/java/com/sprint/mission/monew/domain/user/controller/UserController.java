@@ -7,6 +7,7 @@ import com.sprint.mission.monew.domain.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,11 +25,11 @@ public class UserController implements UserApi {
   @PostMapping
   @Override
   public ResponseEntity<UserResponse> create(@Valid @RequestBody UserRegisterRequest request) {
-    log.debug("회원가입 요청: email={}", request.email());
+    log.debug("회원가입 요청 수신");
 
     UserResponse response = userService.create(request);
 
-    log.info("회원가입 응답: id={}, email={}", response.id(), response.email());
-    return ResponseEntity.ok(response);
+    log.info("회원가입 성공: id={}", response.id());
+    return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 }

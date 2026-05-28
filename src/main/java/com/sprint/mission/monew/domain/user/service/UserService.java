@@ -24,7 +24,7 @@ public class UserService {
 
   @Transactional
   public UserResponse create(UserRegisterRequest request) {
-    log.debug("회원가입 시도: email={}", request.email());
+    log.debug("회원가입 시도");
 
     if (userRepository.existsByEmail(request.email())) {
       throw UserEmailDuplicateException.withEmail(request.email());
@@ -37,7 +37,7 @@ public class UserService {
     );
 
     User saved = userRepository.save(user);
-    log.info("회원가입 완료: id={}, email={}", saved.getId(), saved.getEmail());
+    log.info("회원가입 완료: id={}", saved.getId());
     return userMapper.toResponse(saved);
   }
 }

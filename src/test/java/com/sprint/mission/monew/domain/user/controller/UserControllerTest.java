@@ -72,8 +72,8 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("성공 시 200 반환")
-    void 성공_시_200_반환() throws Exception {
+    @DisplayName("성공 시 201 반환")
+    void 성공_시_201_반환() throws Exception {
       // given
       UserRegisterRequest request = new UserRegisterRequest(
           "test@test.com", "테스터", "password123"
@@ -88,7 +88,7 @@ class UserControllerTest {
       mockMvc.perform(post("/api/users")
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
-          .andExpect(status().isOk())
+          .andExpect(status().isCreated())
           .andExpect(jsonPath("$.email").value("test@test.com"))
           .andExpect(jsonPath("$.nickname").value("테스터"));
     }

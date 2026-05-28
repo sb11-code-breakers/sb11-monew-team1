@@ -18,7 +18,7 @@ public interface UserApi {
 
   @Operation(summary = "회원가입", description = "새로운 사용자를 등록합니다.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "회원가입 성공",
+      @ApiResponse(responseCode = "201", description = "회원가입 성공",
           content = @Content(schema = @Schema(implementation = UserResponse.class))),
       @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
