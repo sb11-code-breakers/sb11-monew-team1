@@ -8,12 +8,16 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
+import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
+import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
+import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -88,6 +92,62 @@ class UserServiceTest {
       assertThat(result).isNotNull();
       assertThat(result.email()).isEqualTo("test@test.com");
       assertThat(result.nickname()).isEqualTo("테스터");
+    }
+  }
+
+  @Nested
+  @DisplayName("로그인")
+  class 로그인 {
+
+    private UserLoginRequest request;
+
+    @BeforeEach
+    void setUp() {
+      request = new UserLoginRequest("test@test.com", "password123");
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 이메일이면 예외 발생")
+    void 존재하지_않는_이메일이면_예외_발생() {
+      // given
+      given(userRepository.findByEmail(request.email())).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userService.login(request))
+          .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("비밀번호가 틀리면 예외 발생")
+    void 비밀번호가_틀리면_예외_발생() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      given(userRepository.findByEmail(request.email())).willReturn(Optional.of(user));
+      given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
+
+      // when & then
+      assertThatThrownBy(() -> userService.login(request))
+          .isInstanceOf(UserInvalidPasswordException.class);
+    }
+
+    @Test
+    @DisplayName("성공 시 사용자 반환")
+    void 성공_시_사용자_반환() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      UserResponse userResponse = new UserResponse(
+          UUID.randomUUID(), "test@test.com", "테스터", Instant.now()
+      );
+      given(userRepository.findByEmail(request.email())).willReturn(Optional.of(user));
+      given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(true);
+      given(userMapper.toResponse(user)).willReturn(userResponse);
+
+      // when
+      UserResponse result = userService.login(request);
+
+      // then
+      assertThat(result).isNotNull();
+      assertThat(result.email()).isEqualTo("test@test.com");
     }
   }
 }
