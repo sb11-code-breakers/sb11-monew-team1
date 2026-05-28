@@ -22,7 +22,8 @@ import org.springframework.test.context.ActiveProfiles;
 @Import(QuerydslConfig.class)
 class InterestRepositoryTest {
 
-  @Autowired InterestRepository interestRepository;
+  @Autowired
+  InterestRepository interestRepository;
 
   @BeforeEach
   void setUp() {
@@ -47,7 +48,9 @@ class InterestRepositoryTest {
       // then
       assertThat(found).isPresent();
       assertThat(found.get().getName()).isEqualTo("인공지능");
-      assertThat(found.get().getKeywords()).containsExactlyInAnyOrderElementsOf(keywords);
+      assertThat(found.get().getKeywords())
+          .extracting(com.sprint.mission.monew.domain.interest.entity.InterestKeyword::getKeyword)
+          .containsExactlyInAnyOrderElementsOf(keywords);
     }
   }
 }

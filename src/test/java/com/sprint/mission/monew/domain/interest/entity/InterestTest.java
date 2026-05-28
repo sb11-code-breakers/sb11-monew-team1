@@ -32,8 +32,37 @@ class InterestTest {
       // then
       assertThat(interest.getId()).isNotNull();
       assertThat(interest.getName()).isEqualTo(name);
-      assertThat(interest.getKeywords()).containsExactlyElementsOf(keywords);
+      assertThat(interest.getKeywords())
+          .extracting(InterestKeyword::getKeyword)
+          .containsExactlyElementsOf(keywords);
       assertThat(interest.getSubscriberCount()).isZero();
+    }
+  }
+
+  @Nested
+  @DisplayName("키워드 수정")
+  class UpdateKeywords {
+
+    private Interest interest;
+
+    @BeforeEach
+    void setUp() {
+      interest = Interest.create(name, keywords);
+    }
+
+    @Test
+    @DisplayName("유효한 키워드 목록으로 교체하면 keywords가 업데이트된다")
+    void 유효한_키워드_목록으로_교체하면_keywords가_업데이트된다() {
+      // given
+      List<String> newKeywords = List.of("자연어처리", "GPT", "트랜스포머");
+
+      // when
+      interest.updateKeywords(newKeywords);
+
+      // then
+      assertThat(interest.getKeywords())
+          .extracting(InterestKeyword::getKeyword)
+          .containsExactlyElementsOf(newKeywords);
     }
   }
 }

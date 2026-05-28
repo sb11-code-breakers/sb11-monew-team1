@@ -6,9 +6,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
 import com.sprint.mission.monew.domain.interest.dto.InterestCreateRequest;
-import com.sprint.mission.monew.domain.interest.dto.InterestDto;
+import com.sprint.mission.monew.domain.interest.dto.InterestResponse;
+import com.sprint.mission.monew.domain.interest.dto.InterestUpdateRequest;
+import com.sprint.mission.monew.domain.interest.exception.InterestNotFoundException;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.exception.InterestAlreadyExistsException;
+import java.util.Optional;
 import com.sprint.mission.monew.domain.interest.mapper.InterestMapper;
 import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import java.util.List;
@@ -25,9 +28,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class InterestServiceTest {
 
-  @InjectMocks InterestService interestService;
-  @Mock InterestRepository interestRepository;
-  @Mock InterestMapper interestMapper;
+  @InjectMocks
+  InterestService interestService;
+
+  @Mock
+  InterestRepository interestRepository;
+
+  @Mock
+  InterestMapper interestMapper;
 
   UUID requestUserId;
 
@@ -60,19 +68,62 @@ class InterestServiceTest {
       // given
       InterestCreateRequest request = new InterestCreateRequest("인공지능", List.of("AI", "머신러닝"));
       Interest saved = Interest.create("인공지능", List.of("AI", "머신러닝"));
-      InterestDto expectedDto =
-          new InterestDto(saved.getId(), "인공지능", List.of("AI", "머신러닝"), 0L, false);
+      InterestResponse expectedDto =
+          new InterestResponse(saved.getId(), "인공지능", List.of("AI", "머신러닝"), 0L, false);
 
       given(interestRepository.findAll()).willReturn(List.of());
       given(interestRepository.save(any(Interest.class))).willReturn(saved);
       given(interestMapper.toResponse(any(Interest.class))).willReturn(expectedDto);
 
       // when
-      InterestDto result = interestService.create(request, requestUserId);
+      InterestResponse result = interestService.create(request, requestUserId);
 
       // then
       assertThat(result.name()).isEqualTo("인공지능");
       assertThat(result.keywords()).containsExactlyInAnyOrderElementsOf(request.keywords());
+    }
+  }
+
+  @Nested
+  @DisplayName("관심사 키워드 수정")
+  class UpdateKeywords {
+
+    private UUID interestId;
+    private InterestUpdateRequest request;
+
+    @BeforeEach
+    void setUp() {
+      interestId = UUID.randomUUID();
+      request = new InterestUpdateRequest(List.of("자연어처리", "GPT"));
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 관심사 수정 시 InterestNotFoundException이 발생한다")
+    void 존재하지_않는_관심사_수정_시_예외가_발생한다() {
+      // given
+      given(interestRepository.findById(interestId)).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> interestService.updateKeywords(interestId, request, requestUserId))
+          .isInstanceOf(InterestNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("유효한 관심사 키워드 수정 시 InterestResponse를 반환한다")
+    void 유효한_관심사_키워드_수정_시_InterestResponse를_반환한다() {
+      // given
+      Interest interest = Interest.create("인공지능", List.of("AI"));
+      InterestResponse expected =
+          new InterestResponse(interest.getId(), "인공지능", List.of("자연어처리", "GPT"), 0L, false);
+
+      given(interestRepository.findById(interestId)).willReturn(Optional.of(interest));
+      given(interestMapper.toResponse(interest)).willReturn(expected);
+
+      // when
+      InterestResponse result = interestService.updateKeywords(interestId, request, requestUserId);
+
+      // then
+      assertThat(result.keywords()).containsExactlyElementsOf(request.keywords());
     }
   }
 }

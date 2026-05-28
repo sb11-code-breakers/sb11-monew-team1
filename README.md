@@ -1,4 +1,4 @@
-# MoNew [![codecov](https://codecov.io/gh/sb11-code-breakers/sb11-monew-team1/graph/badge.svg)](https://codecov.io/gh/sb11-code-breakers/sb11-monew-team1)
+# MoNew [![codecov](https://codecov.io/gh/sb11-code-breakers/sb11-monew-team1/graph/badge.svg?branch=dev)](https://codecov.io/gh/sb11-code-breakers/sb11-monew-team1/tree/dev)
 
 여러 뉴스 API를 통합하여 사용자에게 맞춤형 뉴스를 제공하고, 의견을 나눌 수 있는 소셜 기능을 갖춘 Spring Boot 백엔드 서비스
 

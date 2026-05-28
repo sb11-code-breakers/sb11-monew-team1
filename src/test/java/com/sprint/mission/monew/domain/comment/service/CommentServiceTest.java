@@ -64,7 +64,7 @@ public class CommentServiceTest {
 
   @Nested
   @DisplayName("댓글 등록하기")
-  class CreateComment {
+  class 댓글_등록하기 {
 
     @Test
     @DisplayName("댓글 등록 실패 - 뉴스 기사가 존재하지 않음")
@@ -81,7 +81,13 @@ public class CommentServiceTest {
     @DisplayName("댓글 등록 실패 - 사용자가 존재하지 않음")
     void 댓글_등록_실패_사용자_없음() {
       // given
-      Article article = Article.create(ArticleSource.NAVER, "https://test.com", "테스트 기사", Instant.now(), null);
+      Article article = Article.create(
+          ArticleSource.NAVER,
+          "https://example.com",
+          "제목",
+          Instant.now(),
+          null
+      );
 
       given(articleRepository.findById(articleId)).willReturn(Optional.of(article));
       given(userRepository.findById(userId)).willReturn(Optional.empty());
@@ -95,8 +101,17 @@ public class CommentServiceTest {
     @DisplayName("댓글 등록_성공")
     void 댓글_등록_성공() {
       // given
-      Article article = Article.create(ArticleSource.NAVER, "https://test.com", "테스트 기사", Instant.now(), null);
-      User user = new User();
+      Article article = Article.create(
+          ArticleSource.NAVER,
+          "https://example.com/news/1",
+          "테스트 기사 제목",
+          Instant.parse("2024-01-01T00:00:00Z"),
+          "기사 요약 내용"
+      );
+
+      User user = User.create(
+          "Test@naver.com", "test", "12345678"
+      );
 
       CommentResponse expectedResponse = new CommentResponse(
           UUID.randomUUID(),

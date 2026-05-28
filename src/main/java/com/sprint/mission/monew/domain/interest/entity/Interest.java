@@ -1,12 +1,11 @@
 package com.sprint.mission.monew.domain.interest.entity;
 
 import com.sprint.mission.monew.common.entity.BaseUpdatableEntity;
-import jakarta.persistence.CollectionTable;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,10 +22,8 @@ public class Interest extends BaseUpdatableEntity {
   @Column(nullable = false, length = 50)
   private String name;
 
-  @ElementCollection(fetch = FetchType.LAZY)
-  @CollectionTable(name = "interest_keywords", joinColumns = @JoinColumn(name = "interest_id"))
-  @Column(name = "keyword", nullable = false)
-  private List<String> keywords = new ArrayList<>();
+  @OneToMany(mappedBy = "interest", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  private List<InterestKeyword> keywords = new ArrayList<>();
 
   @Column(nullable = false)
   private long subscriberCount = 0;
@@ -34,7 +31,16 @@ public class Interest extends BaseUpdatableEntity {
   public static Interest create(String name, List<String> keywords) {
     Interest interest = new Interest();
     interest.name = name;
-    interest.keywords = new ArrayList<>(keywords);
+    keywords.stream()
+        .map(k -> InterestKeyword.create(interest, k))
+        .forEach(interest.keywords::add);
     return interest;
+  }
+
+  public void updateKeywords(List<String> newKeywords) {
+    this.keywords.clear();
+    newKeywords.stream()
+        .map(k -> InterestKeyword.create(this, k))
+        .forEach(this.keywords::add);
   }
 }

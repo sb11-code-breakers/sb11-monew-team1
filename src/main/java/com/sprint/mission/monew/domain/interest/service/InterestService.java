@@ -1,9 +1,11 @@
 package com.sprint.mission.monew.domain.interest.service;
 
 import com.sprint.mission.monew.domain.interest.dto.InterestCreateRequest;
-import com.sprint.mission.monew.domain.interest.dto.InterestDto;
+import com.sprint.mission.monew.domain.interest.dto.InterestResponse;
+import com.sprint.mission.monew.domain.interest.dto.InterestUpdateRequest;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.exception.InterestAlreadyExistsException;
+import com.sprint.mission.monew.domain.interest.exception.InterestNotFoundException;
 import com.sprint.mission.monew.domain.interest.mapper.InterestMapper;
 import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import java.util.List;
@@ -21,7 +23,7 @@ public class InterestService {
   private final InterestMapper interestMapper;
 
   @Transactional
-  public InterestDto create(InterestCreateRequest request, UUID requestUserId) {
+  public InterestResponse create(InterestCreateRequest request, UUID requestUserId) {
     List<Interest> existingInterests = interestRepository.findAll();
     boolean hasSimilar =
         existingInterests.stream()
@@ -31,6 +33,14 @@ public class InterestService {
     }
     Interest saved = interestRepository.save(Interest.create(request.name(), request.keywords()));
     return interestMapper.toResponse(saved);
+  }
+
+  @Transactional
+  public InterestResponse updateKeywords(UUID id, InterestUpdateRequest request, UUID requestUserId) {
+    Interest interest = interestRepository.findById(id)
+        .orElseThrow(() -> InterestNotFoundException.withId(id));
+    interest.updateKeywords(request.keywords());
+    return interestMapper.toResponse(interest);
   }
 
   private double similarity(String a, String b) {

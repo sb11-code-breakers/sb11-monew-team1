@@ -24,8 +24,8 @@ CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users (deleted_at)
 CREATE TABLE IF NOT EXISTS interests
 (
     id               UUID                     NOT NULL,
-    name             VARCHAR(255)             NOT NULL,
-    subscriber_count INT                      NOT NULL DEFAULT 0,
+    name             VARCHAR(50)              NOT NULL,
+    subscriber_count BIGINT                   NOT NULL DEFAULT 0,
     created_at       TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at       TIMESTAMP WITH TIME ZONE,
     PRIMARY KEY (id),
@@ -40,9 +40,12 @@ CREATE INDEX IF NOT EXISTS idx_interests_subscriber_count ON interests (subscrib
 -- =====================
 CREATE TABLE IF NOT EXISTS interest_keywords
 (
-    interest_id UUID         NOT NULL,
-    keyword     VARCHAR(255) NOT NULL,
-    PRIMARY KEY (interest_id, keyword),
+    id          UUID                     NOT NULL,
+    interest_id UUID                     NOT NULL,
+    keyword     VARCHAR(50)              NOT NULL,
+    created_at  TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (interest_id, keyword),
     FOREIGN KEY (interest_id) REFERENCES interests (id) ON DELETE CASCADE
 );
 
