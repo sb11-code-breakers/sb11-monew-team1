@@ -14,8 +14,6 @@ import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
 import com.sprint.mission.monew.domain.user.service.UserService;
-import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
-
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -118,21 +116,21 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("존재하지 않는 이메일이면 404 반환")
-    void 존재하지_않는_이메일이면_404_반환() throws Exception {
+    @DisplayName("존재하지 않는 이메일이면 401 반환")
+    void 존재하지_않는_이메일이면_401_반환() throws Exception {
       // given
       UserLoginRequest request = new UserLoginRequest(
           "test@test.com", "password123"
       );
 
       given(userService.login(any()))
-          .willThrow(UserNotFoundException.withEmail("test@test.com"));
+          .willThrow(UserInvalidPasswordException.withoutDetail());
 
       // when & then
       mockMvc.perform(post("/api/users/login")
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
-          .andExpect(status().isNotFound());
+          .andExpect(status().isUnauthorized());
     }
 
     @Test

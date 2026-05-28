@@ -10,6 +10,6 @@ public class UserInvalidPasswordException extends UserException {
   }
 
   public static UserInvalidPasswordException withoutDetail() {
-    return new UserInvalidPasswordException(Map.of("password", ""));
+    return new UserInvalidPasswordException(Map.of());
   }
 }

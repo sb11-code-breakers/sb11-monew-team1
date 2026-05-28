@@ -6,7 +6,6 @@ import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
-import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +47,7 @@ public class UserService {
     log.debug("로그인 시도");
 
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
-        .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
+        .orElseThrow(UserInvalidPasswordException::withoutDetail);
 
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
       throw UserInvalidPasswordException.withoutDetail();
