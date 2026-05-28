@@ -14,20 +14,20 @@ import lombok.NoArgsConstructor;
 @Entity
 public class User extends BaseSoftDeletableEntity {
 
-    @Column(nullable = false, unique = true)
-    private String email;
+  @Column(nullable = false, unique = true)
+  private String email;
 
-    @Column(nullable = false)
-    private String nickname;
+  @Column(nullable = false)
+  private String nickname;
 
-    @Column(nullable = false)
-    private String password;
+  @Column(nullable = false)
+  private String password;
 
-    public static User create(String email, String nickname, String password) {
-        User user = new User();
-        user.email = email;
-        user.nickname = nickname;
-        user.password = password;
-        return user;
-    }
+  public static User create(String email, String nickname, String password) {
+    User user = new User();
+    user.email = email;
+    user.nickname = nickname;
+    user.password = password;
+    return user;
+  }
 }
