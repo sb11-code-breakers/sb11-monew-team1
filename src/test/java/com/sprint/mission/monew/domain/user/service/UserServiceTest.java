@@ -117,7 +117,7 @@ class UserServiceTest {
 
       // when & then
       assertThatThrownBy(() -> userService.login(request))
-          .isInstanceOf(UserInvalidPasswordException.class);
+          .isInstanceOf(UserNotFoundException.class);
     }
 
     @Test
