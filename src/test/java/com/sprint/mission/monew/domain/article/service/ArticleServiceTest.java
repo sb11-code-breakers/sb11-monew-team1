@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.article.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -13,10 +14,12 @@ import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.mapper.ArticleMapper;
+import com.sprint.mission.monew.domain.article.exception.ArticleNotFoundException;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -86,7 +89,7 @@ class ArticleServiceTest {
       given(articleRepository.findAll(any(ArticleQueryCondition.class))).willReturn(List.of(article));
       given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
           .willReturn(Set.of());
-      given(articleMapper.toDto(eq(article), eq(false))).willReturn(dto);
+      given(articleMapper.toResponse(eq(article), eq(false))).willReturn(dto);
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(defaultCondition, requestUserId);
@@ -120,8 +123,10 @@ class ArticleServiceTest {
           .willReturn(List.of(article1, article2, article3));
       given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
           .willReturn(Set.of());
-      given(articleMapper.toDto(eq(article1), eq(false))).willReturn(dto1);
-      given(articleMapper.toDto(eq(article2), eq(false))).willReturn(dto2);
+      given(articleMapper.toResponse(eq(article1), eq(false))).willReturn(dto1);
+      given(articleMapper.toResponse(eq(article2), eq(false))).willReturn(dto2);
+      given(articleRepository.buildCursor(eq(article2), eq(ArticleOrderBy.PUBLISH_DATE)))
+          .willReturn(article2.getPublishDate().toString());
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(condition, requestUserId);
@@ -147,7 +152,7 @@ class ArticleServiceTest {
       given(articleRepository.findAll(any(ArticleQueryCondition.class))).willReturn(List.of(article));
       given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
           .willReturn(Set.of(article.getId()));
-      given(articleMapper.toDto(eq(article), eq(true))).willReturn(dto);
+      given(articleMapper.toResponse(eq(article), eq(true))).willReturn(dto);
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(defaultCondition, requestUserId);
@@ -177,7 +182,9 @@ class ArticleServiceTest {
           .willReturn(List.of(article1, article2));
       given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
           .willReturn(Set.of());
-      given(articleMapper.toDto(eq(article1), eq(false))).willReturn(dto1);
+      given(articleMapper.toResponse(eq(article1), eq(false))).willReturn(dto1);
+      given(articleRepository.buildCursor(eq(article1), eq(ArticleOrderBy.VIEW_COUNT)))
+          .willReturn("0");
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(condition, requestUserId);
@@ -206,7 +213,9 @@ class ArticleServiceTest {
           .willReturn(List.of(article1, article2));
       given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
           .willReturn(Set.of());
-      given(articleMapper.toDto(eq(article1), eq(false))).willReturn(dto1);
+      given(articleMapper.toResponse(eq(article1), eq(false))).willReturn(dto1);
+      given(articleRepository.buildCursor(eq(article1), eq(ArticleOrderBy.COMMENT_COUNT)))
+          .willReturn("0");
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(condition, requestUserId);
@@ -214,6 +223,76 @@ class ArticleServiceTest {
       // then
       assertThat(result.hasNext()).isTrue();
       assertThat(result.nextCursor()).isEqualTo("0"); // article1.commentCount = 0 (default)
+    }
+  }
+
+  @Nested
+  @DisplayName("뉴스 기사 단건 조회")
+  class GetArticle {
+
+    @Test
+    @DisplayName("존재하지 않는 기사를 조회하면 ArticleNotFoundException을 던진다")
+    void 존재하지_않는_기사를_조회하면_ArticleNotFoundException을_던진다() {
+      // given
+      UUID articleId = UUID.randomUUID();
+      given(articleRepository.findById(eq(articleId))).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> articleService.getArticle(articleId, requestUserId))
+          .isInstanceOf(ArticleNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("소프트딜리트된 기사를 조회하면 ArticleNotFoundException을 던진다")
+    void 소프트딜리트된_기사를_조회하면_ArticleNotFoundException을_던진다() {
+      // given
+      Article article = makeArticle(ArticleSource.NAVER);
+      article.softDelete();
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+
+      // when & then
+      assertThatThrownBy(() -> articleService.getArticle(article.getId(), requestUserId))
+          .isInstanceOf(ArticleNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("존재하는 기사를 조회하면 ArticleResponse를 반환한다")
+    void 존재하는_기사를_조회하면_ArticleResponse를_반환한다() {
+      // given
+      Article article = makeArticle(ArticleSource.NAVER);
+      ArticleResponse dto = new ArticleResponse(article.getId(), ArticleSource.NAVER,
+          article.getSourceUrl(), article.getTitle(), article.getPublishDate(),
+          article.getSummary(), 0, 0, false);
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+      given(articleViewRepository.existsByArticleIdAndUserId(eq(article.getId()), eq(requestUserId)))
+          .willReturn(false);
+      given(articleMapper.toResponse(eq(article), eq(false))).willReturn(dto);
+
+      // when
+      ArticleResponse result = articleService.getArticle(article.getId(), requestUserId);
+
+      // then
+      assertThat(result).isEqualTo(dto);
+    }
+
+    @Test
+    @DisplayName("요청자가 조회한 기사는 viewedByMe가 true이다")
+    void 요청자가_조회한_기사는_viewedByMe가_true이다() {
+      // given
+      Article article = makeArticle(ArticleSource.NAVER);
+      ArticleResponse dto = new ArticleResponse(article.getId(), ArticleSource.NAVER,
+          article.getSourceUrl(), article.getTitle(), article.getPublishDate(),
+          article.getSummary(), 0, 0, true);
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+      given(articleViewRepository.existsByArticleIdAndUserId(eq(article.getId()), eq(requestUserId)))
+          .willReturn(true);
+      given(articleMapper.toResponse(eq(article), eq(true))).willReturn(dto);
+
+      // when
+      ArticleResponse result = articleService.getArticle(article.getId(), requestUserId);
+
+      // then
+      assertThat(result.viewedByMe()).isTrue();
     }
   }
 }

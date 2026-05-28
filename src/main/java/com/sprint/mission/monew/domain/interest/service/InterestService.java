@@ -23,7 +23,7 @@ public class InterestService {
   private final InterestMapper interestMapper;
 
   @Transactional
-  public InterestResponse create(InterestCreateRequest request, UUID requestUserId) {
+  public InterestResponse create(InterestCreateRequest request) {
     List<Interest> existingInterests = interestRepository.findAll();
     boolean hasSimilar =
         existingInterests.stream()
@@ -36,11 +36,18 @@ public class InterestService {
   }
 
   @Transactional
-  public InterestResponse updateKeywords(UUID id, InterestUpdateRequest request, UUID requestUserId) {
+  public InterestResponse updateKeywords(UUID id, InterestUpdateRequest request) {
     Interest interest = interestRepository.findById(id)
         .orElseThrow(() -> InterestNotFoundException.withId(id));
     interest.updateKeywords(request.keywords());
     return interestMapper.toResponse(interest);
+  }
+
+  @Transactional
+  public void hardDelete(UUID id) {
+    Interest interest = interestRepository.findById(id)
+        .orElseThrow(() -> InterestNotFoundException.withId(id));
+    interestRepository.delete(interest);
   }
 
   private double similarity(String a, String b) {

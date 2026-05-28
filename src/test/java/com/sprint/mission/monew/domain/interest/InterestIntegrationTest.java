@@ -1,5 +1,7 @@
 package com.sprint.mission.monew.domain.interest;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -48,14 +50,12 @@ class InterestIntegrationTest {
     void 유사한_관심사가_이미_존재하면_409를_반환한다() throws Exception {
       // given
       interestRepository.save(Interest.create("인공지능X", List.of("머신러닝")));
-
       InterestCreateRequest request = new InterestCreateRequest("인공지능", List.of("AI"));
 
       // when & then
       mockMvc
           .perform(
               post("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isConflict())
@@ -72,7 +72,6 @@ class InterestIntegrationTest {
       mockMvc
           .perform(
               post("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isCreated())
@@ -96,7 +95,6 @@ class InterestIntegrationTest {
       mockMvc
           .perform(
               patch("/api/interests/{id}", UUID.randomUUID())
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isNotFound())
@@ -114,12 +112,42 @@ class InterestIntegrationTest {
       mockMvc
           .perform(
               patch("/api/interests/{id}", interest.getId())
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.keywords[0]").value("GPT"))
           .andExpect(jsonPath("$.keywords[1]").value("자연어처리"));
+    }
+  }
+
+  @Nested
+  @DisplayName("DELETE /api/interests/{interestId} — 관심사 물리 삭제")
+  class HardDelete {
+
+    @Test
+    @DisplayName("존재하지 않는 관심사 삭제 시 404를 반환한다")
+    void 존재하지_않는_관심사_삭제_시_404를_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(
+              delete("/api/interests/{id}", UUID.randomUUID()))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.code").value("INTEREST_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("정상 요청이면 204를 반환하고 DB에서 삭제된다")
+    void 정상_요청이면_204를_반환하고_DB에서_삭제된다() throws Exception {
+      // given
+      Interest interest = interestRepository.save(Interest.create("블록체인", List.of("비트코인")));
+
+      // when & then
+      mockMvc
+          .perform(
+              delete("/api/interests/{id}", interest.getId()))
+          .andExpect(status().isNoContent());
+
+      assertThat(interestRepository.findById(interest.getId())).isEmpty();
     }
   }
 }

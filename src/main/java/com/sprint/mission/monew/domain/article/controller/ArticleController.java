@@ -12,6 +12,7 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -29,5 +30,13 @@ public class ArticleController implements ArticleApi {
       @ParameterObject @ModelAttribute @Valid ArticleQueryCondition condition,
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId) {
     return ResponseEntity.ok(articleService.search(condition, requestUserId));
+  }
+
+  @GetMapping("/{articleId}")
+  @Override
+  public ResponseEntity<ArticleResponse> getArticle(
+      @PathVariable UUID articleId,
+      @RequestHeader("Monew-Request-User-ID") UUID requestUserId) {
+    return ResponseEntity.ok(articleService.getArticle(articleId, requestUserId));
   }
 }

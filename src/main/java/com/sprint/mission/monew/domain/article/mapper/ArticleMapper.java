@@ -7,7 +7,7 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface ArticleMapper {
 
-  default ArticleResponse toDto(Article article, boolean viewedByMe) {
+  default ArticleResponse toResponse(Article article, boolean viewedByMe) {
     return new ArticleResponse(
         article.getId(),
         article.getSource(),

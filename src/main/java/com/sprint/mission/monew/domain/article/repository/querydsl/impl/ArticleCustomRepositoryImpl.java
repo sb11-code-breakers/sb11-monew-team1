@@ -163,6 +163,15 @@ public class ArticleCustomRepositoryImpl implements ArticleCustomRepository {
     };
   }
 
+  @Override
+  public String buildCursor(Article article, ArticleOrderBy orderBy) {
+    return switch (orderBy) {
+      case PUBLISH_DATE -> article.getPublishDate().toString();
+      case COMMENT_COUNT -> String.valueOf(article.getCommentCount());
+      case VIEW_COUNT -> String.valueOf(article.getViewCount());
+    };
+  }
+
   private OrderSpecifier<?>[] buildOrderSpecifiers(
       QArticle article, ArticleQueryCondition condition) {
     Order dir = condition.direction() == SortDirection.DESC ? Order.DESC : Order.ASC;

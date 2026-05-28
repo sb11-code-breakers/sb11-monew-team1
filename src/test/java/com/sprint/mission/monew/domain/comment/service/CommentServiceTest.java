@@ -64,7 +64,7 @@ public class CommentServiceTest {
 
   @Nested
   @DisplayName("댓글 등록하기")
-  class 댓글_등록하기 {
+  class Create {
 
     @Test
     @DisplayName("댓글 등록 실패 - 뉴스 기사가 존재하지 않음")

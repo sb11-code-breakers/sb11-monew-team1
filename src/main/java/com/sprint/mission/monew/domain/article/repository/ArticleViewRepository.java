@@ -15,4 +15,6 @@ public interface ArticleViewRepository extends JpaRepository<ArticleView, UUID> 
           + " WHERE av.article.id IN :articleIds AND av.userId = :userId")
   Set<UUID> findArticleIdsByArticleIdsAndUserId(
       @Param("articleIds") List<UUID> articleIds, @Param("userId") UUID userId);
+
+  boolean existsByArticleIdAndUserId(UUID articleId, UUID userId);
 }
