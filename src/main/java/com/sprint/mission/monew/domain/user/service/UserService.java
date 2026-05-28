@@ -45,6 +45,8 @@ public class UserService {
   }
 
   public UserResponse login(UserLoginRequest request) {
+    log.debug("로그인 시도");
+
     User user = userRepository.findByEmail(request.email())
         .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
 
@@ -52,6 +54,7 @@ public class UserService {
       throw UserInvalidPasswordException.withEmail(request.email());
     }
 
+    log.info("로그인 완료: id={}", user.getId());
     return userMapper.toResponse(user);
   }
 }
