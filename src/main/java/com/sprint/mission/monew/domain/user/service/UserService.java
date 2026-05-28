@@ -48,10 +48,10 @@ public class UserService {
     log.debug("로그인 시도");
 
     User user = userRepository.findByEmail(request.email())
-        .orElseThrow(() -> UserInvalidPasswordException.withEmail(request.email()));
+        .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
 
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-      throw UserInvalidPasswordException.withEmail(request.email());
+      throw UserInvalidPasswordException.withoutDetail();
     }
 
     log.info("로그인 완료: id={}", user.getId());
