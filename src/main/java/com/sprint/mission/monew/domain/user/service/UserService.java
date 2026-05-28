@@ -3,12 +3,13 @@ package com.sprint.mission.monew.domain.user.service;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
+import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
-import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -48,7 +49,7 @@ public class UserService {
     log.debug("로그인 시도");
 
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
-        .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
+        .orElseThrow(UserInvalidPasswordException::withoutDetail);
 
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
       throw UserInvalidPasswordException.withoutDetail();
@@ -56,5 +57,9 @@ public class UserService {
 
     log.info("로그인 완료: id={}", user.getId());
     return userMapper.toResponse(user);
+  }
+
+  public UserResponse update(UUID userId, UserUpdateRequest request) {
+    return null;
   }
 }
