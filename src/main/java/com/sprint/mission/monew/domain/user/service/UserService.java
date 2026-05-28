@@ -62,10 +62,13 @@ public class UserService {
 
   @Transactional
   public UserResponse update(UUID userId, UserUpdateRequest request) {
+    log.debug("닉네임 수정 시도");
+
     User user = userRepository.findByIdAndDeletedAtIsNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
 
     user.updateNickname(request.nickname());
+    log.info("닉네임 수정 완료: id={}", userId);
     return userMapper.toResponse(user);
   }
 }
