@@ -1,7 +1,7 @@
 package com.sprint.mission.monew.domain.user.controller.api;
 
 import com.sprint.mission.monew.common.dto.ErrorResponse;
-import com.sprint.mission.monew.domain.user.dto.UserRegisterRequest;
+import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -27,5 +27,5 @@ public interface UserApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
-  ResponseEntity<UserResponse> create(@Valid @RequestBody UserRegisterRequest request);
+  ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request);
 }

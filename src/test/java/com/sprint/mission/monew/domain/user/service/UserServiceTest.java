@@ -7,7 +7,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 
-import com.sprint.mission.monew.domain.user.dto.UserRegisterRequest;
+import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
@@ -44,11 +44,11 @@ class UserServiceTest {
   @DisplayName("회원가입")
   class 회원가입 {
 
-    private UserRegisterRequest request;
+    private UserCreateRequest request;
 
     @BeforeEach
     void setUp() {
-      request = new UserRegisterRequest("test@test.com", "테스터", "password123");
+      request = new UserCreateRequest("test@test.com", "테스터", "password123");
     }
 
     @Test

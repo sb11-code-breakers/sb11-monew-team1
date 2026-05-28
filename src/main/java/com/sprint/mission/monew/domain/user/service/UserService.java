@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.domain.user.service;
 
-import com.sprint.mission.monew.domain.user.dto.UserRegisterRequest;
+import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
@@ -23,7 +23,7 @@ public class UserService {
   private final PasswordEncoder passwordEncoder;
 
   @Transactional
-  public UserResponse create(UserRegisterRequest request) {
+  public UserResponse create(UserCreateRequest request) {
     log.debug("회원가입 시도");
 
     if (userRepository.existsByEmail(request.email())) {

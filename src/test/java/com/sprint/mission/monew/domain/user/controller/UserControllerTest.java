@@ -8,7 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sprint.mission.monew.domain.user.dto.UserRegisterRequest;
+import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.service.UserService;
@@ -42,7 +42,7 @@ class UserControllerTest {
     @DisplayName("이메일 형식이 잘못되면 400 반환")
     void 이메일_형식이_잘못되면_400_반환() throws Exception {
       // given
-      UserRegisterRequest request = new UserRegisterRequest(
+      UserCreateRequest request = new UserCreateRequest(
           "invalid-email", "테스터", "password123"
       );
 
@@ -57,7 +57,7 @@ class UserControllerTest {
     @DisplayName("이메일 중복 시 409 반환")
     void 이메일_중복_시_409_반환() throws Exception {
       // given
-      UserRegisterRequest request = new UserRegisterRequest(
+      UserCreateRequest request = new UserCreateRequest(
           "test@test.com", "테스터", "password123"
       );
 
@@ -75,7 +75,7 @@ class UserControllerTest {
     @DisplayName("성공 시 201 반환")
     void 성공_시_201_반환() throws Exception {
       // given
-      UserRegisterRequest request = new UserRegisterRequest(
+      UserCreateRequest request = new UserCreateRequest(
           "test@test.com", "테스터", "password123"
       );
       UserResponse response = new UserResponse(
