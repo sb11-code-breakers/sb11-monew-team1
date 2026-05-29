@@ -11,6 +11,8 @@ import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -90,5 +92,12 @@ public class UserService {
 
     user.softDelete();
     log.info("논리 삭제 완료: id={}", userId);
+  }
+
+  @Transactional
+  public void deleteExpiredUsers() {
+    Instant threshold = Instant.now().minus(1, ChronoUnit.DAYS);
+    log.info("물리 삭제 실행: threshold={}", threshold);
+    userRepository.deleteAllByDeletedAtBefore(threshold);
   }
 }

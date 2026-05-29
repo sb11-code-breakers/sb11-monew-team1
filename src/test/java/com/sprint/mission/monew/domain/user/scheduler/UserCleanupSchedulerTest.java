@@ -1,10 +1,8 @@
 package com.sprint.mission.monew.domain.user.scheduler;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.then;
 
-import com.sprint.mission.monew.domain.user.repository.UserRepository;
-import java.time.Instant;
+import com.sprint.mission.monew.domain.user.service.UserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,15 +17,15 @@ class UserCleanupSchedulerTest {
   private UserCleanupScheduler scheduler;
 
   @Mock
-  private UserRepository userRepository;
+  private UserService userService;
 
   @Test
-  @DisplayName("논리 삭제 후 1일 경과한 사용자 물리 삭제")
-  void 논리_삭제_후_1일_경과한_사용자_물리_삭제() {
+  @DisplayName("스케줄러가 UserService의 물리 삭제 메서드를 호출한다")
+  void 스케줄러가_UserService의_물리_삭제_메서드를_호출한다() {
     // when
     scheduler.cleanUpDeletedUsers();
 
     // then
-    then(userRepository).should().deleteAllByDeletedAtBefore(any(Instant.class));
+    then(userService).should().deleteExpiredUsers();
   }
 }
