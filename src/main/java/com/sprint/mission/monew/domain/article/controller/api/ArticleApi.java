@@ -106,4 +106,19 @@ public interface ArticleApi {
       @Parameter(description = "뉴스 기사 ID") @PathVariable UUID articleId,
       @Parameter(description = "요청자 ID") @RequestHeader("Monew-Request-User-ID")
           UUID requestUserId);
+
+  @Operation(summary = "뉴스 기사 논리 삭제", description = "뉴스 기사를 논리적으로 삭제합니다.")
+  @ApiResponses({
+    @ApiResponse(responseCode = "204", description = "논리 삭제 성공"),
+    @ApiResponse(
+        responseCode = "404",
+        description = "뉴스 기사 정보 없음",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "500",
+        description = "서버 내부 오류",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<Void> softDelete(
+      @Parameter(description = "뉴스 기사 ID") @PathVariable UUID articleId);
 }

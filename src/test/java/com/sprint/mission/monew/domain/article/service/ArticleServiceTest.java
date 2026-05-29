@@ -387,4 +387,48 @@ class ArticleServiceTest {
       assertThat(article.getViewCount()).isEqualTo(viewCountBefore + 1);
     }
   }
+
+  @Nested
+  @DisplayName("뉴스 기사 논리 삭제")
+  class SoftDelete {
+
+    @Test
+    @DisplayName("존재하지 않는 기사이면 ArticleNotFoundException을 던진다")
+    void 존재하지_않는_기사이면_ArticleNotFoundException을_던진다() {
+      // given
+      UUID articleId = UUID.randomUUID();
+      given(articleRepository.findById(eq(articleId))).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> articleService.softDelete(articleId))
+          .isInstanceOf(ArticleNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("이미 논리 삭제된 기사이면 ArticleNotFoundException을 던진다")
+    void 이미_논리_삭제된_기사이면_ArticleNotFoundException을_던진다() {
+      // given
+      Article article = makeArticle(ArticleSource.NAVER);
+      article.softDelete();
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+
+      // when & then
+      assertThatThrownBy(() -> articleService.softDelete(article.getId()))
+          .isInstanceOf(ArticleNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("존재하는 기사이면 deletedAt을 설정한다")
+    void 존재하는_기사이면_deletedAt을_설정한다() {
+      // given
+      Article article = makeArticle(ArticleSource.NAVER);
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+
+      // when
+      articleService.softDelete(article.getId());
+
+      // then
+      assertThat(article.isDeleted()).isTrue();
+    }
+  }
 }

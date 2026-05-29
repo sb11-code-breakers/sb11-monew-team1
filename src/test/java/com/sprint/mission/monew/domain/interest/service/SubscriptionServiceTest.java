@@ -12,6 +12,7 @@ import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.entity.Subscription;
 import com.sprint.mission.monew.domain.interest.exception.InterestNotFoundException;
 import com.sprint.mission.monew.domain.interest.exception.SubscriptionAlreadyExistsException;
+import com.sprint.mission.monew.domain.interest.exception.SubscriptionNotFoundException;
 import com.sprint.mission.monew.domain.interest.mapper.SubscriptionMapper;
 import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import com.sprint.mission.monew.domain.user.entity.User;
@@ -55,6 +56,57 @@ class SubscriptionServiceTest {
   void setUp() {
     interestId = UUID.randomUUID();
     userId = UUID.randomUUID();
+  }
+
+  @Nested
+  @DisplayName("관심사 구독 취소")
+  class Unsubscribe {
+
+    @Test
+    @DisplayName("존재하지 않는 관심사 구독 취소 시 InterestNotFoundException이 발생한다")
+    void 존재하지_않는_관심사_구독_취소_시_InterestNotFoundException이_발생한다() {
+      // given
+      given(interestRepository.findById(interestId)).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> subscriptionService.unsubscribe(interestId, userId))
+          .isInstanceOf(InterestNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("구독하지 않은 관심사 취소 시 SubscriptionNotFoundException이 발생한다")
+    void 구독하지_않은_관심사_취소_시_SubscriptionNotFoundException이_발생한다() {
+      // given
+      Interest interest = Interest.create("인공지능", List.of("AI"));
+      given(interestRepository.findById(interestId)).willReturn(Optional.of(interest));
+      given(subscriptionRepository.findByInterestIdAndUserId(interestId, userId))
+          .willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> subscriptionService.unsubscribe(interestId, userId))
+          .isInstanceOf(SubscriptionNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("정상 취소 시 delete가 호출되고 subscriberCount가 1 감소한다")
+    void 정상_취소_시_delete가_호출되고_subscriberCount가_1_감소한다() {
+      // given
+      Interest interest = Interest.create("인공지능", List.of("AI"));
+      interest.increaseSubscriberCount();
+      User user = User.create("test@test.com", "테스터", "password123!");
+      Subscription subscription = Subscription.create(interest, user);
+
+      given(interestRepository.findById(interestId)).willReturn(Optional.of(interest));
+      given(subscriptionRepository.findByInterestIdAndUserId(interestId, userId))
+          .willReturn(Optional.of(subscription));
+
+      // when
+      subscriptionService.unsubscribe(interestId, userId);
+
+      // then
+      then(subscriptionRepository).should().delete(subscription);
+      assertThat(interest.getSubscriberCount()).isEqualTo(0);
+    }
   }
 
   @Nested

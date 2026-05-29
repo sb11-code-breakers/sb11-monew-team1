@@ -284,7 +284,7 @@ public class CommentControllerTest {
 
 
     @Test
-    @DisplayName("댓글 논리 삭제 성공")
+    @DisplayName("댓글 논리삭제 성공")
     void 댓글_논리삭제_성공() throws Exception {
       // given
       doNothing().when(commentService).softDelete(commentId, userId);
@@ -292,6 +292,34 @@ public class CommentControllerTest {
       // when & then
       mockMvc.perform(delete("/api/comments/{commentId}", commentId)
               .header("Monew-Request-User-ID", userId))
+          .andExpect(status().isNoContent());
+    }
+  }
+
+  @Nested
+  @DisplayName("댓글 물리 삭제하기")
+  class Controller_HardDelete_Comment {
+
+    @Test
+    @DisplayName("댓글 물리삭제 실패 - 댓글이 존재하지 않음")
+    void 댓글_물리삭제_실패_댓글_없음() throws Exception {
+      // given
+      doThrow(CommentNotFoundException.withId(commentId)).when(commentService)
+          .hardDelete(commentId);
+
+      // when & then
+      mockMvc.perform(delete("/api/comments/{commentId}/hard", commentId))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("댓글 물리삭제 성공")
+    void 댓글_물리삭제_성공() throws Exception {
+      // given
+      doNothing().when(commentService).hardDelete(commentId);
+
+      // when & then
+      mockMvc.perform(delete("/api/comments/{commentId}/hard", commentId))
           .andExpect(status().isNoContent());
     }
   }

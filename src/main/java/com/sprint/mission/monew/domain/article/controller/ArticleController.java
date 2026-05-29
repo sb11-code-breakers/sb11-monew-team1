@@ -14,6 +14,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,5 +58,12 @@ public class ArticleController implements ArticleApi {
       @PathVariable UUID articleId,
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId) {
     return ResponseEntity.ok(articleService.registerView(articleId, requestUserId));
+  }
+
+  @DeleteMapping("/{articleId}")
+  @Override
+  public ResponseEntity<Void> softDelete(@PathVariable UUID articleId) {
+    articleService.softDelete(articleId);
+    return ResponseEntity.noContent().build();
   }
 }
