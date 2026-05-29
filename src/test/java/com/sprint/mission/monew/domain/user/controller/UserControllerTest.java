@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.BDDMockito.then;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -330,6 +331,7 @@ class UserControllerTest {
       // when & then
       mockMvc.perform(delete("/api/users/{userId}/hard", userId))
           .andExpect(status().isNoContent());
+      then(userService).should().hardDelete(eq(userId));
     }
   }
 }
