@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
+import static org.mockito.ArgumentMatchers.eq;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
@@ -217,14 +217,15 @@ class UserControllerTest {
     @DisplayName("존재하지 않는 사용자면 404 반환")
     void 존재하지_않는_사용자면_404_반환() throws Exception {
       // given
+      UUID userId = UUID.randomUUID();
       UserUpdateRequest request = new UserUpdateRequest("새닉네임");
 
-      given(userService.update(any(), any(), any()))
-          .willThrow(UserNotFoundException.withId(UUID.randomUUID()));
+      given(userService.update(eq(userId), eq(userId), any()))
+          .willThrow(UserNotFoundException.withId(userId));
 
       // when & then
-      mockMvc.perform(patch("/api/users/{userId}", UUID.randomUUID())
-              .header("Monew-Request-User-ID", UUID.randomUUID())
+      mockMvc.perform(patch("/api/users/{userId}", userId)
+              .header("Monew-Request-User-ID", userId)
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isNotFound());
