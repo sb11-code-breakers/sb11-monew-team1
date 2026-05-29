@@ -101,4 +101,8 @@ public class UserService {
     log.info("물리 삭제 완료: {}건 삭제", deleted);
     return deleted;
   }
+
+  @Transactional
+  public void hardDelete(UUID userId) {
+  }
 }
