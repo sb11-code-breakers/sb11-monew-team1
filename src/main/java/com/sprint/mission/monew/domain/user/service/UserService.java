@@ -95,10 +95,10 @@ public class UserService {
   }
 
   @Transactional
-  public void deleteExpiredUsers() {
-    Instant threshold = Instant.now().minus(1, ChronoUnit.DAYS);
+  public int deleteExpiredUsers(Instant threshold) {
     log.info("물리 삭제 실행: threshold={}", threshold);
     int deleted = userRepository.deleteAllByDeletedAtBefore(threshold);
     log.info("물리 삭제 완료: {}건 삭제", deleted);
+    return deleted;
   }
 }
