@@ -133,4 +133,44 @@ class ArticleViewRepositoryTest {
       assertThat(result).containsExactly(article1.getId());
     }
   }
+  @Nested
+  @DisplayName("findTop10ByUserIdAndArticleNotDeleted")
+  class FindTop10ByUserIdAndArticleNotDeleted {
+
+    @Test
+    @DisplayName("본 기사가 있으면 최근 10건을 반환한다")
+    void 본_기사가_있으면_최근_10건을_반환한다() {
+      // given
+      UUID userId = UUID.randomUUID();
+      for (int i = 0; i < 15; i++) {
+        Article article = saveArticle();
+        articleViewRepository.save(ArticleView.create(userId, article));
+      }
+
+      // when
+      List<ArticleView> result = articleViewRepository
+          .findTop10ByUserIdAndArticleNotDeleted(userId);
+
+      // then
+      assertThat(result).hasSize(10);
+    }
+
+    @Test
+    @DisplayName("삭제된 기사는 조회되지 않는다")
+    void 삭제된_기사는_조회되지_않는다() {
+      // given
+      UUID userId = UUID.randomUUID();
+      Article article = saveArticle();
+      articleViewRepository.save(ArticleView.create(userId, article));
+      article.softDelete();
+      articleRepository.save(article);
+
+      // when
+      List<ArticleView> result = articleViewRepository
+          .findTop10ByUserIdAndArticleNotDeleted(userId);
+
+      // then
+      assertThat(result).isEmpty();
+    }
+  }
 }

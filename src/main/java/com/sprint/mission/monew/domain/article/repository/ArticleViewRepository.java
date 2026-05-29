@@ -17,6 +17,10 @@ public interface ArticleViewRepository extends JpaRepository<ArticleView, UUID> 
   Set<UUID> findArticleIdsByArticleIdsAndUserId(
       @Param("articleIds") List<UUID> articleIds, @Param("userId") UUID userId);
 
+  @Query("SELECT av FROM ArticleView av WHERE 1=0")
+  List<ArticleView> findTop10ByUserIdAndArticleNotDeleted(
+      @Param("userId") UUID userId);
+
   boolean existsByArticleIdAndUserId(UUID articleId, UUID userId);
 
   Optional<ArticleView> findByArticleIdAndUserId(UUID articleId, UUID userId);
