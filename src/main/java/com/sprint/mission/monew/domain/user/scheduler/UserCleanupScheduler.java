@@ -17,9 +17,9 @@ public class UserCleanupScheduler {
   private final UserRepository userRepository;
 
   @Transactional
-  @Scheduled(cron = "${scheduler.user-cleanup.cron:0 0 0 * * *}")
+  @Scheduled(cron = "${scheduler.user-cleanup.cron}")
   public void cleanUpDeletedUsers() {
-    Instant threshold = Instant.now().minus(30, ChronoUnit.DAYS);
+    Instant threshold = Instant.now().minus(1, ChronoUnit.DAYS);
     log.info("물리 삭제 스케줄러 실행: threshold={}", threshold);
 
     userRepository.deleteAllByDeletedAtBefore(threshold);
