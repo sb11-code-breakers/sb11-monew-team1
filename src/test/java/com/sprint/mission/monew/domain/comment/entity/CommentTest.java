@@ -105,4 +105,38 @@ public class CommentTest {
       assertThat(comment.getContent()).isEqualTo(newContent);
     }
   }
+
+  @Nested
+  @DisplayName("댓글 논리 삭제하기")
+  class SoftDeleteComment {
+
+    @Test
+    @DisplayName("댓글 논리 삭제 재호출 시 deletedAt 그대로 유지")
+    void 댓글_논리삭제_재호출_deletedAt_유지() {
+      // given
+      comment.softDelete();
+      Instant firstDeletedAt = comment.getDeletedAt();
+
+      // when
+      comment.softDelete();
+
+      // then
+      assertThat(comment.isDeleted()).isTrue();
+      assertThat(comment.getDeletedAt()).isEqualTo(firstDeletedAt);
+    }
+
+    @Test
+    @DisplayName("댓글 논리 삭제")
+    void 댓글_논리삭제() {
+      // given
+      // setUp()의 comment 초기화
+
+      // when
+      comment.softDelete();
+
+      // then
+      assertThat(comment.isDeleted()).isTrue();
+      assertThat(comment.getDeletedAt()).isNotNull();
+    }
+  }
 }

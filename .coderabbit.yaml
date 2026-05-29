@@ -6,6 +6,7 @@ tone_instructions: |
 
 reviews:
   profile: "assertive"
+  auto_fix_enabled: false
 
   auto_review:
     auto_incremental_review: true

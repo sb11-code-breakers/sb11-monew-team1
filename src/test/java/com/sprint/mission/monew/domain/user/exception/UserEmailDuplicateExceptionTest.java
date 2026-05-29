@@ -10,7 +10,7 @@ class UserEmailDuplicateExceptionTest {
 
   @Nested
   @DisplayName("이메일 마스킹")
-  class 이메일_마스킹 {
+  class EmailMasking {
 
     @Test
     @DisplayName("일반 이메일은 첫 글자만 남기고 마스킹")

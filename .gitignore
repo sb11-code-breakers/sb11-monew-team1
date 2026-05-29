@@ -44,6 +44,7 @@ out/
 Thumbs.db
 
 ### Logs ###
+.logs
 *.log
 
 ### Environment ###

@@ -5,15 +5,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.common.dto.SortDirection;
 import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleOrderBy;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
+import com.sprint.mission.monew.domain.article.dto.ArticleViewResponse;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
+import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.article.mapper.ArticleMapper;
+import com.sprint.mission.monew.domain.article.mapper.ArticleViewMapper;
 import com.sprint.mission.monew.domain.article.exception.ArticleNotFoundException;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
@@ -38,6 +43,7 @@ class ArticleServiceTest {
   @Mock ArticleRepository articleRepository;
   @Mock ArticleViewRepository articleViewRepository;
   @Mock ArticleMapper articleMapper;
+  @Mock ArticleViewMapper articleViewMapper;
 
   UUID requestUserId;
   ArticleQueryCondition defaultCondition;
@@ -293,6 +299,92 @@ class ArticleServiceTest {
 
       // then
       assertThat(result.viewedByMe()).isTrue();
+    }
+  }
+
+  @Nested
+  @DisplayName("기사 조회수 등록")
+  class RegisterView {
+
+    @Test
+    @DisplayName("존재하지 않는 기사이면 ArticleNotFoundException을 던진다")
+    void 존재하지_않는_기사이면_ArticleNotFoundException을_던진다() {
+      // given
+      UUID articleId = UUID.randomUUID();
+      given(articleRepository.findById(eq(articleId))).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> articleService.registerView(articleId, requestUserId))
+          .isInstanceOf(ArticleNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("소프트딜리트된 기사이면 ArticleNotFoundException을 던진다")
+    void 소프트딜리트된_기사이면_ArticleNotFoundException을_던진다() {
+      // given
+      Article article = makeArticle(ArticleSource.NAVER);
+      article.softDelete();
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+
+      // when & then
+      assertThatThrownBy(() -> articleService.registerView(article.getId(), requestUserId))
+          .isInstanceOf(ArticleNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("이미 조회한 기사이면 기존 ArticleView를 반환하고 viewCount를 증가시키지 않는다")
+    void 이미_조회한_기사이면_기존_뷰를_반환하고_viewCount를_증가시키지_않는다() {
+      // given
+      Article article = makeArticle(ArticleSource.NAVER);
+      ArticleView existingView = ArticleView.create(requestUserId, article);
+      ArticleViewResponse dto = new ArticleViewResponse(
+          existingView.getId(), requestUserId, existingView.getCreatedAt(),
+          article.getId(), ArticleSource.NAVER, article.getSourceUrl(),
+          article.getTitle(), article.getPublishDate(), article.getSummary(),
+          0, 0);
+
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+      given(articleViewRepository.findByArticleIdAndUserId(eq(article.getId()), eq(requestUserId)))
+          .willReturn(Optional.of(existingView));
+      given(articleViewMapper.toResponse(eq(existingView))).willReturn(dto);
+
+      int viewCountBefore = article.getViewCount();
+
+      // when
+      ArticleViewResponse result = articleService.registerView(article.getId(), requestUserId);
+
+      // then
+      assertThat(result).isEqualTo(dto);
+      assertThat(article.getViewCount()).isEqualTo(viewCountBefore);
+      verify(articleViewRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("처음 조회하는 기사이면 ArticleView를 저장하고 viewCount를 증가시킨다")
+    void 처음_조회하는_기사이면_뷰를_저장하고_viewCount를_증가시킨다() {
+      // given
+      Article article = makeArticle(ArticleSource.NAVER);
+      ArticleView newView = ArticleView.create(requestUserId, article);
+      ArticleViewResponse dto = new ArticleViewResponse(
+          newView.getId(), requestUserId, newView.getCreatedAt(),
+          article.getId(), ArticleSource.NAVER, article.getSourceUrl(),
+          article.getTitle(), article.getPublishDate(), article.getSummary(),
+          0, 1);
+
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+      given(articleViewRepository.findByArticleIdAndUserId(eq(article.getId()), eq(requestUserId)))
+          .willReturn(Optional.empty());
+      given(articleViewRepository.save(any(ArticleView.class))).willReturn(newView);
+      given(articleViewMapper.toResponse(eq(newView))).willReturn(dto);
+
+      int viewCountBefore = article.getViewCount();
+
+      // when
+      ArticleViewResponse result = articleService.registerView(article.getId(), requestUserId);
+
+      // then
+      assertThat(result).isEqualTo(dto);
+      assertThat(article.getViewCount()).isEqualTo(viewCountBefore + 1);
     }
   }
 }

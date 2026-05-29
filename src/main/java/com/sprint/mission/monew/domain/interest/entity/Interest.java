@@ -37,6 +37,10 @@ public class Interest extends BaseUpdatableEntity {
     return interest;
   }
 
+  public void increaseSubscriberCount() {
+    this.subscriberCount++;
+  }
+
   public void updateKeywords(List<String> newKeywords) {
     this.keywords.clear();
     newKeywords.stream()

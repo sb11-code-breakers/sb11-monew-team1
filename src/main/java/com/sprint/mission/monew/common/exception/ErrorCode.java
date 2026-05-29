@@ -26,6 +26,9 @@ public enum ErrorCode {
   INTEREST_NOT_FOUND(HttpStatus.NOT_FOUND, "관심사를 찾을 수 없습니다."),
   INTEREST_ALREADY_EXISTS(HttpStatus.CONFLICT, "유사한 관심사가 이미 존재합니다."),
 
+  // Subscription
+  SUBSCRIPTION_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 구독 중인 관심사입니다."),
+
   // Article
   ARTICLE_NOT_FOUND(HttpStatus.NOT_FOUND, "뉴스 기사를 찾을 수 없습니다."),
   ARTICLE_INVALID_CURSOR(HttpStatus.BAD_REQUEST, "커서 값의 형식이 올바르지 않습니다."),

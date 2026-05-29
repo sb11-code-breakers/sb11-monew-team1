@@ -40,6 +40,25 @@ class InterestTest {
   }
 
   @Nested
+  @DisplayName("구독자 수 증가")
+  class IncreaseSubscriberCount {
+
+    @Test
+    @DisplayName("호출할 때마다 subscriberCount가 1 증가한다")
+    void 호출할_때마다_subscriberCount가_1_증가한다() {
+      // given
+      Interest interest = Interest.create(name, keywords);
+
+      // when
+      interest.increaseSubscriberCount();
+      interest.increaseSubscriberCount();
+
+      // then
+      assertThat(interest.getSubscriberCount()).isEqualTo(2);
+    }
+  }
+
+  @Nested
   @DisplayName("키워드 수정")
   class UpdateKeywords {
 

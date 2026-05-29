@@ -74,4 +74,24 @@ public class CommentService {
 
     return commentMapper.toResponse(comment, false);
   }
+
+  @Transactional
+  public void softDelete(UUID commentId, UUID userId) {
+    log.debug("[COMMENT_SOFT_DELETE] 댓글 논리삭제 시작 - 댓글 ID={}",
+        commentId);
+
+    Comment comment = commentRepository.findById(commentId).orElseThrow(
+        () -> CommentNotFoundException.withId(commentId)
+    );
+
+    if (!comment.isOwner(userId)) {
+      throw CommentAccessDeniedException.withId(commentId);
+    }
+
+    comment.softDelete();
+
+    log.info("[COMMENT_SOFT_DELETE_SUCCESS] 댓글 논리삭제 성공 - 댓글 ID={}, 요청자 ID={}",
+        commentId, userId);
+  }
+
 }

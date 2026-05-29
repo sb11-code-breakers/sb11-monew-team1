@@ -10,7 +10,7 @@ class UserTest {
 
   @Nested
   @DisplayName("User 생성")
-  class User_생성 {
+  class Create {
 
     @Test
     @DisplayName("정상 입력으로 User 생성 성공")
