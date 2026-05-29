@@ -81,6 +81,11 @@ public class UserController implements UserApi {
   @DeleteMapping("/{userId}/hard")
   @Override
   public ResponseEntity<Void> hardDelete(@PathVariable UUID userId) {
-    return null;
+    log.debug("물리 삭제 요청 수신");
+
+    userService.hardDelete(userId);
+
+    log.info("물리 삭제 성공: id={}", userId);
+    return ResponseEntity.noContent().build();
   }
 }
