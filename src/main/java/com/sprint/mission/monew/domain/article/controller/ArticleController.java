@@ -60,6 +60,13 @@ public class ArticleController implements ArticleApi {
     return ResponseEntity.ok(articleService.registerView(articleId, requestUserId));
   }
 
+  @DeleteMapping("/{articleId}/hard")
+  @Override
+  public ResponseEntity<Void> hardDelete(@PathVariable UUID articleId) {
+    articleService.hardDelete(articleId);
+    return ResponseEntity.noContent().build();
+  }
+
   @DeleteMapping("/{articleId}")
   @Override
   public ResponseEntity<Void> softDelete(@PathVariable UUID articleId) {

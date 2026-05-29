@@ -10,6 +10,7 @@ import com.sprint.mission.monew.domain.notification.dto.NotificationResponse;
 import com.sprint.mission.monew.domain.notification.entity.Notification;
 import com.sprint.mission.monew.domain.notification.entity.ResourceType;
 
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -119,6 +120,75 @@ class NotificationRepositoryTest {
       // then
       assertThat(result.hasNext()).isTrue();
       assertThat(result.content()).hasSize(2);
+    }
+  }
+
+  @Nested
+  @DisplayName("findByIdAndUserIdAndConfirmedAtIsNull")
+  class FindByIdAndUserIdAndConfirmedAtIsNull {
+
+    @Test
+    @DisplayName("존재하지 않는 알림 ID면 빈 Optional을 반환한다")
+    void 존재하지_않는_알림_ID면_빈_Optional을_반환한다() {
+      // given
+      UUID notExistId = UUID.randomUUID();
+
+      // when
+      Optional<Notification> result = notificationRepository.findByIdAndUserIdAndConfirmedAtIsNull(
+          notExistId, userId);
+
+      // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("다른 사용자의 알림이면 빈 Optional을 반환한다")
+    void 다른_사용자의_알림이면_빈_Optional을_반환한다() {
+      // given
+      UUID otherUserId = UUID.randomUUID();
+      Notification notification = notificationRepository.save(
+          Notification.create(otherUserId, "타인 알림", ResourceType.INTEREST, UUID.randomUUID()));
+
+      // when
+      Optional<Notification> result = notificationRepository.findByIdAndUserIdAndConfirmedAtIsNull(
+          notification.getId(), userId);
+
+      // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("이미 확인된 알림이면 빈 Optional을 반환한다")
+    void 이미_확인된_알림이면_빈_Optional을_반환한다() {
+      // given
+      Notification notification = notificationRepository.save(
+          Notification.create(userId, "확인된 알림", ResourceType.INTEREST, UUID.randomUUID()));
+      notification.confirm();
+      notificationRepository.save(notification);
+
+      // when
+      Optional<Notification> result = notificationRepository.findByIdAndUserIdAndConfirmedAtIsNull(
+          notification.getId(), userId);
+
+      // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("id와 userId가 모두 일치하고 미확인 상태면 알림을 반환한다")
+    void id와_userId가_모두_일치하고_미확인_상태면_알림을_반환한다() {
+      // given
+      Notification notification = notificationRepository.save(
+          Notification.create(userId, "내 알림", ResourceType.INTEREST, UUID.randomUUID()));
+
+      // when
+      Optional<Notification> result = notificationRepository.findByIdAndUserIdAndConfirmedAtIsNull(
+          notification.getId(), userId);
+
+      // then
+      assertThat(result).isPresent();
+      assertThat(result.get().getId()).isEqualTo(notification.getId());
+      assertThat(result.get().getUserId()).isEqualTo(userId);
     }
   }
 

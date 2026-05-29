@@ -2,13 +2,16 @@ package com.sprint.mission.monew.domain.notification.controller;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.notification.dto.NotificationResponse;
+import com.sprint.mission.monew.domain.notification.exception.NotificationNotFoundException;
 import com.sprint.mission.monew.domain.notification.service.NotificationService;
 import java.util.List;
 import java.util.UUID;
@@ -23,8 +26,54 @@ import org.springframework.test.web.servlet.MockMvc;
 @WebMvcTest(NotificationController.class)
 class NotificationControllerTest {
 
-  @Autowired MockMvc mockMvc;
-  @MockitoBean NotificationService notificationService;
+  @Autowired
+  MockMvc mockMvc;
+  @MockitoBean
+  NotificationService notificationService;
+
+  @Nested
+  @DisplayName("PATCH /api/notifications/{notificationId} — 알림 단건 확인")
+  class ConfirmNotification {
+
+    @Test
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
+    void 헤더가_없으면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(patch("/api/notifications/{notificationId}", UUID.randomUUID()))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("해당 사용자의 알림을 찾을 수 없으면 404를 반환한다")
+    void 해당_사용자의_알림을_찾을_수_없으면_404를_반환한다() throws Exception {
+      // given
+      UUID notificationId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+      willThrow(NotificationNotFoundException.withId(notificationId))
+          .given(notificationService).confirm(notificationId, userId);
+
+      // when & then
+      mockMvc
+          .perform(patch("/api/notifications/{notificationId}", notificationId)
+              .header("Monew-Request-User-ID", userId))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("알림 확인 성공 시 204를 반환한다")
+    void 알림_확인_성공_시_204를_반환한다() throws Exception {
+      // given
+      UUID notificationId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
+
+      // when & then
+      mockMvc
+          .perform(patch("/api/notifications/{notificationId}", notificationId)
+              .header("Monew-Request-User-ID", userId))
+          .andExpect(status().isNoContent());
+    }
+  }
 
   @Nested
   @DisplayName("GET /api/notifications — 미확인 알림 목록 조회")

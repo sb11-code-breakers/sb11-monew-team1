@@ -12,6 +12,7 @@ import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +35,7 @@ class ArticleIntegrationTest {
   @Autowired MockMvc mockMvc;
   @Autowired ArticleRepository articleRepository;
   @Autowired ArticleViewRepository articleViewRepository;
+  @Autowired EntityManager em;
 
   private static final String URL = "/api/articles";
   private static final String USER_ID_HEADER = "Monew-Request-User-ID";
@@ -310,6 +312,78 @@ class ArticleIntegrationTest {
               .header(USER_ID_HEADER, userId))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.articleViewCount").value(0));
+    }
+  }
+
+  @Nested
+  @DisplayName("DELETE /api/articles/{articleId}/hard — 뉴스 기사 물리 삭제")
+  class HardDelete {
+
+    @Test
+    @DisplayName("존재하지 않는 기사이면 404를 반환한다")
+    void 존재하지_않는_기사이면_404를_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(delete(URL + "/{articleId}/hard", UUID.randomUUID()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("논리 삭제된 기사도 물리 삭제하면 204를 반환한다")
+    void 논리_삭제된_기사도_물리_삭제하면_204를_반환한다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/soft-deleted", "논리 삭제 기사",
+          Instant.now(), "요약"));
+      article.softDelete();
+      articleRepository.save(article);
+
+      // when & then
+      mockMvc
+          .perform(delete(URL + "/{articleId}/hard", article.getId()))
+          .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("정상 요청이면 204를 반환하고 이후 단건 조회가 404를 반환한다")
+    void 정상_요청이면_204를_반환하고_이후_단건_조회가_404를_반환한다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/1", "테스트 기사",
+          Instant.now(), "요약"));
+
+      // when
+      mockMvc
+          .perform(delete(URL + "/{articleId}/hard", article.getId()))
+          .andExpect(status().isNoContent());
+
+      // then
+      mockMvc
+          .perform(get(URL + "/{articleId}", article.getId())
+              .header(USER_ID_HEADER, UUID.randomUUID()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("물리 삭제 시 연관된 ArticleView도 함께 삭제된다")
+    void 물리_삭제_시_연관된_ArticleView도_함께_삭제된다() throws Exception {
+      // given
+      Article article = articleRepository.save(Article.create(
+          ArticleSource.NAVER, "https://example.com/news/cascade", "cascade 기사",
+          Instant.now(), "요약"));
+      UUID articleId = article.getId();
+      UUID userId = UUID.randomUUID();
+      articleViewRepository.save(ArticleView.create(userId, article));
+
+      // when
+      mockMvc
+          .perform(delete(URL + "/{articleId}/hard", articleId))
+          .andExpect(status().isNoContent());
+
+      // then — 삭제 후 세션 초기화: delete된 Article을 참조하는 ArticleView가 세션에 남아 flush 충돌 방지
+      em.clear();
+      boolean viewExists = articleViewRepository.existsByArticleIdAndUserId(articleId, userId);
+      org.assertj.core.api.Assertions.assertThat(viewExists).isFalse();
     }
   }
 

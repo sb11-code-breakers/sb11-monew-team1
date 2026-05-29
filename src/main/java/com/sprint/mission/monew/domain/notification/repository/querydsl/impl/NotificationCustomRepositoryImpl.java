@@ -28,7 +28,7 @@ public class NotificationCustomRepositoryImpl implements NotificationCustomRepos
         .select(Projections.constructor(NotificationResponse.class,
             notification.id,
             notification.createdAt,
-            notification.updatedAt,
+            notification.confirmedAt,
             notification.confirmedAt.isNotNull(),
             notification.userId,
             notification.content,

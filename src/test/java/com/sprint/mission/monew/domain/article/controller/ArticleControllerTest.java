@@ -304,4 +304,44 @@ class ArticleControllerTest {
           .andExpect(status().isNoContent());
     }
   }
+
+  @Nested
+  @DisplayName("DELETE /api/articles/{articleId}/hard — 뉴스 기사 물리 삭제")
+  class HardDelete {
+
+    @Test
+    @DisplayName("유효하지 않은 형식의 articleId이면 400을 반환한다")
+    void 유효하지_않은_형식의_articleId이면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(delete(URL + "/{articleId}/hard", "not-a-uuid"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 articleId이면 404를 반환한다")
+    void 존재하지_않는_articleId이면_404를_반환한다() throws Exception {
+      // given
+      UUID articleId = UUID.randomUUID();
+      willThrow(ArticleNotFoundException.withId(articleId))
+          .given(articleService).hardDelete(eq(articleId));
+
+      // when & then
+      mockMvc
+          .perform(delete(URL + "/{articleId}/hard", articleId))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("정상 요청이면 204를 반환한다")
+    void 정상_요청이면_204를_반환한다() throws Exception {
+      // given
+      UUID articleId = UUID.randomUUID();
+
+      // when & then
+      mockMvc
+          .perform(delete(URL + "/{articleId}/hard", articleId))
+          .andExpect(status().isNoContent());
+    }
+  }
 }

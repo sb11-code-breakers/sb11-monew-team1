@@ -431,4 +431,50 @@ class ArticleServiceTest {
       assertThat(article.isDeleted()).isTrue();
     }
   }
+
+  @Nested
+  @DisplayName("뉴스 기사 물리 삭제")
+  class HardDelete {
+
+    @Test
+    @DisplayName("존재하지 않는 기사이면 ArticleNotFoundException을 던진다")
+    void 존재하지_않는_기사이면_ArticleNotFoundException을_던진다() {
+      // given
+      UUID articleId = UUID.randomUUID();
+      given(articleRepository.findById(eq(articleId))).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> articleService.hardDelete(articleId))
+          .isInstanceOf(ArticleNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("논리 삭제된 기사도 물리 삭제할 수 있다")
+    void 논리_삭제된_기사도_물리_삭제할_수_있다() {
+      // given
+      Article article = makeArticle(ArticleSource.NAVER);
+      article.softDelete();
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+
+      // when
+      articleService.hardDelete(article.getId());
+
+      // then
+      verify(articleRepository).delete(eq(article));
+    }
+
+    @Test
+    @DisplayName("존재하는 기사이면 delete를 호출한다")
+    void 존재하는_기사이면_delete를_호출한다() {
+      // given
+      Article article = makeArticle(ArticleSource.NAVER);
+      given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+
+      // when
+      articleService.hardDelete(article.getId());
+
+      // then
+      verify(articleRepository).delete(eq(article));
+    }
+  }
 }

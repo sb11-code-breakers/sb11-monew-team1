@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.domain.notification.entity;
 
-import com.sprint.mission.monew.common.entity.BaseUpdatableEntity;
+import com.sprint.mission.monew.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "notifications")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Notification extends BaseUpdatableEntity {
+public class Notification extends BaseEntity {
 
   @Column(name = "user_id", columnDefinition = "uuid")
   private UUID userId;

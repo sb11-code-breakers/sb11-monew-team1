@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,4 +33,13 @@ public class NotificationController implements NotificationApi {
     return ResponseEntity.ok(notificationService.findUnconfirmed(userId, request));
   }
 
+  @Override
+  @PatchMapping("/{notificationId}")
+  public ResponseEntity<Void> confirm(
+      @PathVariable UUID notificationId,
+      @RequestHeader("Monew-Request-User-ID") UUID userId
+  ) {
+    notificationService.confirm(notificationId, userId);
+    return ResponseEntity.noContent().build();
+  }
 }

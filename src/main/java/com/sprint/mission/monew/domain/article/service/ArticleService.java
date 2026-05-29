@@ -67,6 +67,13 @@ public class ArticleService {
   }
 
   @Transactional
+  public void hardDelete(UUID articleId) {
+    Article article = articleRepository.findById(articleId)
+        .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
+    articleRepository.delete(article);
+  }
+
+  @Transactional
   public void softDelete(UUID articleId) {
     Article article = articleRepository.findById(articleId)
         .filter(a -> !a.isDeleted())

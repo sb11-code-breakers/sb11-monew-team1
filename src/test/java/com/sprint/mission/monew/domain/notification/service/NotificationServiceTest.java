@@ -1,14 +1,20 @@
 package com.sprint.mission.monew.domain.notification.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.notification.dto.NotificationQueryCondition;
 import com.sprint.mission.monew.domain.notification.dto.NotificationResponse;
+import com.sprint.mission.monew.domain.notification.entity.Notification;
+import com.sprint.mission.monew.domain.notification.entity.ResourceType;
+import com.sprint.mission.monew.domain.notification.exception.NotificationNotFoundException;
+import com.sprint.mission.monew.domain.notification.mapper.NotificationMapper;
 import com.sprint.mission.monew.domain.notification.repository.NotificationRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,12 +32,49 @@ class NotificationServiceTest {
   NotificationService notificationService;
   @Mock
   NotificationRepository notificationRepository;
+  @Mock
+  NotificationMapper notificationMapper;
 
   UUID userId;
 
   @BeforeEach
   void setUp() {
     userId = UUID.randomUUID();
+  }
+
+  @Nested
+  @DisplayName("알림 단건 확인")
+  class Confirm {
+
+    @Test
+    @DisplayName("알림이 존재하지 않으면 NotificationNotFoundException이 발생한다")
+    void 알림이_존재하지_않으면_NotificationNotFoundException이_발생한다() {
+      // given
+      UUID notificationId = UUID.randomUUID();
+      given(notificationRepository.findByIdAndUserIdAndConfirmedAtIsNull(notificationId, userId))
+          .willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> notificationService.confirm(notificationId, userId))
+          .isInstanceOf(NotificationNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("성공 시 알림의 confirm()이 호출된다")
+    void 성공_시_알림의_confirm이_호출된다() {
+      // given
+      UUID notificationId = UUID.randomUUID();
+      Notification notification = Notification.create(userId, "알림", ResourceType.INTEREST,
+          UUID.randomUUID());
+      given(notificationRepository.findByIdAndUserIdAndConfirmedAtIsNull(notificationId, userId))
+          .willReturn(Optional.of(notification));
+
+      // when
+      notificationService.confirm(notificationId, userId);
+
+      // then
+      assertThat(notification.getConfirmedAt()).isNotNull();
+    }
   }
 
   @Nested
