@@ -76,7 +76,19 @@ public class UserService {
     log.info("닉네임 수정 완료: id={}", userId);
     return userMapper.toResponse(user);
   }
+
   @Transactional
   public void delete(UUID userId, UUID requestUserId) {
+    log.debug("논리 삭제 시도");
+
+    if (!userId.equals(requestUserId)) {
+      throw UserAccessDeniedException.forUser(requestUserId);
+    }
+
+    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+
+    user.softDelete();
+    log.info("논리 삭제 완료: id={}", userId);
   }
 }
