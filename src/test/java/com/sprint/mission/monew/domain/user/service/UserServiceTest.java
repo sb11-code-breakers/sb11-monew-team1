@@ -263,4 +263,41 @@ class UserServiceTest {
       assertThat(user.isDeleted()).isTrue();
     }
   }
+
+  @Nested
+  @DisplayName("물리 삭제")
+  class HardDelete {
+
+    private UUID userId;
+
+    @BeforeEach
+    void setUp() {
+      userId = UUID.randomUUID();
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자면 예외 발생")
+    void 존재하지_않는_사용자면_예외_발생() {
+      // given
+      given(userRepository.findById(userId)).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userService.hardDelete(userId))
+          .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("성공 시 사용자 물리 삭제")
+    void 성공_시_사용자_물리_삭제() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+      // when
+      userService.hardDelete(userId);
+
+      // then
+      then(userRepository).should().delete(user);
+    }
+  }
 }
