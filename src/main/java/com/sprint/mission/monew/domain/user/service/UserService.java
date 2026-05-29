@@ -76,4 +76,7 @@ public class UserService {
     log.info("닉네임 수정 완료: id={}", userId);
     return userMapper.toResponse(user);
   }
+  @Transactional
+  public void delete(UUID userId, UUID requestUserId) {
+  }
 }
