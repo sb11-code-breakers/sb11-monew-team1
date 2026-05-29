@@ -70,6 +70,11 @@ public class UserController implements UserApi {
   public ResponseEntity<Void> delete(
       @PathVariable UUID userId,
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId) {
-    return null;
+    log.debug("논리 삭제 요청 수신");
+
+    userService.delete(userId, requestUserId);
+
+    log.info("논리 삭제 성공: id={}", userId);
+    return ResponseEntity.noContent().build();
   }
 }
