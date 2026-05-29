@@ -19,6 +19,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
+import java.util.List;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -147,6 +148,26 @@ class SubscriptionRepositoryTest {
 
       // then
       assertThat(found).isEmpty();
+    }
+  }
+
+
+
+  @Nested
+  @DisplayName("userId로 구독 목록 조회")
+  class FindByUserId {
+
+    @Test
+    @DisplayName("구독한 관심사가 없으면 빈 리스트를 반환한다")
+    void 구독한_관심사가_없으면_빈_리스트를_반환한다() {
+      // given
+      // 구독 없이 user만 있음
+
+      // when
+      List<Subscription> result = subscriptionRepository.findByUserId(user.getId());
+
+      // then
+      assertThat(result).isEmpty();
     }
   }
 }
