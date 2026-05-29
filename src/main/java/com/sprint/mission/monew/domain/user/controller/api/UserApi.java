@@ -78,4 +78,14 @@ public interface UserApi {
   ResponseEntity<Void> delete(
       @PathVariable UUID userId,
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId);
+
+  @Operation(summary = "사용자 물리 삭제", description = "사용자를 즉시 물리적으로 삭제합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "물리 삭제 성공"),
+      @ApiResponse(responseCode = "404", description = "사용자 없음",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<Void> hardDelete(@PathVariable UUID userId);
 }
