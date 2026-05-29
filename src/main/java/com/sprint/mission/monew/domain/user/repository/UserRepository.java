@@ -17,6 +17,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   Optional<User> findByIdAndDeletedAtIsNull(UUID id);
 
+  Optional<User> findByIdAndDeletedAtIsNotNull(UUID id);
+
   @Modifying
   @Query("DELETE FROM User u WHERE u.deletedAt < :threshold")
   int deleteAllByDeletedAtBefore(@Param("threshold") Instant threshold);

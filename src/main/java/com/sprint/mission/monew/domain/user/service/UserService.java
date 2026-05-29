@@ -106,7 +106,7 @@ public class UserService {
   public void hardDelete(UUID userId) {
     log.debug("물리 삭제 시도");
 
-    User user = userRepository.findById(userId)
+    User user = userRepository.findByIdAndDeletedAtIsNotNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
 
     userRepository.delete(user);
