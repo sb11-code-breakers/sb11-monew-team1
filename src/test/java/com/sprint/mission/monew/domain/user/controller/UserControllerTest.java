@@ -302,4 +302,34 @@ class UserControllerTest {
           .andExpect(status().isNoContent());
     }
   }
+
+  @Nested
+  @DisplayName("DELETE /api/users/{userId}/hard — 물리 삭제")
+  class HardDelete {
+
+    @Test
+    @DisplayName("존재하지 않는 사용자면 404 반환")
+    void 존재하지_않는_사용자면_404_반환() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+
+      willThrow(UserNotFoundException.withId(userId))
+          .given(userService).hardDelete(eq(userId));
+
+      // when & then
+      mockMvc.perform(delete("/api/users/{userId}/hard", userId))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("성공 시 204 반환")
+    void 성공_시_204_반환() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+
+      // when & then
+      mockMvc.perform(delete("/api/users/{userId}/hard", userId))
+          .andExpect(status().isNoContent());
+    }
+  }
 }
