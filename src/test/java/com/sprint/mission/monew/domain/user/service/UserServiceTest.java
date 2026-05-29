@@ -213,4 +213,54 @@ class UserServiceTest {
       assertThat(result.nickname()).isEqualTo("새닉네임");
     }
   }
+
+  @Nested
+  @DisplayName("논리 삭제")
+  class Delete {
+
+    private UUID userId;
+    private UUID requestUserId;
+
+    @BeforeEach
+    void setUp() {
+      userId = UUID.randomUUID();
+      requestUserId = userId;
+    }
+
+    @Test
+    @DisplayName("다른 사용자가 삭제하면 예외 발생")
+    void 다른_사용자가_삭제하면_예외_발생() {
+      // given
+      UUID anotherUserId = UUID.randomUUID();
+
+      // when & then
+      assertThatThrownBy(() -> userService.delete(userId, anotherUserId))
+          .isInstanceOf(UserAccessDeniedException.class);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자면 예외 발생")
+    void 존재하지_않는_사용자면_예외_발생() {
+      // given
+      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userService.delete(userId, requestUserId))
+          .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("성공 시 논리 삭제 처리")
+    void 성공_시_논리_삭제_처리() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(user));
+
+      // when
+      userService.delete(userId, requestUserId);
+
+      // then
+      assertThat(user.isDeleted()).isTrue();
+    }
+  }
 }
