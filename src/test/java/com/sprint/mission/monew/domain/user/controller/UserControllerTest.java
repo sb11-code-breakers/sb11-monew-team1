@@ -1,13 +1,16 @@
 package com.sprint.mission.monew.domain.user.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.mockito.ArgumentMatchers.eq;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
@@ -250,6 +253,53 @@ class UserControllerTest {
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.nickname").value("새닉네임"));
+    }
+  }
+
+  @Nested
+  @DisplayName("DELETE /api/users/{userId} — 논리 삭제")
+  class Delete {
+
+    @Test
+    @DisplayName("다른 사용자가 삭제하면 403 반환")
+    void 다른_사용자가_삭제하면_403_반환() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+
+      willThrow(UserAccessDeniedException.forUser(UUID.randomUUID()))
+          .given(userService).delete(any(), any());
+
+      // when & then
+      mockMvc.perform(delete("/api/users/{userId}", userId)
+              .header("Monew-Request-User-ID", UUID.randomUUID()))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자면 404 반환")
+    void 존재하지_않는_사용자면_404_반환() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+
+      willThrow(UserNotFoundException.withId(userId))
+          .given(userService).delete(eq(userId), eq(userId));
+
+      // when & then
+      mockMvc.perform(delete("/api/users/{userId}", userId)
+              .header("Monew-Request-User-ID", userId))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("성공 시 204 반환")
+    void 성공_시_204_반환() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+
+      // when & then
+      mockMvc.perform(delete("/api/users/{userId}", userId)
+              .header("Monew-Request-User-ID", userId))
+          .andExpect(status().isNoContent());
     }
   }
 }
