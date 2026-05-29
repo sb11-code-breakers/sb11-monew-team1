@@ -10,6 +10,12 @@ import org.springframework.data.repository.query.Param;
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
   // 일단 빈 메서드로 추가
-  @Query("SELECT c FROM Comment c WHERE 1=0")
+  @Query("SELECT c FROM Comment c " +
+      "JOIN FETCH c.article a " +
+      "WHERE c.user.id = :userId " +
+      "AND c.deletedAt IS NULL " +
+      "AND a.deletedAt IS NULL " +
+      "ORDER BY c.createdAt DESC " +
+      "LIMIT 10")
   List<Comment> findTop10RecentCommentsByUserId(@Param("userId") UUID userId);
 }
