@@ -38,4 +38,22 @@ public interface SubscriptionApi {
   ResponseEntity<SubscriptionResponse> subscribe(
       @PathVariable UUID interestId,
       @RequestHeader("Monew-Request-User-ID") UUID userId);
+
+  @Operation(summary = "관심사 구독 취소", description = "관심사를 구독을 취소합니다.")
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "204",
+          description = "구독 취소 성공"),
+      @ApiResponse(
+          responseCode = "404",
+          description = "관심사 정보 없음",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(
+          responseCode = "500",
+          description = "서버 내부 오류",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<Void> unsubscribe(
+      @PathVariable UUID interestId,
+      @RequestHeader("Monew-Request-User-ID") UUID userId);
 }

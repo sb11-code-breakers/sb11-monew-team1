@@ -267,7 +267,7 @@ public class CommentIntegrationTest {
     @DisplayName("댓글 논리삭제 성공")
     void 댓글_논리삭제_성공() throws Exception {
       // given
-      // commentId, userId를 BeforeEach에서 초기화
+      // comment, user를 BeforeEach에서 초기화
 
       // when & then
       mockMvc.perform(delete("/api/comments/{commentId}", comment.getId())
@@ -279,6 +279,38 @@ public class CommentIntegrationTest {
 
       assertThat(deletedComment.isDeleted()).isTrue();
       assertThat(deletedComment.getDeletedAt()).isNotNull();
+    }
+  }
+
+  @Nested
+  @DisplayName("댓글 물리 삭제하기")
+  class HardDelete {
+
+    @Test
+    @DisplayName("댓글 물리삭제 실패 - 댓글이 존재하지 않음")
+    void 댓글_물리삭제_실패_댓글_없음() throws Exception {
+      // given
+      UUID notExistCommentId = UUID.randomUUID();
+
+      // when & then
+      mockMvc.perform(delete("/api/comments/{commentId}/hard", notExistCommentId)
+              .header("Monew-Request-User-ID", user.getId()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("댓글 물리삭제 성공")
+    void 댓글_물리삭제_성공() throws Exception {
+      // given
+      // comment, user를 BeforeEach에서 초기화
+
+      // when & then
+      mockMvc.perform(delete("/api/comments/{commentId}/hard", comment.getId())
+              .header("Monew-Request-User-ID", user.getId()))
+          .andExpect(status().isNoContent());
+
+      // DB 검증
+      assertThat(commentRepository.findById(comment.getId())).isEmpty();
     }
   }
 }

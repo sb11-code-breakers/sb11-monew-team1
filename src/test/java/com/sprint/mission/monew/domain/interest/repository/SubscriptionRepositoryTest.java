@@ -100,6 +100,25 @@ class SubscriptionRepositoryTest {
   }
 
   @Nested
+  @DisplayName("구독 삭제")
+  class Delete {
+
+    @Test
+    @DisplayName("구독 삭제 후 existsByInterestIdAndUserId가 false를 반환한다")
+    void 구독_삭제_후_existsByInterestIdAndUserId가_false를_반환한다() {
+      // given
+      Subscription subscription = subscriptionRepository.save(Subscription.create(interest, user));
+
+      // when
+      subscriptionRepository.delete(subscription);
+
+      // then
+      assertThat(subscriptionRepository.existsByInterestIdAndUserId(
+          interest.getId(), user.getId())).isFalse();
+    }
+  }
+
+  @Nested
   @DisplayName("구독 정보 조회")
   class FindByInterestIdAndUserId {
 

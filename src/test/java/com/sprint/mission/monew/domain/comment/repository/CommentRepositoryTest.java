@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.comment.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sprint.mission.monew.common.config.QuerydslConfig;
 import com.sprint.mission.monew.domain.article.entity.Article;
@@ -111,5 +112,24 @@ public class CommentRepositoryTest {
       assertThat(foundComment.getContent()).isEqualTo(savedComment.getContent());
     }
 
+  }
+
+  @Nested
+  @DisplayName("delete() 테스트")
+  class Delete {
+
+    @Test
+    @DisplayName("댓글 삭제 성공")
+    void 댓글_삭제_성공() {
+      // given
+      Comment savedComment = commentRepository.save(comment);
+      commentRepository.delete(savedComment);
+
+      // when
+      Optional<Comment> result = commentRepository.findById(comment.getId());
+
+      // then
+      assertThat(result).isEmpty();
+    }
   }
 }

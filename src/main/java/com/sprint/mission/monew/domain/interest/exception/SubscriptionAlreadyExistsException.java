@@ -10,7 +10,7 @@ public class SubscriptionAlreadyExistsException extends InterestException {
     super(ErrorCode.SUBSCRIPTION_ALREADY_EXISTS, details);
   }
 
-  public static SubscriptionAlreadyExistsException of(UUID interestId, UUID userId) {
+  public static SubscriptionAlreadyExistsException withIds(UUID interestId, UUID userId) {
     return new SubscriptionAlreadyExistsException(
         Map.of("interestId", interestId, "userId", userId));
   }

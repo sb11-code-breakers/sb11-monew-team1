@@ -34,7 +34,7 @@ public class CommentService {
   @Transactional
   public CommentResponse create(CommentCreateRequest request) {
 
-    log.debug("[COMMENT_CREATE] 댓글 생성 시작 - 뉴스 기사 ID={}, 댓글 작성자 ID={}",
+    log.debug("[COMMENT_CREATE_START] 댓글 생성 시작 - 뉴스 기사 ID={}, 댓글 작성자 ID={}",
         request.articleId(), request.userId());
 
     Article article = articleRepository.findById(request.articleId()).orElseThrow(
@@ -56,7 +56,7 @@ public class CommentService {
   @Transactional
   public CommentResponse update(UUID commentId, UUID userId, CommentUpdateRequest request) {
 
-    log.debug("[COMMENT_UPDATE] 댓글 수정 시작 - 댓글 ID={}, 요청자 ID={}",
+    log.debug("[COMMENT_UPDATE_START] 댓글 수정 시작 - 댓글 ID={}, 요청자 ID={}",
         commentId, userId);
 
     Comment comment = commentRepository.findById(commentId).orElseThrow(
@@ -77,7 +77,7 @@ public class CommentService {
 
   @Transactional
   public void softDelete(UUID commentId, UUID userId) {
-    log.debug("[COMMENT_SOFT_DELETE] 댓글 논리삭제 시작 - 댓글 ID={}",
+    log.debug("[COMMENT_SOFT_DELETE_START] 댓글 논리삭제 시작 - 댓글 ID={}",
         commentId);
 
     Comment comment = commentRepository.findById(commentId).orElseThrow(
@@ -92,6 +92,19 @@ public class CommentService {
 
     log.info("[COMMENT_SOFT_DELETE_SUCCESS] 댓글 논리삭제 성공 - 댓글 ID={}, 요청자 ID={}",
         commentId, userId);
+  }
+
+  @Transactional
+  public void hardDelete(UUID commentId) {
+    log.debug("[COMMENT_HARD_DELETE_START] 댓글 물리삭제 시작 - 댓글 ID={}", commentId);
+
+    Comment comment = commentRepository.findById(commentId).orElseThrow(
+        () -> CommentNotFoundException.withId(commentId)
+    );
+
+    commentRepository.delete(comment);
+
+    log.info("[COMMENT_HARD_DELETE_SUCCESS] 댓글 물리삭제 성공 - 댓글 ID={}", commentId);
   }
 
 }
