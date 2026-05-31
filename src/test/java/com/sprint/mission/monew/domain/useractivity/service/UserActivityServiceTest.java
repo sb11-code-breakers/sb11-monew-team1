@@ -65,7 +65,8 @@ class UserActivityServiceTest {
       given(userRepository.findById(userId)).willReturn(Optional.of(user));
       given(subscriptionRepository.findByUserId(userId)).willReturn(List.of());
       given(commentRepository.findTop10RecentCommentsByUserId(userId)).willReturn(List.of());
-      given(articleViewRepository.findTop10ByUserIdAndArticleNotDeleted(userId)).willReturn(List.of());
+      given(articleViewRepository.findTop10ByUserIdAndArticleNotDeleted(userId)).willReturn(
+          List.of());
 
       // when
       UserActivityResponse result = userActivityService.getUserActivity(userId);
