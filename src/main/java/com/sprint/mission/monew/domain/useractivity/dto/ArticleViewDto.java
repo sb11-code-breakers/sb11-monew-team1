@@ -15,4 +15,6 @@ public record ArticleViewDto(
     String articleSummary,
     long articleCommentCount,
     long articleViewCount
-) {}
+) {
+
+}

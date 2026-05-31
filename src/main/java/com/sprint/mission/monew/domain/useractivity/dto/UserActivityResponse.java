@@ -13,4 +13,6 @@ public record UserActivityResponse(
     List<CommentDto> comments,
     List<CommentLikeDto> commentLikes,
     List<ArticleViewDto> articleViews
-) {}
+) {
+
+}

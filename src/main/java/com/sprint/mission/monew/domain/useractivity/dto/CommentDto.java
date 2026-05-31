@@ -12,4 +12,6 @@ public record CommentDto(
     String content,
     long likeCount,
     Instant createdAt
-) {}
+) {
+
+}

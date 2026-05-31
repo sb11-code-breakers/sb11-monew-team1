@@ -11,4 +11,6 @@ public record SubscriptionDto(
     List<String> interestKeywords,
     long interestSubscriberCount,
     Instant createdAt
-) {}
+) {
+
+}
