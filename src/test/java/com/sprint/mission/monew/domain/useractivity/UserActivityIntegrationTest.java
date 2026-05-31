@@ -1,0 +1,155 @@
+package com.sprint.mission.monew.domain.useractivity;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.sprint.mission.monew.domain.article.entity.Article;
+import com.sprint.mission.monew.domain.article.entity.ArticleSource;
+import com.sprint.mission.monew.domain.article.entity.ArticleView;
+import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
+import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
+import com.sprint.mission.monew.domain.comment.entity.Comment;
+import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
+import com.sprint.mission.monew.domain.interest.entity.Interest;
+import com.sprint.mission.monew.domain.interest.entity.Subscription;
+import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
+import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepository;
+import com.sprint.mission.monew.domain.user.entity.User;
+import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
+
+@SpringBootTest
+@Transactional
+@ActiveProfiles("test")
+@AutoConfigureMockMvc
+public class UserActivityIntegrationTest {
+
+  @Autowired
+  private MockMvc mockMvc;
+
+  @Autowired
+  private UserRepository userRepository;
+
+  @Autowired
+  private ArticleRepository articleRepository;
+
+  @Autowired
+  private ArticleViewRepository articleViewRepository;
+
+  @Autowired
+  private CommentRepository commentRepository;
+
+  @Autowired
+  private InterestRepository interestRepository;
+
+  @Autowired
+  private SubscriptionRepository subscriptionRepository;
+
+  private User user;
+  private Article article;
+
+  @BeforeEach
+  void setUp() {
+    user = userRepository.save(
+        User.create("test@test.com", "테스터", "password123!")
+    );
+    article = articleRepository.save(
+        Article.create(
+            ArticleSource.NAVER,
+            "https://test.com/news/1",
+            "테스트 기사",
+            Instant.now(),
+            "테스트 요약"
+        )
+    );
+  }
+
+  @Nested
+  @DisplayName("GET /api/user-activities/{userId} — 활동 내역 조회")
+  class GetUserActivity {
+
+    @Test
+    @DisplayName("성공 시 200과 활동 내역을 반환한다")
+    void 성공_시_200과_활동_내역을_반환한다() throws Exception {
+      // when & then
+      mockMvc.perform(get("/api/user-activities/{userId}", user.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.id").value(user.getId().toString()))
+          .andExpect(jsonPath("$.email").value("test@test.com"))
+          .andExpect(jsonPath("$.nickname").value("테스터"))
+          .andExpect(jsonPath("$.subscriptions").isArray())
+          .andExpect(jsonPath("$.comments").isArray())
+          .andExpect(jsonPath("$.commentLikes").isArray())
+          .andExpect(jsonPath("$.articleViews").isArray());
+    }
+
+    @Test
+    @DisplayName("구독 관심사가 있으면 응답에 포함된다")
+    void 구독_관심사가_있으면_응답에_포함된다() throws Exception {
+      // given
+      Interest interest = interestRepository.save(
+          Interest.create("인공지능", List.of("AI"))
+      );
+      subscriptionRepository.save(Subscription.create(interest, user));
+
+      // when & then
+      mockMvc.perform(get("/api/user-activities/{userId}", user.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.subscriptions.length()").value(1))
+          .andExpect(jsonPath("$.subscriptions[0].interestName").value("인공지능"));
+    }
+
+    @Test
+    @DisplayName("최근 본 기사가 있으면 응답에 포함된다")
+    void 최근_본_기사가_있으면_응답에_포함된다() throws Exception {
+      // given
+      articleViewRepository.save(ArticleView.create(user.getId(), article));
+
+      // when & then
+      mockMvc.perform(get("/api/user-activities/{userId}", user.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.articleViews.length()").value(1))
+          .andExpect(jsonPath("$.articleViews[0].articleTitle").value("테스트 기사"));
+    }
+
+    @Test
+    @DisplayName("최근 작성한 댓글이 있으면 응답에 포함된다")
+    void 최근_작성한_댓글이_있으면_응답에_포함된다() throws Exception {
+      // given
+      commentRepository.save(Comment.create(article, user, "테스트 댓글"));
+
+      // when & then
+      mockMvc.perform(get("/api/user-activities/{userId}", user.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.comments.length()").value(1))
+          .andExpect(jsonPath("$.comments[0].content").value("테스트 댓글"));
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 userId면 404와 에러 응답을 반환한다")
+    void 존재하지_않는_userId면_404와_에러_응답을_반환한다() throws Exception {
+      // given
+      UUID nonExistentUserId = UUID.randomUUID();
+
+      // when & then
+      mockMvc.perform(get("/api/user-activities/{userId}", nonExistentUserId))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.status").value(404))
+          .andExpect(jsonPath("$.message").exists());
+    }
+  }
+}
