@@ -7,6 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.AccessLevel;
@@ -22,6 +23,7 @@ public class Interest extends BaseUpdatableEntity {
   @Column(nullable = false, length = 50)
   private String name;
 
+  @BatchSize(size = 100)
   @OneToMany(mappedBy = "interest", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   private List<InterestKeyword> keywords = new ArrayList<>();
 

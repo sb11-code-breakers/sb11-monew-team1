@@ -6,12 +6,14 @@ import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.interest.dto.InterestCreateRequest;
 import com.sprint.mission.monew.domain.interest.dto.InterestResponse;
 import com.sprint.mission.monew.domain.interest.dto.InterestUpdateRequest;
@@ -39,6 +41,168 @@ class InterestControllerTest {
 
   @MockitoBean
   InterestService interestService;
+
+  @Nested
+  @DisplayName("GET /api/interests — 관심사 목록 조회")
+  class FindAll {
+
+    @Test
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
+    void Monew_Request_User_ID_헤더가_없으면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .param("orderBy", "name")
+                  .param("direction", "ASC")
+                  .param("limit", "10"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("orderBy가 없으면 400을 반환한다")
+    void orderBy가_없으면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .param("direction", "ASC")
+                  .param("limit", "10"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("direction이 없으면 400을 반환한다")
+    void direction이_없으면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .param("orderBy", "name")
+                  .param("limit", "10"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("limit이 없으면 400을 반환한다")
+    void limit이_없으면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .param("orderBy", "name")
+                  .param("direction", "ASC"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("limit이 0이면 400을 반환한다")
+    void limit이_0이면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .param("orderBy", "name")
+                  .param("direction", "ASC")
+                  .param("limit", "0"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("cursor만 있고 after가 없으면 400을 반환한다")
+    void cursor만_있고_after가_없으면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .param("orderBy", "name")
+                  .param("direction", "ASC")
+                  .param("limit", "10")
+                  .param("cursor", "Baseball"))
+          .andExpect(status().isBadRequest());
+      verifyNoInteractions(interestService);
+    }
+
+    @Test
+    @DisplayName("after만 있고 cursor가 없으면 400을 반환한다")
+    void after만_있고_cursor가_없으면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .param("orderBy", "name")
+                  .param("direction", "ASC")
+                  .param("limit", "10")
+                  .param("after", java.time.Instant.now().toString()))
+          .andExpect(status().isBadRequest());
+      verifyNoInteractions(interestService);
+    }
+
+    @Test
+    @DisplayName("orderBy=subscriberCount이고 cursor가 숫자가 아니면 400을 반환한다")
+    void orderBy가_subscriberCount이고_cursor가_숫자가_아니면_400을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .param("orderBy", "subscriberCount")
+                  .param("direction", "ASC")
+                  .param("limit", "10")
+                  .param("cursor", "invalid")
+                  .param("after", java.time.Instant.now().toString()))
+          .andExpect(status().isBadRequest());
+      verifyNoInteractions(interestService);
+    }
+
+    @Test
+    @DisplayName("정상 요청이면 200과 CursorPageResponse를 반환한다")
+    void 정상_요청이면_200과_CursorPageResponse를_반환한다() throws Exception {
+      // given
+      CursorPageResponse<InterestResponse> response =
+          CursorPageResponse.of(List.of(), null, null, false, 0, 0L);
+      given(interestService.findAll(any(), any(UUID.class))).willReturn(response);
+
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .param("orderBy", "name")
+                  .param("direction", "ASC")
+                  .param("limit", "10"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.hasNext").value(false))
+          .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    @DisplayName("orderBy=subscriberCount이고 cursor가 유효한 숫자면 200을 반환한다")
+    void orderBy가_subscriberCount이고_cursor가_유효한_숫자면_200을_반환한다() throws Exception {
+      // given
+      CursorPageResponse<InterestResponse> response =
+          CursorPageResponse.of(List.of(), null, null, false, 0, 0L);
+      given(interestService.findAll(any(), any(UUID.class))).willReturn(response);
+
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .param("orderBy", "subscriberCount")
+                  .param("direction", "ASC")
+                  .param("limit", "10")
+                  .param("cursor", "5")
+                  .param("after", java.time.Instant.now().toString()))
+          .andExpect(status().isOk());
+    }
+  }
 
   @Nested
   @DisplayName("POST /api/interests — 관심사 등록")

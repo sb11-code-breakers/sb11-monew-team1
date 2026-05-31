@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.interest.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +62,17 @@ class InterestTest {
   @Nested
   @DisplayName("구독자 수 감소")
   class DecreaseSubscriberCount {
+
+    @Test
+    @DisplayName("subscriberCount가 0일 때 감소하면 IllegalStateException이 발생한다")
+    void subscriberCount가_0일_때_감소하면_예외가_발생한다() {
+      // given
+      Interest interest = Interest.create(name, keywords);
+
+      // when & then
+      assertThatThrownBy(interest::decreaseSubscriberCount)
+          .isInstanceOf(IllegalStateException.class);
+    }
 
     @Test
     @DisplayName("호출할 때마다 subscriberCount가 1 감소한다")

@@ -185,7 +185,7 @@ public class CommentServiceTest {
       Comment comment = Comment.create(article, user, content);
 
       CommentResponse expectedResponse = new CommentResponse(
-          commentId,
+          comment.getId(),
           articleId,
           userId,
           "닉네임",
@@ -195,11 +195,11 @@ public class CommentServiceTest {
           Instant.now()
       );
 
-      given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+      given(commentRepository.findById(comment.getId())).willReturn(Optional.of(comment));
       given(commentMapper.toResponse(eq(comment), eq(false))).willReturn(expectedResponse);
 
       // when
-      CommentResponse response = commentService.update(commentId, user.getId(), updateRequest);
+      CommentResponse response = commentService.update(comment.getId(), user.getId(), updateRequest);
 
       // then
       assertThat(response).isNotNull();
@@ -245,10 +245,10 @@ public class CommentServiceTest {
     void 댓글_논리삭제_성공() {
       // given
       Comment comment = Comment.create(article, user, content);
-      given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+      given(commentRepository.findById(comment.getId())).willReturn(Optional.of(comment));
 
       // when
-      commentService.softDelete(commentId, userId);
+      commentService.softDelete(comment.getId(), userId);
 
       // then
       assertThat(comment.isDeleted()).isTrue();
@@ -275,10 +275,10 @@ public class CommentServiceTest {
     void 댓글_물리삭제_성공() {
       // given
       Comment comment = Comment.create(article, user, content);
-      given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+      given(commentRepository.findById(comment.getId())).willReturn(Optional.of(comment));
 
       // when
-      commentService.hardDelete(commentId);
+      commentService.hardDelete(comment.getId());
 
       // then
       verify(commentRepository).delete(comment);

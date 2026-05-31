@@ -1,7 +1,9 @@
 package com.sprint.mission.monew.domain.interest.controller.api;
 
+import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.common.dto.ErrorResponse;
 import com.sprint.mission.monew.domain.interest.dto.InterestCreateRequest;
+import com.sprint.mission.monew.domain.interest.dto.InterestQueryCondition;
 import com.sprint.mission.monew.domain.interest.dto.InterestResponse;
 import com.sprint.mission.monew.domain.interest.dto.InterestUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,11 +15,31 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Interest", description = "관심사 API")
 public interface InterestApi {
+
+  @Operation(summary = "관심사 목록 조회", description = "관심사 목록을 조회합니다.")
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = "200",
+        description = "조회 성공"),
+    @ApiResponse(
+        responseCode = "400",
+        description = "잘못된 요청 (정렬 기준 오류, 페이지네이션 파라미터 오류 등)",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+    @ApiResponse(
+        responseCode = "500",
+        description = "서버 내부 오류",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<CursorPageResponse<InterestResponse>> findAll(
+      @RequestHeader("Monew-Request-User-ID") UUID userId,
+      @ModelAttribute InterestQueryCondition condition);
 
   @Operation(summary = "관심사 등록", description = "새로운 관심사를 등록합니다.")
   @ApiResponses({

@@ -18,9 +18,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.format.FormatterRegistry;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +31,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @WebMvcTest(GlobalExceptionHandlerTest.FakeController.class)
 class GlobalExceptionHandlerTest {
@@ -71,11 +75,38 @@ class GlobalExceptionHandlerTest {
 
     @GetMapping("/missing-param")
     void missingParam(@RequestParam String requiredParam) {}
+
+    @GetMapping("/converter-mismatch")
+    void converterMismatch(@Valid @ModelAttribute FakeModelRequest req) {}
   }
 
   record BodyRequest(String name) {}
 
   record ValidRequest(@NotBlank String name) {}
+
+  static class FakeModelRequest {
+    private FakeOrderBy orderBy;
+    public FakeOrderBy getOrderBy() { return orderBy; }
+    public void setOrderBy(FakeOrderBy orderBy) { this.orderBy = orderBy; }
+  }
+
+  enum FakeOrderBy {
+    LATEST;
+    static FakeOrderBy from(String value) {
+      for (FakeOrderBy v : values()) {
+        if (v.name().equalsIgnoreCase(value)) return v;
+      }
+      throw new InvalidOrderByException(value, FakeOrderBy.class, "지원하는 정렬 기준이 아닙니다.");
+    }
+  }
+
+  @TestConfiguration
+  static class TestWebConfig implements WebMvcConfigurer {
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+      registry.addConverter(String.class, FakeOrderBy.class, FakeOrderBy::from);
+    }
+  }
 
   @Nested
   @DisplayName("404 — 경로 없음")
@@ -232,6 +263,23 @@ class GlobalExceptionHandlerTest {
           .andExpect(status().isBadRequest())
           .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
           .andExpect(jsonPath("$.details.requiredParam").value("필수 파라미터입니다"));
+    }
+  }
+
+  @Nested
+  @DisplayName("400 — 컨버터 TypeMismatch (root cause 메시지 추출)")
+  class ConverterTypeMismatch {
+
+    @Test
+    @DisplayName("컨버터에서 InvalidOrderByException 발생 시 root cause 메시지를 details에 노출")
+    void 컨버터_InvalidOrderByException_root_cause_메시지_노출() throws Exception {
+      // given & when & then
+      mockMvc
+          .perform(get("/test/converter-mismatch")
+              .param("orderBy", "invalid"))
+          .andExpect(status().isBadRequest())
+          .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+          .andExpect(jsonPath("$.details.orderBy").value("지원하는 정렬 기준이 아닙니다."));
     }
   }
 

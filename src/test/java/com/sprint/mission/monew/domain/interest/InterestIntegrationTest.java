@@ -2,6 +2,7 @@ package com.sprint.mission.monew.domain.interest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -47,6 +48,68 @@ class InterestIntegrationTest {
     subscriptionRepository.deleteAll();
     interestRepository.deleteAll();
     userRepository.deleteAll();
+  }
+
+  @Nested
+  @DisplayName("GET /api/interests — 관심사 목록 조회")
+  class FindAll {
+
+    @Test
+    @DisplayName("관심사가 없으면 빈 목록을 반환한다")
+    void 관심사가_없으면_빈_목록을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .param("orderBy", "name")
+                  .param("direction", "ASC")
+                  .param("limit", "10"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content").isArray())
+          .andExpect(jsonPath("$.content").isEmpty())
+          .andExpect(jsonPath("$.hasNext").value(false))
+          .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    @DisplayName("저장된 관심사가 목록에 포함된다")
+    void 저장된_관심사가_목록에_포함된다() throws Exception {
+      // given
+      interestRepository.save(Interest.create("인공지능", List.of("AI")));
+
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .param("orderBy", "name")
+                  .param("direction", "ASC")
+                  .param("limit", "10"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content[0].name").value("인공지능"))
+          .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    @DisplayName("구독한 관심사는 subscribedByMe=true로 반환된다")
+    void 구독한_관심사는_subscribedByMe_true로_반환된다() throws Exception {
+      // given
+      Interest interest = interestRepository.save(Interest.create("인공지능", List.of("AI")));
+      User user = userRepository.save(User.create("test@test.com", "테스터", "password123!"));
+      subscriptionRepository.save(Subscription.create(interest, user));
+
+      // when & then
+      mockMvc
+          .perform(
+              get("/api/interests")
+                  .header("Monew-Request-User-ID", user.getId())
+                  .param("orderBy", "name")
+                  .param("direction", "ASC")
+                  .param("limit", "10"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content[0].subscribedByMe").value(true));
+    }
   }
 
   @Nested

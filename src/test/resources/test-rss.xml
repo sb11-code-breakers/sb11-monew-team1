@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Test Feed</title>
+    <link>https://test.com</link>
+    <description>Test RSS Feed</description>
+
+    <!-- 정상 기사 -->
+    <item>
+      <title>&lt;b&gt;테스트 기사 제목&lt;/b&gt;</title>
+      <link>https://test.com/news/1</link>
+      <description>테스트 기사 요약</description>
+      <pubDate>Mon, 25 May 2026 09:00:00 +0900</pubDate>
+    </item>
+
+    <!-- link 없는 기사 → 필터링됨 -->
+    <item>
+      <title>링크 없는 기사</title>
+      <description>URL이 없어 필터링됩니다</description>
+    </item>
+
+    <!-- description 없는 기사 → summary 빈 문자열 -->
+    <item>
+      <title>요약 없는 기사</title>
+      <link>https://test.com/news/2</link>
+    </item>
+
+    <!-- pubDate 없는 기사 → Instant.now() 사용 -->
+    <item>
+      <title>날짜 없는 기사</title>
+      <link>https://test.com/news/3</link>
+      <description>날짜가 없는 기사</description>
+    </item>
+  </channel>
+</rss>

@@ -25,4 +25,8 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
          AND n.confirmedAt IS NULL
       """)
   int confirmAllByUserId(@Param("userId") UUID userId, @Param("now") Instant now);
+
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("DELETE FROM Notification n WHERE n.confirmedAt < :cutoff")
+  int deleteConfirmedBefore(@Param("cutoff") Instant cutoff);
 }

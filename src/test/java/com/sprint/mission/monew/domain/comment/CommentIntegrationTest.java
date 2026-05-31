@@ -12,7 +12,6 @@ import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
-import com.sprint.mission.monew.domain.comment.service.CommentService;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
@@ -38,8 +37,6 @@ public class CommentIntegrationTest {
   @Autowired
   private MockMvc mockMvc;
 
-  @Autowired
-  private CommentService commentService;
 
   @Autowired
   private CommentRepository commentRepository;

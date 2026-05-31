@@ -465,4 +465,34 @@ class ArticleRepositoryTest {
       assertThat(result.get(0).getTitle()).isEqualTo("AI 기사");
     }
   }
+
+  @Nested
+  @DisplayName("findBySourceUrl")
+  class FindBySourceUrl {
+
+    @Test
+    @DisplayName("존재하는 sourceUrl로 조회하면 기사를 반환한다")
+    void 존재하는_sourceUrl로_조회하면_기사를_반환한다() {
+      // given
+      articleRepository.save(
+          Article.create(ArticleSource.NAVER, "https://example.com/news/1", "기사", Instant.now(), null));
+
+      // when
+      var result = articleRepository.findBySourceUrl("https://example.com/news/1");
+
+      // then
+      assertThat(result).isPresent();
+      assertThat(result.get().getTitle()).isEqualTo("기사");
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 sourceUrl로 조회하면 빈 Optional을 반환한다")
+    void 존재하지_않는_sourceUrl로_조회하면_빈_Optional을_반환한다() {
+      // when
+      var result = articleRepository.findBySourceUrl("https://not-exist.com");
+
+      // then
+      assertThat(result).isEmpty();
+    }
+  }
 }

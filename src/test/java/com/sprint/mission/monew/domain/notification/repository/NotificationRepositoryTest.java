@@ -284,4 +284,25 @@ class NotificationRepositoryTest {
       assertThat(count).isEqualTo(1);
     }
   }
+
+  @Nested
+  @DisplayName("deleteConfirmedBefore")
+  class DeleteConfirmedBefore {
+
+    @Test
+    @DisplayName("확인 후 7일 경과한 알림은 물리 삭제된다")
+    void 확인_후_7일_경과한_알림은_물리_삭제된다() {
+      // given
+      notificationRepository.save(
+          Notification.create(userId, "오래된 알림", ResourceType.INTEREST, UUID.randomUUID()));
+      notificationRepository.confirmAllByUserId(userId, Instant.now().minus(8, ChronoUnit.DAYS));
+
+      // when
+      int deleted = notificationRepository.deleteConfirmedBefore(Instant.now().minus(7, ChronoUnit.DAYS));
+
+      // then
+      assertThat(deleted).isEqualTo(1);
+      assertThat(notificationRepository.findAll()).isEmpty();
+    }
+  }
 }

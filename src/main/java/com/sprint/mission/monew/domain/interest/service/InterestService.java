@@ -1,6 +1,8 @@
 package com.sprint.mission.monew.domain.interest.service;
 
+import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.interest.dto.InterestCreateRequest;
+import com.sprint.mission.monew.domain.interest.dto.InterestQueryCondition;
 import com.sprint.mission.monew.domain.interest.dto.InterestResponse;
 import com.sprint.mission.monew.domain.interest.dto.InterestUpdateRequest;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
@@ -21,6 +23,10 @@ public class InterestService {
 
   private final InterestRepository interestRepository;
   private final InterestMapper interestMapper;
+
+  public CursorPageResponse<InterestResponse> findAll(InterestQueryCondition condition, UUID userId) {
+    return interestRepository.findInterests(condition, userId);
+  }
 
   @Transactional
   public InterestResponse create(InterestCreateRequest request) {

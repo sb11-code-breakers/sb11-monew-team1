@@ -10,6 +10,7 @@ import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,7 +20,6 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
-import java.util.List;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -168,6 +168,56 @@ class SubscriptionRepositoryTest {
 
       // then
       assertThat(result).isEmpty();
+    }
+  }
+
+  @Nested
+  @DisplayName("관심사 구독자 userId 목록 조회")
+  class FindUserIdsByInterestId {
+
+    @Test
+    @DisplayName("구독자가 있으면 해당 userId 목록을 반환한다")
+    void 구독자가_있으면_해당_userId_목록을_반환한다() {
+      // given
+      User user2 = userRepository.save(User.create("user2@test.com", "유저2", "password123!"));
+      subscriptionRepository.save(Subscription.create(interest, user));
+      subscriptionRepository.save(Subscription.create(interest, user2));
+
+      // when
+      List<UUID> userIds = subscriptionRepository.findUserIdsByInterestId(interest.getId());
+
+      // then
+      assertThat(userIds).hasSize(2);
+      assertThat(userIds).containsExactlyInAnyOrder(user.getId(), user2.getId());
+    }
+
+    @Test
+    @DisplayName("다른 관심사 구독자는 포함되지 않는다")
+    void 다른_관심사_구독자는_포함되지_않는다() {
+      // given
+      Interest otherInterest = interestRepository.save(Interest.create("스포츠", List.of("축구")));
+      User otherUser = userRepository.save(User.create("other@test.com", "타인", "password123!"));
+      subscriptionRepository.save(Subscription.create(interest, user));
+      subscriptionRepository.save(Subscription.create(otherInterest, otherUser));
+
+      // when
+      List<UUID> userIds = subscriptionRepository.findUserIdsByInterestId(interest.getId());
+
+      // then
+      assertThat(userIds).hasSize(1);
+      assertThat(userIds).containsExactly(user.getId());
+    }
+
+    @Test
+    @DisplayName("구독자가 없으면 빈 목록을 반환한다")
+    void 구독자가_없으면_빈_목록을_반환한다() {
+      // given — 구독 없음
+
+      // when
+      List<UUID> userIds = subscriptionRepository.findUserIdsByInterestId(interest.getId());
+
+      // then
+      assertThat(userIds).isEmpty();
     }
   }
 }

@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.comment.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sprint.mission.monew.common.config.JpaConfig;
 import com.sprint.mission.monew.common.config.QuerydslConfig;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -39,15 +41,15 @@ public class CommentRepositoryTest {
   @Autowired
   private UserRepository userRepository;
 
+  @Autowired
+  private TestEntityManager testEntityManager;
+
   private Article article;
   private User user;
   private Comment comment;
 
   @BeforeEach
   void setUp() {
-    commentRepository.deleteAll();
-    articleRepository.deleteAll();
-    userRepository.deleteAll();
     article = articleRepository.save(
         Article.create(
             ArticleSource.NAVER,
@@ -115,6 +117,7 @@ public class CommentRepositoryTest {
       assertThat(foundComment.getUser().getId()).isEqualTo(savedComment.getUser().getId());
       assertThat(foundComment.getContent()).isEqualTo(savedComment.getContent());
     }
+
   }
 
   @Nested
@@ -199,23 +202,75 @@ public class CommentRepositoryTest {
       // then
       assertThat(result).isEmpty();
     }
-  }
+    @Test
+    @DisplayName("댓글이 있으면 최근 10건을 반환한다")
+    void 댓글이_있으면_최근_10건을_반환한다() {
+      // given
+      for (int i = 0; i < 15; i++) {
+        commentRepository.save(Comment.create(article, user, "댓글 " + i));
+      }
 
-  @Test
-  @DisplayName("댓글이 있으면 최근 10건을 반환한다")
-  void 댓글이_있으면_최근_10건을_반환한다() {
-    // given
-    for (int i = 0; i < 15; i++) {
-      commentRepository.save(Comment.create(article, user, "댓글 " + i));
+      // when
+      List<Comment> result = commentRepository
+          .findTop10RecentCommentsByUserId(user.getId());
+
+      // then
+      assertThat(result).hasSize(10);
     }
-
-    // when
-    List<Comment> result = commentRepository
-        .findTop10RecentCommentsByUserId(user.getId());
-
-    // then
-    assertThat(result).hasSize(10);
   }
 
 
+
+  @Nested
+  @DisplayName("increaseLikeCount() 테스트")
+  class IncreaseLikeCount {
+
+    @Test
+    @DisplayName("댓글 좋아요 +1 증가 성공")
+    void 댓글_좋아요_1_증가_성공() {
+      // given
+      Comment savedComment = commentRepository.save(comment);
+      Comment before = commentRepository.findById(savedComment.getId()).orElseThrow();
+      assertThat(before.getLikeCount()).isEqualTo(0);
+
+      // when
+      commentRepository.increaseLikeCount(comment.getId());
+
+      testEntityManager.flush();
+      testEntityManager.clear();
+
+      // then
+      Comment after = commentRepository.findById(savedComment.getId()).orElseThrow();
+      assertThat(after.getLikeCount()).isEqualTo(1);
+    }
+  }
+
+  @Nested
+  @DisplayName("decreaseLikeCount() 테스트")
+  class DecreaseLikeCount {
+
+    @Test
+    @DisplayName("댓글 좋아요 취소 성공")
+    void 댓글_좋아요_취소_성공() {
+      // given
+      Comment savedComment = commentRepository.save(comment);
+
+      commentRepository.findById(savedComment.getId()).orElseThrow();
+      commentRepository.increaseLikeCount(savedComment.getId());
+      testEntityManager.flush();
+      testEntityManager.clear();
+      Comment before = commentRepository.findById(savedComment.getId()).orElseThrow();
+      assertThat(before.getLikeCount()).isEqualTo(1);
+
+      // when
+      commentRepository.decreaseLikeCount(savedComment.getId());
+
+      testEntityManager.flush();
+      testEntityManager.clear();
+
+      // then
+      Comment after = commentRepository.findById(savedComment.getId()).orElseThrow();
+      assertThat(after.getLikeCount()).isEqualTo(0);
+    }
+  }
 }

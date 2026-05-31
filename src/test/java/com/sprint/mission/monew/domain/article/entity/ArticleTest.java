@@ -98,4 +98,32 @@ class ArticleTest {
       assertThat(article.isDeleted()).isTrue();
     }
   }
+
+  @Nested
+  @DisplayName("제목·요약 업데이트")
+  class Update {
+
+    @Test
+    @DisplayName("update 호출 시 제목과 요약이 변경된다")
+    void update_호출_시_제목과_요약이_변경된다() {
+      // when
+      article.update("새 제목", "새 요약");
+
+      // then
+      assertThat(article.getTitle()).isEqualTo("새 제목");
+      assertThat(article.getSummary()).isEqualTo("새 요약");
+    }
+
+    @Test
+    @DisplayName("update 호출 시 다른 필드는 변경되지 않는다")
+    void update_호출_시_다른_필드는_변경되지_않는다() {
+      // when
+      article.update("새 제목", "새 요약");
+
+      // then
+      assertThat(article.getSource()).isEqualTo(ArticleSource.NAVER);
+      assertThat(article.getSourceUrl()).isEqualTo("https://example.com/news/1");
+      assertThat(article.getViewCount()).isZero();
+    }
+  }
 }

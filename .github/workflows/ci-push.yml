@@ -1,10 +1,10 @@
-name: CI
+name: CI (Push)
 
 on:
   push:
     branches: [dev, main]
-  pull_request_target:
-    branches: [dev, main]
+
+permissions: {}
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.sha }}
@@ -20,6 +20,10 @@ jobs:
     outputs:
       src: ${{ steps.f.outputs.src }}
     steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
       - uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590 # v3.0.3
         id: f
         with:
@@ -36,8 +40,8 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read    # 코드 체크아웃
-      id-token: write   # AWS OIDC 인증
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout code

@@ -6,7 +6,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 
+import com.sprint.mission.monew.common.dto.CursorPageResponse;
+import com.sprint.mission.monew.common.dto.SortDirection;
 import com.sprint.mission.monew.domain.interest.dto.InterestCreateRequest;
+import com.sprint.mission.monew.domain.interest.dto.InterestOrderBy;
+import com.sprint.mission.monew.domain.interest.dto.InterestQueryCondition;
 import com.sprint.mission.monew.domain.interest.dto.InterestResponse;
 import com.sprint.mission.monew.domain.interest.dto.InterestUpdateRequest;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
@@ -37,6 +41,30 @@ class InterestServiceTest {
 
   @Mock
   InterestMapper interestMapper;
+
+  @Nested
+  @DisplayName("관심사 목록 조회")
+  class FindAll {
+
+    @Test
+    @DisplayName("조건에 맞는 관심사 목록을 조회한다")
+    void 조건에_맞는_관심사_목록을_조회한다() {
+      // given
+      UUID userId = UUID.randomUUID();
+      InterestQueryCondition condition = new InterestQueryCondition(
+          "", InterestOrderBy.NAME, SortDirection.DESC, null, null, 10);
+      CursorPageResponse<InterestResponse> expected =
+          CursorPageResponse.of(List.of(), null, null, false, 0, 0L);
+
+      given(interestRepository.findInterests(condition, userId)).willReturn(expected);
+
+      // when
+      CursorPageResponse<InterestResponse> result = interestService.findAll(condition, userId);
+
+      // then
+      assertThat(result).isEqualTo(expected);
+    }
+  }
 
   @Nested
   @DisplayName("관심사 등록")

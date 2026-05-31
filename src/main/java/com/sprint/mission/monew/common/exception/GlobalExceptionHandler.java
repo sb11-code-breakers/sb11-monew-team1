@@ -6,13 +6,15 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
+import org.springframework.beans.TypeMismatchException;
+import org.springframework.core.NestedExceptionUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -76,10 +78,22 @@ public class GlobalExceptionHandler {
     Map<String, Object> details = e.getBindingResult().getFieldErrors().stream()
         .collect(Collectors.toMap(
             FieldError::getField,
-            fe -> fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "invalid"
+            this::resolveFieldErrorMessage
         ));
     log.warn("[{}] {}", code.name(), details);
     return errorResponse(code, details, e);
+  }
+
+  // GenericConversionService가 컨버터 예외를 ConversionFailedException으로 래핑하므로 root cause까지 탐색한다.
+  private String resolveFieldErrorMessage(FieldError fe) {
+    if (fe.contains(TypeMismatchException.class)) {
+      Throwable root = NestedExceptionUtils.getMostSpecificCause(
+          fe.unwrap(TypeMismatchException.class));
+      if (root instanceof InvalidOrderByException ioe) {
+        return ioe.getMessage();
+      }
+    }
+    return fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "invalid";
   }
 
   @ExceptionHandler(MonewException.class)
