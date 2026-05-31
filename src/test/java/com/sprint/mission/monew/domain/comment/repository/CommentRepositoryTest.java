@@ -200,6 +200,7 @@ public class CommentRepositoryTest {
       assertThat(result).isEmpty();
     }
   }
+
   @Test
   @DisplayName("댓글이 있으면 최근 10건을 반환한다")
   void 댓글이_있으면_최근_10건을_반환한다() {
@@ -215,4 +216,6 @@ public class CommentRepositoryTest {
     // then
     assertThat(result).hasSize(10);
   }
+
+
 }
