@@ -11,9 +11,9 @@ import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import com.sprint.mission.monew.domain.useractivity.dto.ArticleViewDto;
 import com.sprint.mission.monew.domain.useractivity.dto.CommentDto;
-import com.sprint.mission.monew.domain.useractivity.dto.CommentLikeDto;
 import com.sprint.mission.monew.domain.useractivity.dto.SubscriptionDto;
 import com.sprint.mission.monew.domain.useractivity.dto.UserActivityResponse;
+import com.sprint.mission.monew.domain.interest.entity.InterestKeyword;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -35,9 +35,66 @@ public class UserActivityService {
   public UserActivityResponse getUserActivity(UUID userId) {
     log.debug("활동 내역 조회 시도: userId={}", userId);
 
-    // TODO: 구현 예정
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+
+    List<Subscription> subscriptions = subscriptionRepository.findByUserId(userId);
+    List<SubscriptionDto> subscriptionDtos = subscriptions.stream()
+        .map(s -> new SubscriptionDto(
+            s.getId(),
+            s.getInterest().getId(),
+            s.getInterest().getName(),
+            s.getInterest().getKeywords().stream()
+                .map(InterestKeyword::getKeyword)
+                .toList(),
+            s.getInterest().getSubscriberCount(),
+            s.getCreatedAt()
+        ))
+        .toList();
+
+    List<Comment> comments = commentRepository.findTop10RecentCommentsByUserId(userId);
+    List<CommentDto> commentDtos = comments.stream()
+        .map(c -> new CommentDto(
+            c.getId(),
+            c.getArticle().getId(),
+            c.getArticle().getTitle(),
+            c.getUser() != null ? c.getUser().getId() : null,
+            c.getUser() != null ? c.getUser().getNickname() : null,
+            c.getContent(),
+            c.getLikeCount(),
+            c.getCreatedAt()
+        ))
+        .toList();
+
+    List<ArticleView> articleViews = articleViewRepository
+        .findTop10ByUserIdAndArticleNotDeleted(userId);
+    List<ArticleViewDto> articleViewDtos = articleViews.stream()
+        .map(av -> new ArticleViewDto(
+            av.getId(),
+            av.getUserId(),
+            av.getCreatedAt(),
+            av.getArticle().getId(),
+            av.getArticle().getSource().name(),
+            av.getArticle().getSourceUrl(),
+            av.getArticle().getTitle(),
+            av.getArticle().getPublishDate(),
+            av.getArticle().getSummary(),
+            av.getArticle().getCommentCount(),
+            av.getArticle().getViewCount()
+        ))
+        .toList();
 
     log.info("활동 내역 조회 완료: userId={}", userId);
-    return null;
+
+    return new UserActivityResponse(
+        user.getId(),
+        user.getEmail(),
+        user.getNickname(),
+        user.getCreatedAt(),
+        subscriptionDtos,
+        commentDtos,
+        List.of(),
+        articleViewDtos
+    );
   }
 }
