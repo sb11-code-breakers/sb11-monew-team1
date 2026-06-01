@@ -1,13 +1,12 @@
 package com.sprint.mission.monew.domain.comment.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 
 import com.sprint.mission.monew.common.config.JpaConfig;
 import com.sprint.mission.monew.common.config.QuerydslConfig;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
-import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.user.entity.User;
@@ -28,7 +27,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
-import java.util.Comparator;
+
 
 @DataJpaTest
 @ActiveProfiles("test")
