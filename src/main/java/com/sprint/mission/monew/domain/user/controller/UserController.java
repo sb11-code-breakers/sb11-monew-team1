@@ -72,7 +72,12 @@ public class UserController implements UserApi {
       @PathVariable UUID userId,
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId,
       @Valid @RequestBody UserPasswordUpdateRequest request) {
-    return null;
+    log.debug("비밀번호 변경 요청 수신");
+
+    userService.updatePassword(userId, requestUserId, request);
+
+    log.info("비밀번호 변경 성공: id={}", userId);
+    return ResponseEntity.ok().build();
   }
 
   @DeleteMapping("/{userId}")
