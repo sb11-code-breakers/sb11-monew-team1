@@ -3,6 +3,7 @@ package com.sprint.mission.monew.domain.user.controller;
 import com.sprint.mission.monew.domain.user.controller.api.UserApi;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.service.UserService;
@@ -63,6 +64,15 @@ public class UserController implements UserApi {
 
     log.info("닉네임 수정 성공: id={}", userId);
     return ResponseEntity.ok(response);
+  }
+
+  @PatchMapping("/{userId}/password")
+  @Override
+  public ResponseEntity<Void> updatePassword(
+      @PathVariable UUID userId,
+      @RequestHeader("Monew-Request-User-ID") UUID requestUserId,
+      @Valid @RequestBody UserPasswordUpdateRequest request) {
+    return null;
   }
 
   @DeleteMapping("/{userId}")
