@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
-import com.sprint.mission.monew.domain.useractivity.dto.UserActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.UserActivityResponse;
 import com.sprint.mission.monew.domain.useractivity.service.UserActivityService;
 import java.time.Instant;
 import java.util.List;
@@ -39,7 +39,7 @@ class UserActivityControllerTest {
       // given
       UUID userId = UUID.randomUUID();
       willThrow(UserNotFoundException.withId(userId))
-          .given(userActivityService).getUserActivity(userId);
+          .given(userActivityService).getUserActivity(userId, userId);
 
       // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", userId)
@@ -53,7 +53,7 @@ class UserActivityControllerTest {
       // given
       UUID userId = UUID.randomUUID();
       willThrow(UserNotFoundException.withId(userId))
-          .given(userActivityService).getUserActivity(userId);
+          .given(userActivityService).getUserActivity(userId, userId);
 
       // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", userId)
@@ -70,7 +70,7 @@ class UserActivityControllerTest {
           userId, "test@test.com", "테스터", Instant.now(),
           List.of(), List.of(), List.of(), List.of()
       );
-      given(userActivityService.getUserActivity(userId)).willReturn(response);
+      given(userActivityService.getUserActivity(userId, userId)).willReturn(response);
 
       // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", userId)

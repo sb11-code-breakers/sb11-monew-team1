@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,7 +25,7 @@ public interface ArticleViewRepository extends JpaRepository<ArticleView, UUID> 
       "ORDER BY av.createdAt DESC " +
       "LIMIT 10")
   List<ArticleView> findTop10ByUserIdAndArticleNotDeleted(
-      @Param("userId") UUID userId);
+      @Param("userId") UUID userId, Pageable pageable);
 
   boolean existsByArticleIdAndUserId(UUID articleId, UUID userId);
 

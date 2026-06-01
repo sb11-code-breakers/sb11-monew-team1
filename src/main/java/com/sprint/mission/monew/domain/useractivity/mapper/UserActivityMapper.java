@@ -4,10 +4,10 @@ import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.entity.CommentLike;
 import com.sprint.mission.monew.domain.interest.entity.Subscription;
-import com.sprint.mission.monew.domain.useractivity.dto.ArticleViewActivityResponse;
-import com.sprint.mission.monew.domain.useractivity.dto.CommentActivityResponse;
-import com.sprint.mission.monew.domain.useractivity.dto.CommentLikeActivityResponse;
-import com.sprint.mission.monew.domain.useractivity.dto.SubscriptionActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.ArticleViewActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.CommentActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.CommentLikeActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.SubscriptionActivityResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 

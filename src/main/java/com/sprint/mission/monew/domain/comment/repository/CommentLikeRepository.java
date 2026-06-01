@@ -2,6 +2,7 @@ package com.sprint.mission.monew.domain.comment.repository;
 
 import com.sprint.mission.monew.domain.comment.entity.CommentLike;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import org.springframework.data.jpa.repository.Query;
@@ -22,5 +23,5 @@ public interface CommentLikeRepository extends JpaRepository<CommentLike, UUID> 
       "AND a.deletedAt IS NULL " +
       "ORDER BY cl.createdAt DESC " +
       "LIMIT 10")
-  List<CommentLike> findTop10ByUserId(@Param("userId") UUID userId);
+  List<CommentLike> findTop10ByUserId(@Param("userId") UUID userId, Pageable pageable);
 }

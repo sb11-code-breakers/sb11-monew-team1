@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
@@ -149,7 +150,7 @@ class ArticleViewRepositoryTest {
 
       // when
       List<ArticleView> result = articleViewRepository
-          .findTop10ByUserIdAndArticleNotDeleted(userId);
+          .findTop10ByUserIdAndArticleNotDeleted(userId, PageRequest.of(0, 10));
 
       // then
       assertThat(result).hasSize(10);
@@ -167,7 +168,7 @@ class ArticleViewRepositoryTest {
 
       // when
       List<ArticleView> result = articleViewRepository
-          .findTop10ByUserIdAndArticleNotDeleted(userId);
+          .findTop10ByUserIdAndArticleNotDeleted(userId, PageRequest.of(0, 10));
 
       // then
       assertThat(result).isEmpty();

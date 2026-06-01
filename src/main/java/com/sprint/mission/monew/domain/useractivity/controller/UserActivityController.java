@@ -1,7 +1,7 @@
 package com.sprint.mission.monew.domain.useractivity.controller;
 
 import com.sprint.mission.monew.domain.useractivity.controller.api.UserActivityApi;
-import com.sprint.mission.monew.domain.useractivity.dto.UserActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.UserActivityResponse;
 import com.sprint.mission.monew.domain.useractivity.service.UserActivityService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class UserActivityController implements UserActivityApi {
 
     log.info("[USER_ACTIVITY_GET_REQUEST] 활동 내역 조회 요청 - 사용자 ID={}", userId);
 
-    UserActivityResponse response = userActivityService.getUserActivity(userId);
+    UserActivityResponse response = userActivityService.getUserActivity(userId, requestUserId);
 
     log.debug("[USER_ACTIVITY_GET_RESPONSE] 활동 내역 조회 응답 - 사용자 ID={}", userId);
 

@@ -1,7 +1,7 @@
 package com.sprint.mission.monew.domain.useractivity.controller.api;
 
 import com.sprint.mission.monew.common.dto.ErrorResponse;
-import com.sprint.mission.monew.domain.useractivity.dto.UserActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.UserActivityResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

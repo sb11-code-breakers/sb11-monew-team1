@@ -5,13 +5,14 @@ import com.sprint.mission.monew.domain.comment.repository.CommentLikeRepository;
 import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
 import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepository;
 import com.sprint.mission.monew.domain.user.entity.User;
+import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
-import com.sprint.mission.monew.domain.useractivity.dto.ArticleViewActivityResponse;
-import com.sprint.mission.monew.domain.useractivity.dto.CommentActivityResponse;
-import com.sprint.mission.monew.domain.useractivity.dto.CommentLikeActivityResponse;
-import com.sprint.mission.monew.domain.useractivity.dto.SubscriptionActivityResponse;
-import com.sprint.mission.monew.domain.useractivity.dto.UserActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.ArticleViewActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.CommentActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.CommentLikeActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.SubscriptionActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.UserActivityResponse;
 import com.sprint.mission.monew.domain.useractivity.mapper.UserActivityMapper;
 import java.util.List;
 import java.util.UUID;
@@ -34,8 +35,12 @@ public class UserActivityService {
   private final ArticleViewRepository articleViewRepository;
   private final UserActivityMapper userActivityMapper;
 
-  public UserActivityResponse getUserActivity(UUID userId) {
+  public UserActivityResponse getUserActivity(UUID userId, UUID requestUserId) {
     log.debug("활동 내역 조회 시도: userId={}", userId);
+
+    if (!userId.equals(requestUserId)) {
+      throw UserAccessDeniedException.forUser(requestUserId);
+    }
 
     User user = userRepository.findByIdAndDeletedAtIsNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
@@ -53,13 +58,13 @@ public class UserActivityService {
         .toList();
 
     List<CommentLikeActivityResponse> commentLikeActivityRespons = commentLikeRepository
-        .findTop10ByUserId(userId)
+        .findTop10ByUserId(userId, PageRequest.of(0, 10))
         .stream()
         .map(userActivityMapper::toCommentLikeDto)
         .toList();
 
     List<ArticleViewActivityResponse> articleViewActivityResponses = articleViewRepository
-        .findTop10ByUserIdAndArticleNotDeleted(userId)
+        .findTop10ByUserIdAndArticleNotDeleted(userId, PageRequest.of(0, 10))
         .stream()
         .map(userActivityMapper::toArticleViewDto)
         .toList();

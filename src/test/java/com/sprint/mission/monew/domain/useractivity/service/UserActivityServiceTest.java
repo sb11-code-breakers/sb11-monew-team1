@@ -12,7 +12,7 @@ import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepositor
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
-import com.sprint.mission.monew.domain.useractivity.dto.UserActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.ActivityResponse.UserActivityResponse;
 import com.sprint.mission.monew.domain.useractivity.mapper.UserActivityMapper;
 import java.util.List;
 import java.util.Optional;
@@ -62,9 +62,10 @@ class UserActivityServiceTest {
       given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
 
       // when & then
-      assertThatThrownBy(() -> userActivityService.getUserActivity(userId))
+      assertThatThrownBy(() -> userActivityService.getUserActivity(userId, userId))
           .isInstanceOf(UserNotFoundException.class);
     }
+
     @Test
     @DisplayName("soft-delete된 userId면 예외가 발생한다")
     void soft_delete된_userId면_예외가_발생한다() {
@@ -74,7 +75,7 @@ class UserActivityServiceTest {
           .willReturn(Optional.empty());
 
       // when & then
-      assertThatThrownBy(() -> userActivityService.getUserActivity(userId))
+      assertThatThrownBy(() -> userActivityService.getUserActivity(userId, userId))
           .isInstanceOf(UserNotFoundException.class);
     }
 
@@ -89,13 +90,14 @@ class UserActivityServiceTest {
           List.of());
       given(commentRepository.findTop10RecentCommentsByUserId(userId,
           PageRequest.of(0, 10))).willReturn(List.of());
-      given(commentLikeRepository.findTop10ByUserId(userId)).willReturn(List.of());
-      given(articleViewRepository.findTop10ByUserIdAndArticleNotDeleted(userId)).willReturn(
+      given(commentLikeRepository.findTop10ByUserId(userId, PageRequest.of(0, 10))).willReturn(
+          List.of());
+      given(articleViewRepository.findTop10ByUserIdAndArticleNotDeleted(userId,
+          PageRequest.of(0, 10))).willReturn(
           List.of());
 
-
       // when
-      UserActivityResponse result = userActivityService.getUserActivity(userId);
+      UserActivityResponse result = userActivityService.getUserActivity(userId, userId);
 
       // then
       assertThat(result).isNotNull();
@@ -109,8 +111,9 @@ class UserActivityServiceTest {
       // 각 Repository 호출 검증
       verify(subscriptionRepository).findAllByUserId(userId, PageRequest.of(0, 10));
       verify(commentRepository).findTop10RecentCommentsByUserId(userId, PageRequest.of(0, 10));
-      verify(commentLikeRepository).findTop10ByUserId(userId);
-      verify(articleViewRepository).findTop10ByUserIdAndArticleNotDeleted(userId);
+      verify(commentLikeRepository).findTop10ByUserId(userId, PageRequest.of(0, 10));
+      verify(articleViewRepository).findTop10ByUserIdAndArticleNotDeleted(userId,
+          PageRequest.of(0, 10));
     }
   }
 }
