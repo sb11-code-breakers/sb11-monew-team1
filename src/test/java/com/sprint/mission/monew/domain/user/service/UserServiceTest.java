@@ -307,36 +307,23 @@ class UserServiceTest {
   @DisplayName("비밀번호 변경")
   class UpdatePassword {
 
-    private UUID userId;
     private UUID requestUserId;
     private UserPasswordUpdateRequest request;
 
     @BeforeEach
     void setUp() {
-      userId = UUID.randomUUID();
-      requestUserId = userId;
+      requestUserId = UUID.randomUUID();
       request = new UserPasswordUpdateRequest("currentPassword123", "newPassword123");
-    }
-
-    @Test
-    @DisplayName("다른 사용자가 변경하면 예외 발생")
-    void 다른_사용자가_변경하면_예외_발생() {
-      // given
-      UUID anotherUserId = UUID.randomUUID();
-
-      // when & then
-      assertThatThrownBy(() -> userService.updatePassword(userId, anotherUserId, request))
-          .isInstanceOf(UserAccessDeniedException.class);
     }
 
     @Test
     @DisplayName("존재하지 않는 사용자면 예외 발생")
     void 존재하지_않는_사용자면_예외_발생() {
       // given
-      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
+      given(userRepository.findByIdAndDeletedAtIsNull(requestUserId)).willReturn(Optional.empty());
 
       // when & then
-      assertThatThrownBy(() -> userService.updatePassword(userId, requestUserId, request))
+      assertThatThrownBy(() -> userService.updatePassword(requestUserId, request))
           .isInstanceOf(UserNotFoundException.class);
     }
 
@@ -345,12 +332,12 @@ class UserServiceTest {
     void 현재_비밀번호가_틀리면_예외_발생() {
       // given
       User user = User.create("test@test.com", "테스터", "encodedPassword");
-      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(user));
+      given(userRepository.findByIdAndDeletedAtIsNull(requestUserId)).willReturn(Optional.of(user));
       given(passwordEncoder.matches(request.currentPassword(), user.getPassword()))
           .willReturn(false);
 
       // when & then
-      assertThatThrownBy(() -> userService.updatePassword(userId, requestUserId, request))
+      assertThatThrownBy(() -> userService.updatePassword(requestUserId, request))
           .isInstanceOf(UserInvalidPasswordException.class);
     }
 
@@ -359,13 +346,13 @@ class UserServiceTest {
     void 성공_시_비밀번호_변경() {
       // given
       User user = User.create("test@test.com", "테스터", "encodedPassword");
-      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(user));
+      given(userRepository.findByIdAndDeletedAtIsNull(requestUserId)).willReturn(Optional.of(user));
       given(passwordEncoder.matches(request.currentPassword(), user.getPassword()))
           .willReturn(true);
       given(passwordEncoder.encode(request.newPassword())).willReturn("newEncodedPassword");
 
       // when
-      userService.updatePassword(userId, requestUserId, request);
+      userService.updatePassword(requestUserId, request);
 
       // then
       assertThat(user.getPassword()).isEqualTo("newEncodedPassword");

@@ -260,7 +260,7 @@ class UserControllerTest {
   }
 
   @Nested
-  @DisplayName("PATCH /api/users/{userId}/password — 비밀번호 변경")
+  @DisplayName("PATCH /api/users/password — 비밀번호 변경")
   class UpdatePassword {
 
     @Test
@@ -270,7 +270,7 @@ class UserControllerTest {
       UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("", "newPassword123");
 
       // when & then
-      mockMvc.perform(patch("/api/users/{userId}/password", UUID.randomUUID())
+      mockMvc.perform(patch("/api/users/password")
               .header("Monew-Request-User-ID", UUID.randomUUID())
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
@@ -278,39 +278,20 @@ class UserControllerTest {
     }
 
     @Test
-    @DisplayName("다른 사용자가 변경하면 403 반환")
-    void 다른_사용자가_변경하면_403_반환() throws Exception {
-      // given
-      UserPasswordUpdateRequest request = new UserPasswordUpdateRequest(
-          "currentPassword123", "newPassword123"
-      );
-
-      willThrow(UserAccessDeniedException.forUser(UUID.randomUUID()))
-          .given(userService).updatePassword(any(), any(), any());
-
-      // when & then
-      mockMvc.perform(patch("/api/users/{userId}/password", UUID.randomUUID())
-              .header("Monew-Request-User-ID", UUID.randomUUID())
-              .contentType(APPLICATION_JSON)
-              .content(objectMapper.writeValueAsString(request)))
-          .andExpect(status().isForbidden());
-    }
-
-    @Test
     @DisplayName("존재하지 않는 사용자면 404 반환")
     void 존재하지_않는_사용자면_404_반환() throws Exception {
       // given
-      UUID userId = UUID.randomUUID();
+      UUID requestUserId = UUID.randomUUID();
       UserPasswordUpdateRequest request = new UserPasswordUpdateRequest(
           "currentPassword123", "newPassword123"
       );
 
-      willThrow(UserNotFoundException.withId(userId))
-          .given(userService).updatePassword(eq(userId), eq(userId), any());
+      willThrow(UserNotFoundException.withId(requestUserId))
+          .given(userService).updatePassword(eq(requestUserId), any());
 
       // when & then
-      mockMvc.perform(patch("/api/users/{userId}/password", userId)
-              .header("Monew-Request-User-ID", userId)
+      mockMvc.perform(patch("/api/users/password")
+              .header("Monew-Request-User-ID", requestUserId)
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isNotFound());
@@ -320,38 +301,38 @@ class UserControllerTest {
     @DisplayName("현재 비밀번호가 틀리면 401 반환")
     void 현재_비밀번호가_틀리면_401_반환() throws Exception {
       // given
-      UUID userId = UUID.randomUUID();
+      UUID requestUserId = UUID.randomUUID();
       UserPasswordUpdateRequest request = new UserPasswordUpdateRequest(
           "wrongPassword", "newPassword123"
       );
 
       willThrow(UserInvalidPasswordException.withoutDetail())
-          .given(userService).updatePassword(eq(userId), eq(userId), any());
+          .given(userService).updatePassword(eq(requestUserId), any());
 
       // when & then
-      mockMvc.perform(patch("/api/users/{userId}/password", userId)
-              .header("Monew-Request-User-ID", userId)
+      mockMvc.perform(patch("/api/users/password")
+              .header("Monew-Request-User-ID", requestUserId)
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isUnauthorized());
     }
 
     @Test
-    @DisplayName("성공 시 200 반환")
-    void 성공_시_200_반환() throws Exception {
+    @DisplayName("성공 시 204 반환")
+    void 성공_시_204_반환() throws Exception {
       // given
-      UUID userId = UUID.randomUUID();
+      UUID requestUserId = UUID.randomUUID();
       UserPasswordUpdateRequest request = new UserPasswordUpdateRequest(
           "currentPassword123", "newPassword123"
       );
 
       // when & then
-      mockMvc.perform(patch("/api/users/{userId}/password", userId)
-              .header("Monew-Request-User-ID", userId)
+      mockMvc.perform(patch("/api/users/password")
+              .header("Monew-Request-User-ID", requestUserId)
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
-          .andExpect(status().isOk());
-      then(userService).should().updatePassword(eq(userId), eq(userId), any());
+          .andExpect(status().isNoContent());
+      then(userService).should().updatePassword(eq(requestUserId), any());
     }
   }
 

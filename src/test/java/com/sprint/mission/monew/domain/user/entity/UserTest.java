@@ -1,34 +1,48 @@
 package com.sprint.mission.monew.domain.user.entity;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 class UserTest {
 
+  private User user;
+
+  @BeforeEach
+  void setUp() {
+    user = User.create("test@test.com", "테스터", "encodedPassword");
+  }
+
   @Nested
-  @DisplayName("User 생성")
-  class Create {
+  @DisplayName("비밀번호 변경")
+  class UpdatePassword {
 
     @Test
-    @DisplayName("정상 입력으로 User 생성 성공")
-    void 정상_입력으로_User_생성_성공() {
-      // given
-      String email = "test@test.com";
-      String nickname = "테스터";
-      String password = "encodedPassword";
-
+    @DisplayName("새 비밀번호로 변경")
+    void 새_비밀번호로_변경() {
       // when
-      User user = User.create(email, nickname, password);
+      user.updatePassword("newEncodedPassword");
 
       // then
-      assertThat(user.getEmail()).isEqualTo(email);
-      assertThat(user.getNickname()).isEqualTo(nickname);
-      assertThat(user.getPassword()).isEqualTo(password);
-      assertThat(user.getId()).isNotNull();
-      assertThat(user.isDeleted()).isFalse();
+      assertThat(user.getPassword()).isEqualTo("newEncodedPassword");
+    }
+  }
+
+  @Nested
+  @DisplayName("닉네임 변경")
+  class UpdateNickname {
+
+    @Test
+    @DisplayName("새 닉네임으로 변경")
+    void 새_닉네임으로_변경() {
+      // when
+      user.updateNickname("새닉네임");
+
+      // then
+      assertThat(user.getNickname()).isEqualTo("새닉네임");
     }
   }
 }
