@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
-  // 일단 빈 메서드로 추가
+
   @Query("SELECT c FROM Comment c " +
       "JOIN FETCH c.article a " +
       "WHERE c.user.id = :userId " +
@@ -20,6 +20,7 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
       "ORDER BY c.createdAt DESC " +
       "LIMIT 10")
   List<Comment> findTop10RecentCommentsByUserId(@Param("userId") UUID userId);
+
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("""
       update Comment c set c.likeCount = c.likeCount + 1
