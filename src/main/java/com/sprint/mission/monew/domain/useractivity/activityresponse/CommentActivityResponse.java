@@ -1,4 +1,4 @@
-package com.sprint.mission.monew.domain.useractivity.ActivityResponse;
+package com.sprint.mission.monew.domain.useractivity.activityresponse;
 
 import java.time.Instant;
 import java.util.UUID;

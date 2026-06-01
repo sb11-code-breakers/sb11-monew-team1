@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
-import com.sprint.mission.monew.domain.useractivity.ActivityResponse.UserActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.activityresponse.UserActivityResponse;
 import com.sprint.mission.monew.domain.useractivity.service.UserActivityService;
 import java.time.Instant;
 import java.util.List;

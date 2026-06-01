@@ -1,7 +1,7 @@
 package com.sprint.mission.monew.domain.useractivity.controller;
 
 import com.sprint.mission.monew.domain.useractivity.controller.api.UserActivityApi;
-import com.sprint.mission.monew.domain.useractivity.ActivityResponse.UserActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.activityresponse.UserActivityResponse;
 import com.sprint.mission.monew.domain.useractivity.service.UserActivityService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

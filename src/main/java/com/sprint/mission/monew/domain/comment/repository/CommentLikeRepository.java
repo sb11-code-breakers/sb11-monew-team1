@@ -21,7 +21,7 @@ public interface CommentLikeRepository extends JpaRepository<CommentLike, UUID> 
       "WHERE cl.user.id = :userId " +
       "AND c.deletedAt IS NULL " +
       "AND a.deletedAt IS NULL " +
-      "ORDER BY cl.createdAt DESC " +
-      "LIMIT 10")
+      "ORDER BY cl.createdAt DESC "
+  )
   List<CommentLike> findTop10ByUserId(@Param("userId") UUID userId, Pageable pageable);
 }

@@ -22,8 +22,8 @@ public interface ArticleViewRepository extends JpaRepository<ArticleView, UUID> 
       "JOIN FETCH av.article a " +
       "WHERE av.userId = :userId " +
       "AND a.deletedAt IS NULL " +
-      "ORDER BY av.createdAt DESC " +
-      "LIMIT 10")
+      "ORDER BY av.createdAt DESC "
+  )
   List<ArticleView> findTop10ByUserIdAndArticleNotDeleted(
       @Param("userId") UUID userId, Pageable pageable);
 

@@ -3,20 +3,28 @@ package com.sprint.mission.monew.domain.useractivity.mapper;
 import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.entity.CommentLike;
+import com.sprint.mission.monew.domain.interest.entity.InterestKeyword;
 import com.sprint.mission.monew.domain.interest.entity.Subscription;
-import com.sprint.mission.monew.domain.useractivity.ActivityResponse.ArticleViewActivityResponse;
-import com.sprint.mission.monew.domain.useractivity.ActivityResponse.CommentActivityResponse;
-import com.sprint.mission.monew.domain.useractivity.ActivityResponse.CommentLikeActivityResponse;
-import com.sprint.mission.monew.domain.useractivity.ActivityResponse.SubscriptionActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.activityresponse.ArticleViewActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.activityresponse.CommentActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.activityresponse.CommentLikeActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.activityresponse.SubscriptionActivityResponse;
+import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface UserActivityMapper {
 
+  default List<String> mapInterestKeywords(Subscription subscription) {
+    return subscription.getInterest().getKeywords().stream()
+        .map(InterestKeyword::getKeyword)
+        .toList();
+  }
+
   @Mapping(target = "interestId", source = "interest.id")
   @Mapping(target = "interestName", source = "interest.name")
-  @Mapping(target = "interestKeywords", expression = "java(subscription.getInterest().getKeywords().stream().map(com.sprint.mission.monew.domain.interest.entity.InterestKeyword::getKeyword).toList())")
+  @Mapping(target = "interestKeywords", expression = "java(mapInterestKeywords(subscription))")
   @Mapping(target = "interestSubscriberCount", source = "interest.subscriberCount")
   SubscriptionActivityResponse toSubscriptionDto(Subscription subscription);
 
