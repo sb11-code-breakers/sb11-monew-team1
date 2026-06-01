@@ -7,11 +7,13 @@ import com.sprint.mission.monew.common.config.JpaConfig;
 import com.sprint.mission.monew.common.config.QuerydslConfig;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
+import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,6 +28,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
+import java.util.Comparator;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -166,7 +169,7 @@ public class CommentRepositoryTest {
 
       // when
       List<Comment> result = commentRepository
-          .findTop10RecentCommentsByUserId(user.getId(),PageRequest.of(0, 10));
+          .findTop10RecentCommentsByUserId(user.getId(), PageRequest.of(0, 10));
 
       // then
       assertThat(result).isEmpty();
@@ -182,7 +185,7 @@ public class CommentRepositoryTest {
 
       // when
       List<Comment> result = commentRepository
-          .findTop10RecentCommentsByUserId(user.getId(),PageRequest.of(0, 10));
+          .findTop10RecentCommentsByUserId(user.getId(), PageRequest.of(0, 10));
 
       // then
       assertThat(result).isEmpty();
@@ -198,11 +201,12 @@ public class CommentRepositoryTest {
 
       // when
       List<Comment> result = commentRepository
-          .findTop10RecentCommentsByUserId(user.getId(),PageRequest.of(0, 10));
+          .findTop10RecentCommentsByUserId(user.getId(), PageRequest.of(0, 10));
 
       // then
       assertThat(result).isEmpty();
     }
+
     @Test
     @DisplayName("댓글이 있으면 최근 10건을 반환한다")
     void 댓글이_있으면_최근_10건을_반환한다() {
@@ -213,13 +217,16 @@ public class CommentRepositoryTest {
 
       // when
       List<Comment> result = commentRepository
-          .findTop10RecentCommentsByUserId(user.getId(),PageRequest.of(0, 10));
+          .findTop10RecentCommentsByUserId(user.getId(), PageRequest.of(0, 10));
 
       // then
       assertThat(result).hasSize(10);
+      List<Instant> createdAts = result.stream()
+          .map(av -> av.getCreatedAt())
+          .toList();
+      assertThat(createdAts).isSortedAccordingTo((a, b) -> b.compareTo(a));;
     }
   }
-
 
 
   @Nested
