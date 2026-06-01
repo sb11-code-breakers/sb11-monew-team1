@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,14 +57,14 @@ public class UserActivityService {
         ))
         .toList();
 
-    List<Comment> comments = commentRepository.findTop10RecentCommentsByUserId(userId);
+    List<Comment> comments = commentRepository.findTop10RecentCommentsByUserId(userId, PageRequest.of(0, 10));
     List<CommentDto> commentDtos = comments.stream()
         .map(c -> new CommentDto(
             c.getId(),
             c.getArticle().getId(),
             c.getArticle().getTitle(),
             c.getUser() != null ? c.getUser().getId() : null,
-            c.getUser() != null ? c.getUser().getNickname() : null,
+            c.getUser() != null ? c.getUser().getNickname() : "알 수 없음",
             c.getContent(),
             c.getLikeCount(),
             c.getCreatedAt()

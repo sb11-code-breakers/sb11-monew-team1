@@ -7,19 +7,20 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.domain.Pageable;
+
 
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
 
   @Query("SELECT c FROM Comment c " +
       "JOIN FETCH c.article a " +
+      "JOIN FETCH c.user u " +
       "WHERE c.user.id = :userId " +
       "AND c.deletedAt IS NULL " +
       "AND a.deletedAt IS NULL " +
-      "ORDER BY c.createdAt DESC " +
-      "LIMIT 10")
-  List<Comment> findTop10RecentCommentsByUserId(@Param("userId") UUID userId);
+      "ORDER BY c.createdAt DESC ")
+  List<Comment> findTop10RecentCommentsByUserId(@Param("userId") UUID userId, Pageable pageable);
 
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("""
