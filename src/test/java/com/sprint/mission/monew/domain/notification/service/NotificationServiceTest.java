@@ -33,6 +33,7 @@ class NotificationServiceTest {
 
   @InjectMocks NotificationService notificationService;
   @Mock NotificationRepository notificationRepository;
+  @Mock NotificationMetrics notificationMetrics;
 
   UUID userId;
 
@@ -174,6 +175,7 @@ class NotificationServiceTest {
                           && n.getResourceType() == ResourceType.COMMENT
                           && n.getResourceId().equals(commentId)
                           && n.getContent().contains(likerNickname)));
+      then(notificationMetrics).should().countCommentLikeNotification();
     }
   }
 
@@ -196,6 +198,7 @@ class NotificationServiceTest {
           .should()
           .saveAll(
               argThat(notifications -> ((List<?>) notifications).size() == subscriberIds.size()));
+      then(notificationMetrics).should().countArticleNotifications(subscriberIds.size());
     }
   }
 }
