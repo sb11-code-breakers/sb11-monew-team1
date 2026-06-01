@@ -8,6 +8,7 @@ import com.sprint.mission.monew.external.naver.NaverNewsClient;
 import com.sprint.mission.monew.external.naver.dto.NaverNewsItem;
 import com.sprint.mission.monew.external.rss.RssNewsParser;
 import com.sprint.mission.monew.external.rss.dto.RssArticleDto;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -27,14 +28,20 @@ public class NewsCollectService {
   private final NaverNewsClient naverNewsClient;
   private final RssNewsParser rssNewsParser;
   private final ApplicationEventPublisher eventPublisher;
+  private final NewsCollectMetrics newsCollectMetrics;
 
   // 네트워크 호출이 포함되므로 트랜잭션 없이 실행, 각 upsert는 Spring Data 개별 트랜잭션으로 처리
   @Transactional(propagation = Propagation.NOT_SUPPORTED)
   public void collect() {
-    collectNaver();
-    collectRss(ArticleSource.HANKYUNG);
-    collectRss(ArticleSource.CHOSUN);
-    collectRss(ArticleSource.YONHAP);
+    long start = System.nanoTime();
+    try {
+      collectNaver();
+      collectRss(ArticleSource.HANKYUNG);
+      collectRss(ArticleSource.CHOSUN);
+      collectRss(ArticleSource.YONHAP);
+    } finally {
+      newsCollectMetrics.recordCollectDuration(Duration.ofNanos(System.nanoTime() - start));
+    }
   }
 
   private void collectNaver() {
@@ -52,6 +59,7 @@ public class NewsCollectService {
           log.warn("Naver 기사 단건 처리 실패: link={}", item.link(), e);
         }
       }
+      newsCollectMetrics.countCollected(ArticleSource.NAVER, items.size());
       log.info("Naver 뉴스 수집 완료: {}건", items.size());
     } catch (Exception e) {
       log.error("Naver 뉴스 수집 실패", e);
@@ -68,6 +76,7 @@ public class NewsCollectService {
           log.warn("{} 기사 단건 처리 실패: url={}", source, item.sourceUrl(), e);
         }
       }
+      newsCollectMetrics.countCollected(source, items.size());
       log.info("{} RSS 수집 완료: {}건", source, items.size());
     } catch (Exception e) {
       log.error("{} RSS 수집 실패", source, e);
@@ -85,11 +94,13 @@ public class NewsCollectService {
             existing -> {
               existing.update(title, summary);
               articleRepository.save(existing);
+              newsCollectMetrics.countDuplicated();
             },
             () -> {
               Article saved = articleRepository.save(
                   Article.create(source, sourceUrl, title, publishDate, summary));
               eventPublisher.publishEvent(new ArticleCreatedEvent(saved));
+              newsCollectMetrics.countCreated();
             });
   }
 }
