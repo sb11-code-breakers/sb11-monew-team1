@@ -11,11 +11,11 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class NotificationScheduler {
+public class NotificationCleanupScheduler {
 
   private final NotificationService notificationService;
 
-  @Scheduled(cron = "0 0 0 * * *")
+  @Scheduled(cron = "${scheduler.notification-cleanup.cron}")
   public void cleanUpExpiredNotifications() {
     log.debug("만료 알림 삭제 스케줄러 실행");
     notificationService.deleteExpiredNotifications();
