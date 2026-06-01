@@ -68,12 +68,10 @@ public interface UserApi {
 
   @Operation(summary = "비밀번호 변경", description = "사용자의 비밀번호를 변경합니다.")
   @ApiResponses({
-      @ApiResponse(responseCode = "200", description = "비밀번호 변경 성공"),
+      @ApiResponse(responseCode = "204", description = "비밀번호 변경 성공"),
       @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "401", description = "현재 비밀번호 불일치",
-          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(responseCode = "403", description = "변경 권한 없음",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "404", description = "사용자 없음",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
@@ -81,7 +79,6 @@ public interface UserApi {
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   ResponseEntity<Void> updatePassword(
-      @PathVariable UUID userId,
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId,
       @Valid @RequestBody UserPasswordUpdateRequest request);
 

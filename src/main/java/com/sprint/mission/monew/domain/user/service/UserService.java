@@ -34,17 +34,14 @@ public class UserService {
   @Transactional
   public UserResponse create(UserCreateRequest request) {
     log.debug("회원가입 시도");
-
     if (userRepository.existsByEmail(request.email())) {
       throw UserEmailDuplicateException.withEmail(request.email());
     }
-
     User user = User.create(
         request.email(),
         request.nickname(),
         passwordEncoder.encode(request.password())
     );
-
     User saved = userRepository.save(user);
     log.info("회원가입 완료: id={}", saved.getId());
     return userMapper.toResponse(saved);
@@ -52,14 +49,11 @@ public class UserService {
 
   public UserResponse login(UserLoginRequest request) {
     log.debug("로그인 시도");
-
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
         .orElseThrow(UserLoginFailedException::withEmail);
-
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
       throw UserLoginFailedException.withPassword();
     }
-
     log.info("로그인 완료: id={}", user.getId());
     return userMapper.toResponse(user);
   }
@@ -67,14 +61,11 @@ public class UserService {
   @Transactional
   public UserResponse update(UUID userId, UUID requestUserId, UserUpdateRequest request) {
     log.debug("닉네임 수정 시도");
-
     if (!userId.equals(requestUserId)) {
       throw UserAccessDeniedException.forUser(requestUserId);
     }
-
     User user = userRepository.findByIdAndDeletedAtIsNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
-
     user.updateNickname(request.nickname());
     log.info("닉네임 수정 완료: id={}", userId);
     return userMapper.toResponse(user);
@@ -83,14 +74,11 @@ public class UserService {
   @Transactional
   public void delete(UUID userId, UUID requestUserId) {
     log.debug("논리 삭제 시도");
-
     if (!userId.equals(requestUserId)) {
       throw UserAccessDeniedException.forUser(requestUserId);
     }
-
     User user = userRepository.findByIdAndDeletedAtIsNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
-
     user.softDelete();
     log.info("논리 삭제 완료: id={}", userId);
   }
@@ -106,30 +94,21 @@ public class UserService {
   @Transactional
   public void hardDelete(UUID userId) {
     log.debug("물리 삭제 시도");
-
     User user = userRepository.findByIdAndDeletedAtIsNotNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
-
     userRepository.delete(user);
     log.info("물리 삭제 완료: id={}", userId);
   }
 
   @Transactional
-  public void updatePassword(UUID userId, UUID requestUserId, UserPasswordUpdateRequest request) {
+  public void updatePassword(UUID requestUserId, UserPasswordUpdateRequest request) {
     log.debug("비밀번호 변경 시도");
-
-    if (!userId.equals(requestUserId)) {
-      throw UserAccessDeniedException.forUser(requestUserId);
-    }
-
-    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
-        .orElseThrow(() -> UserNotFoundException.withId(userId));
-
+    User user = userRepository.findByIdAndDeletedAtIsNull(requestUserId)
+        .orElseThrow(() -> UserNotFoundException.withId(requestUserId));
     if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
       throw UserInvalidPasswordException.withoutDetail();
     }
-
     user.updatePassword(passwordEncoder.encode(request.newPassword()));
-    log.info("비밀번호 변경 완료: id={}", userId);
+    log.info("비밀번호 변경 완료: id={}", requestUserId);
   }
 }
