@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @RequiredArgsConstructor
 @Component
-public class UserHardDeleteScheduler {
+public class UserCleanupScheduler {
 
   private final UserService userService;
 

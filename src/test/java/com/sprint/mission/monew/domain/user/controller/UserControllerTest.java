@@ -3,8 +3,8 @@ package com.sprint.mission.monew.domain.user.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -15,10 +15,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
+import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.service.UserService;
@@ -254,6 +256,83 @@ class UserControllerTest {
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.nickname").value("새닉네임"));
+    }
+  }
+
+  @Nested
+  @DisplayName("PATCH /api/users/password — 비밀번호 변경")
+  class UpdatePassword {
+
+    @Test
+    @DisplayName("현재 비밀번호가 빈 값이면 400 반환")
+    void 현재_비밀번호가_빈_값이면_400_반환() throws Exception {
+      // given
+      UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("", "newPassword123");
+
+      // when & then
+      mockMvc.perform(patch("/api/users/password")
+              .header("Monew-Request-User-ID", UUID.randomUUID())
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 사용자면 404 반환")
+    void 존재하지_않는_사용자면_404_반환() throws Exception {
+      // given
+      UUID requestUserId = UUID.randomUUID();
+      UserPasswordUpdateRequest request = new UserPasswordUpdateRequest(
+          "currentPassword123", "newPassword123"
+      );
+
+      willThrow(UserNotFoundException.withId(requestUserId))
+          .given(userService).updatePassword(eq(requestUserId), any());
+
+      // when & then
+      mockMvc.perform(patch("/api/users/password")
+              .header("Monew-Request-User-ID", requestUserId)
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("현재 비밀번호가 틀리면 401 반환")
+    void 현재_비밀번호가_틀리면_401_반환() throws Exception {
+      // given
+      UUID requestUserId = UUID.randomUUID();
+      UserPasswordUpdateRequest request = new UserPasswordUpdateRequest(
+          "wrongPassword", "newPassword123"
+      );
+
+      willThrow(UserInvalidPasswordException.withoutDetail())
+          .given(userService).updatePassword(eq(requestUserId), any());
+
+      // when & then
+      mockMvc.perform(patch("/api/users/password")
+              .header("Monew-Request-User-ID", requestUserId)
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("성공 시 204 반환")
+    void 성공_시_204_반환() throws Exception {
+      // given
+      UUID requestUserId = UUID.randomUUID();
+      UserPasswordUpdateRequest request = new UserPasswordUpdateRequest(
+          "currentPassword123", "newPassword123"
+      );
+
+      // when & then
+      mockMvc.perform(patch("/api/users/password")
+              .header("Monew-Request-User-ID", requestUserId)
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isNoContent());
+      then(userService).should().updatePassword(eq(requestUserId), any());
     }
   }
 

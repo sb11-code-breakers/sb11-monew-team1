@@ -6,120 +6,61 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: ci-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: true
-
 jobs:
-  filter:
-    name: Filter changed files
+  codecov:
+    name: Upload coverage to Codecov
+    if: github.event.repository.fork == false
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
-      pull-requests: read
-    outputs:
-      src: ${{ steps.f.outputs.src }}
-    steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          fetch-depth: 2
-          persist-credentials: false
-      - uses: dorny/paths-filter@d1c1ffe0248fe513906c8e24db8ea791d46f8590 # v3.0.3
-        id: f
-        with:
-          filters: |
-            src:
-              - '**/*.java'
-              - '**/*.gradle'
-              - 'src/**'
-
-  test:
-    name: Run tests
-    needs: filter
-    if: needs.filter.outputs.src == 'true'
-    runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
-      id-token: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-          persist-credentials: false
-
-      - name: Set up JDK 17 (Corretto)
-        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
-        with:
-          java-version: '17'
-          distribution: 'corretto'
-
-      - name: Cache Gradle dependencies
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      - name: Configure AWS credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Download config files from S3
+      - name: Extract PR number from commit message
+        id: pr
         run: |
-          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/config/test/application.yaml src/main/resources/application.yaml
-          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/config/test/application-test.yaml src/test/resources/application-test.yaml
-          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/config/.env .env
+          PR_NUMBER=$(echo "$COMMIT_MESSAGE" | grep -oP '#\K\d+' || true)
+          echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      - name: Find PR CI run ID
+        id: run
+        if: steps.pr.outputs.number != ''
+        run: |
+          RUN_ID=$(gh api \
+            "repos/${{ github.repository }}/actions/workflows/ci-pr.yml/runs" \
+            --jq "[.workflow_runs[] | select((.pull_requests[].number | tostring) == \"${{ steps.pr.outputs.number }}\") | {id, created_at}] | sort_by(.created_at) | reverse | first | .id")
+          echo "id=$RUN_ID" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run tests and check coverage gate (80%)
-        run: ./gradlew test jacocoTestCoverageVerification
+      - name: Download Jacoco report from PR CI
+        id: download
+        if: steps.run.outputs.id != '' && steps.run.outputs.id != 'null'
+        continue-on-error: true
+        run: |
+          gh run download ${{ steps.run.outputs.id }} \
+            --name jacoco-report \
+            --dir /tmp/jacoco-report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload coverage to Codecov
+      - name: Resolve Jacoco XML path
+        id: report
+        if: steps.download.outcome == 'success'
+        run: |
+          REPORT_FILE=$(find /tmp/jacoco-report -type f -name 'jacocoTestReport.xml' | head -n 1)
+          echo "file=$REPORT_FILE" >> $GITHUB_OUTPUT
+
+      - name: Upload to Codecov
+        if: steps.report.outputs.file != ''
         uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: build/reports/jacoco/test/jacocoTestReport.xml
+          files: ${{ steps.report.outputs.file }}
           fail_ci_if_error: true
 
-      - name: Upload test & coverage reports
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: test-reports-${{ github.run_number }}
-          path: |
-            build/reports/tests/test/
-            build/reports/jacoco/test/html/
-          retention-days: 7
-
-  skip:
-    name: Skip CI
-    needs: filter
-    if: needs.filter.outputs.src != 'true'
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: CI skipped
-        run: echo "CI skipped — no code changes"
-
-  result:
-    name: CI Result
-    needs: [test, skip]
-    if: always()
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Check CI result
-        run: |
-          if [[ "${{ needs.test.result }}" == "failure" || "${{ needs.test.result }}" == "cancelled" ]]; then
-            exit 1
-          fi
+      - name: Skip (no PR artifact found)
+        if: steps.pr.outputs.number == '' || steps.run.outputs.id == '' || steps.run.outputs.id == 'null' || steps.download.outcome != 'success'
+        run: echo "No PR artifact found — Codecov upload skipped"

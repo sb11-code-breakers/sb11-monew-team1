@@ -77,7 +77,6 @@ jobs:
         run: |
           aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/config/test/application.yaml src/main/resources/application.yaml
           aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/config/test/application-test.yaml src/test/resources/application-test.yaml
-          aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/config/.env .env
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -89,10 +88,11 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: test-reports-${{ github.run_number }}
+          name: jacoco-report
           path: |
-            build/reports/tests/test/
+            build/reports/jacoco/test/jacocoTestReport.xml
             build/reports/jacoco/test/html/
+            build/reports/tests/test/
           retention-days: 7
 
   skip:

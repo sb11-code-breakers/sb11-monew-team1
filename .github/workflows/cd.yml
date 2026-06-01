@@ -15,7 +15,10 @@ permissions:
 jobs:
   # ════ Job 1: Build and push Docker image ══════════════════════
   build-and-push:
+    if: github.event.repository.fork == false
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tag.outputs.tag }}
 
     steps:
       - name: Checkout code
@@ -34,28 +37,51 @@ jobs:
           aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/config/prod/application.yaml src/main/resources/application.yaml
           aws s3 cp s3://${{ secrets.AWS_S3_BUCKET }}/config/prod/application-prod.yaml src/main/resources/application-prod.yaml
 
-      - name: Configure AWS credentials (us-east-1 for Public ECR)
-        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
-        with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR Public
+      - name: Login to Amazon ECR
         run: |
-          aws ecr-public get-login-password --region us-east-1 \
-            | docker login --username AWS --password-stdin public.ecr.aws
+          REGISTRY=$(echo "${{ vars.ECR_REPOSITORY_URI }}" | awk -F'/' '{print $1}')
+          aws ecr get-login-password --region ${{ vars.AWS_REGION }} \
+            | docker login --username AWS --password-stdin $REGISTRY
 
       - name: Build and push Docker image
+        id: tag
         run: |
           IMAGE_URI=${{ vars.ECR_REPOSITORY_URI }}
-          docker build -t $IMAGE_URI:${{ github.sha }} .
-          docker push $IMAGE_URI:${{ github.sha }}
+          SHORT_SHA=${GITHUB_SHA::8}
           if [ "${GITHUB_REF_NAME}" = "main" ]; then
-            docker tag $IMAGE_URI:${{ github.sha }} $IMAGE_URI:latest
-            docker push $IMAGE_URI:latest
+            TAG="latest-${SHORT_SHA}"
           else
-            docker tag $IMAGE_URI:${{ github.sha }} $IMAGE_URI:staging
-            docker push $IMAGE_URI:staging
+            TAG="staging-${SHORT_SHA}"
+          fi
+          docker build -t $IMAGE_URI:$TAG .
+          docker push $IMAGE_URI:$TAG
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "REPO_NAME=$(echo $IMAGE_URI | awk -F'/' '{print $NF}')" >> $GITHUB_ENV
+
+      - name: Clean up old ECR images (keep latest 2)
+        run: |
+          TAG_PREFIX=$([ "${GITHUB_REF_NAME}" = "main" ] && echo "latest-" || echo "staging-")
+          ALL_IMAGES=$(aws ecr describe-images \
+            --repository-name $REPO_NAME \
+            --region ${{ vars.AWS_REGION }} \
+            --output json \
+            | jq --arg prefix "$TAG_PREFIX" '
+                [.imageDetails[]
+                 | select(.imageTags != null and any(.imageTags[]; startswith($prefix)))
+                 | {imageDigest, imagePushedAt}]
+                | sort_by(.imagePushedAt)
+                | map(.imageDigest)
+              ')
+
+          TOTAL=$(echo $ALL_IMAGES | jq 'length')
+          DELETE_COUNT=$((TOTAL - 2))
+
+          if [ $DELETE_COUNT -gt 0 ]; then
+            IMAGE_IDS=$(echo $ALL_IMAGES | jq "[.[0:$DELETE_COUNT] | .[] | {imageDigest:.}]")
+            aws ecr batch-delete-image \
+              --repository-name $REPO_NAME \
+              --region ${{ vars.AWS_REGION }} \
+              --image-ids "$IMAGE_IDS"
           fi
 
   # ════ Job 2: Deploy to ECS ════════════════════════════════════
@@ -73,63 +99,22 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
 
-      - name: Register new task definition revision
+      - name: Prepare task definition
         run: |
-          NEW_IMAGE=${{ vars.ECR_REPOSITORY_URI }}:${{ github.sha }}
-          ENV_FILE_ARN="arn:aws:s3:::${{ secrets.AWS_S3_BUCKET }}/config/monew.env"
-
-          TASK_DEF=$(aws ecs describe-task-definition \
+          aws ecs describe-task-definition \
             --task-definition ${{ vars.ECS_TASK_DEFINITION }} \
-            --query taskDefinition)
-          NEW_TASK_DEF=$(echo $TASK_DEF \
-            | jq --arg IMAGE "$NEW_IMAGE" \
-                 --arg ENV_FILE_ARN "$ENV_FILE_ARN" \
+            --query taskDefinition \
+            | jq --arg IMAGE "${{ vars.ECR_REPOSITORY_URI }}:${{ needs.build-and-push.outputs.image_tag }}" \
               '.containerDefinitions[0].image = $IMAGE
-               | .containerDefinitions[0].environmentFiles = [{"value": $ENV_FILE_ARN, "type": "s3"}]
                | del(.taskDefinitionArn, .revision, .status,
                      .requiresAttributes, .compatibilities,
-                     .registeredAt, .registeredBy)')
-          NEW_REVISION=$(aws ecs register-task-definition \
-            --cli-input-json "$NEW_TASK_DEF" \
-            --query taskDefinition.taskDefinitionArn --output text)
-          echo "NEW_REVISION=$NEW_REVISION" >> $GITHUB_ENV
+                     .registeredAt, .registeredBy)' \
+            > /tmp/task-definition.json
 
-      - name: Stop existing tasks (free-tier resource)
-        run: |
-          aws ecs update-service \
-            --cluster ${{ vars.ECS_CLUSTER }} \
-            --service ${{ vars.ECS_SERVICE }} \
-            --desired-count 0
-
-          aws ecs wait services-stable \
-            --cluster ${{ vars.ECS_CLUSTER }} \
-            --services ${{ vars.ECS_SERVICE }}
-
-          RUNNING_COUNT=$(aws ecs describe-services \
-            --cluster ${{ vars.ECS_CLUSTER }} \
-            --services ${{ vars.ECS_SERVICE }} \
-            --query 'services[0].runningCount' \
-            --output text)
-          test "$RUNNING_COUNT" = "0"
-
-      - name: Deploy new task definition
-        run: |
-          aws ecs update-service \
-            --cluster ${{ vars.ECS_CLUSTER }} \
-            --service ${{ vars.ECS_SERVICE }} \
-            --task-definition $NEW_REVISION \
-            --desired-count 1
-
-      - name: Wait for deployment to stabilize
-        run: |
-          aws ecs wait services-stable \
-            --cluster ${{ vars.ECS_CLUSTER }} \
-            --services ${{ vars.ECS_SERVICE }}
-          echo "Deployment complete!"
-
-      - name: Verify deployment status
-        run: |
-          aws ecs describe-services \
-            --cluster ${{ vars.ECS_CLUSTER }} \
-            --services ${{ vars.ECS_SERVICE }} \
-            --query "services[0].deployments"
+      - name: Deploy to ECS (rolling update)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@a310a830f5c14e583e35d84e4e1ec7dd177c3c9c # v2
+        with:
+          task-definition: /tmp/task-definition.json
+          service: ${{ vars.ECS_SERVICE }}
+          cluster: ${{ vars.ECS_CLUSTER }}
+          wait-for-service-stability: true

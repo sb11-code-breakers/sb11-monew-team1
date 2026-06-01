@@ -7,6 +7,7 @@ import com.sprint.mission.monew.domain.interest.dto.InterestOrderBy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -15,6 +16,18 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebMvcConfig implements WebMvcConfigurer {
 
   private final MdcLoggingInterceptor mdcLoggingInterceptor;
+
+  @Override
+  public void addCorsMappings(CorsRegistry registry) {
+    registry.addMapping("/**")
+        .allowedOrigins(
+            "https://monew.dev"
+        )
+        .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+        .allowedHeaders("Content-Type", "Monew-Request-User-ID")
+        .allowCredentials(false)
+        .maxAge(3600);
+  }
 
   @Override
   public void addInterceptors(InterceptorRegistry registry) {

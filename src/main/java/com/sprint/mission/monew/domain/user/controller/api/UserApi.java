@@ -3,6 +3,7 @@ package com.sprint.mission.monew.domain.user.controller.api;
 import com.sprint.mission.monew.common.dto.ErrorResponse;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -64,6 +65,22 @@ public interface UserApi {
       @PathVariable UUID userId,
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId,
       @Valid @RequestBody UserUpdateRequest request);
+
+  @Operation(summary = "비밀번호 변경", description = "사용자의 비밀번호를 변경합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "비밀번호 변경 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "401", description = "현재 비밀번호 불일치",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "404", description = "사용자 없음",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<Void> updatePassword(
+      @RequestHeader("Monew-Request-User-ID") UUID requestUserId,
+      @Valid @RequestBody UserPasswordUpdateRequest request);
 
   @Operation(summary = "사용자 논리 삭제", description = "사용자를 논리적으로 삭제합니다.")
   @ApiResponses({

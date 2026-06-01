@@ -15,16 +15,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class UserHardDeleteSchedulerTest {
+class UserCleanupSchedulerTest {
 
-  private UserHardDeleteScheduler scheduler;
+  private UserCleanupScheduler scheduler;
 
   @Mock
   private UserService userService;
 
   @BeforeEach
   void setUp() {
-    scheduler = new UserHardDeleteScheduler(userService);
+    scheduler = new UserCleanupScheduler(userService);
   }
 
   @Test
