@@ -2,6 +2,7 @@ package com.sprint.mission.monew.domain.user.service;
 
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.User;
@@ -111,5 +112,9 @@ public class UserService {
 
     userRepository.delete(user);
     log.info("물리 삭제 완료: id={}", userId);
+  }
+
+  @Transactional
+  public void updatePassword(UUID userId, UUID requestUserId, UserPasswordUpdateRequest request) {
   }
 }
