@@ -24,6 +24,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
@@ -151,7 +152,7 @@ public class CommentRepositoryTest {
 
       // when
       List<Comment> result = commentRepository
-          .findTop10RecentCommentsByUserId(nonExistentUserId);
+          .findTop10RecentCommentsByUserId(nonExistentUserId, PageRequest.of(0, 10));
 
       // then
       assertThat(result).isEmpty();
@@ -165,7 +166,7 @@ public class CommentRepositoryTest {
 
       // when
       List<Comment> result = commentRepository
-          .findTop10RecentCommentsByUserId(user.getId());
+          .findTop10RecentCommentsByUserId(user.getId(),PageRequest.of(0, 10));
 
       // then
       assertThat(result).isEmpty();
@@ -181,7 +182,7 @@ public class CommentRepositoryTest {
 
       // when
       List<Comment> result = commentRepository
-          .findTop10RecentCommentsByUserId(user.getId());
+          .findTop10RecentCommentsByUserId(user.getId(),PageRequest.of(0, 10));
 
       // then
       assertThat(result).isEmpty();
@@ -197,7 +198,7 @@ public class CommentRepositoryTest {
 
       // when
       List<Comment> result = commentRepository
-          .findTop10RecentCommentsByUserId(user.getId());
+          .findTop10RecentCommentsByUserId(user.getId(),PageRequest.of(0, 10));
 
       // then
       assertThat(result).isEmpty();
@@ -212,7 +213,7 @@ public class CommentRepositoryTest {
 
       // when
       List<Comment> result = commentRepository
-          .findTop10RecentCommentsByUserId(user.getId());
+          .findTop10RecentCommentsByUserId(user.getId(),PageRequest.of(0, 10));
 
       // then
       assertThat(result).hasSize(10);

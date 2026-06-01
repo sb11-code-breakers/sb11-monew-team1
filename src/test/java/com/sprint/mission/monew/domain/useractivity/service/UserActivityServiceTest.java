@@ -13,6 +13,7 @@ import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import com.sprint.mission.monew.domain.useractivity.dto.UserActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.mapper.UserActivityMapper;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,6 +37,9 @@ class UserActivityServiceTest {
 
   @Mock
   private SubscriptionRepository subscriptionRepository;
+
+  @Mock
+  private UserActivityMapper userActivityMapper;
 
   @Mock
   private CommentRepository commentRepository;
@@ -69,10 +73,13 @@ class UserActivityServiceTest {
       UUID userId = UUID.randomUUID();
       User user = User.create("test@test.com", "테스터", "password123");
       given(userRepository.findById(userId)).willReturn(Optional.of(user));
-      given(subscriptionRepository.findByUserId(userId, PageRequest.of(0, 10))).willReturn(List.of());
-      given(commentRepository.findTop10RecentCommentsByUserId(userId,PageRequest.of(0, 10))).willReturn(List.of());
+      given(subscriptionRepository.findByUserId(userId, PageRequest.of(0, 10))).willReturn(
+          List.of());
+      given(commentRepository.findTop10RecentCommentsByUserId(userId,
+          PageRequest.of(0, 10))).willReturn(List.of());
       given(commentLikeRepository.findTop10ByUserId(userId)).willReturn(List.of());
-      given(articleViewRepository.findTop10ByUserIdAndArticleNotDeleted(userId)).willReturn(List.of());
+      given(articleViewRepository.findTop10ByUserIdAndArticleNotDeleted(userId)).willReturn(
+          List.of());
 
       // when
       UserActivityResponse result = userActivityService.getUserActivity(userId);
