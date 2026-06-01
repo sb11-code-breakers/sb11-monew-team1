@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationService {
 
   private final NotificationRepository notificationRepository;
+  private final NotificationMetrics notificationMetrics;
 
   public CursorPageResponse<NotificationResponse> findUnconfirmed(
       UUID userId, NotificationQueryCondition condition) {
@@ -51,6 +52,7 @@ public class NotificationService {
             ResourceType.COMMENT,
             commentId);
     Notification saved = notificationRepository.save(notification);
+    notificationMetrics.countCommentLikeNotification();
     log.info("댓글 좋아요 알림 생성 완료: 알림 ID={}, 수신자={}", saved.getId(), commentAuthorId);
   }
 
@@ -71,6 +73,7 @@ public class NotificationService {
                         interestId))
             .toList();
     List<Notification> saved = notificationRepository.saveAll(notifications);
+    notificationMetrics.countArticleNotifications(notifications.size());
     log.info("기사 등록 알림 생성 완료: 관심사={}, 수신자={}명", interestName, saved.size());
   }
 
