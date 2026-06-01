@@ -36,6 +36,7 @@ class NewsCollectServiceTest {
   @Mock NaverNewsClient naverNewsClient;
   @Mock RssNewsParser rssNewsParser;
   @Mock ApplicationEventPublisher eventPublisher;
+  @Mock NewsCollectMetrics newsCollectMetrics;
 
   @Nested
   @DisplayName("뉴스 수집")
@@ -62,6 +63,7 @@ class NewsCollectServiceTest {
       // then
       verify(articleRepository).save(any(Article.class));
       verify(eventPublisher).publishEvent(any(ArticleCreatedEvent.class));
+      verify(newsCollectMetrics).countCreated();
     }
 
     @Test
@@ -85,6 +87,7 @@ class NewsCollectServiceTest {
       // then — update 케이스: 기존 기사에 대해 save() 호출, 이벤트는 발행 안 함
       verify(articleRepository).save(existing);
       verify(eventPublisher, never()).publishEvent(any());
+      verify(newsCollectMetrics).countDuplicated();
       assertThat(existing.getTitle()).isEqualTo("수정된 제목");
       assertThat(existing.getSummary()).isEqualTo("수정된 요약");
     }
