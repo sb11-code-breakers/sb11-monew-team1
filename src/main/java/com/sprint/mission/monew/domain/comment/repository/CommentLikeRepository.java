@@ -16,6 +16,7 @@ public interface CommentLikeRepository extends JpaRepository<CommentLike, UUID> 
   @Query("SELECT cl FROM CommentLike cl " +
       "JOIN FETCH cl.comment c " +
       "JOIN FETCH c.article a " +
+      "JOIN FETCH c.user u " +
       "WHERE cl.user.id = :userId " +
       "AND c.deletedAt IS NULL " +
       "AND a.deletedAt IS NULL " +
