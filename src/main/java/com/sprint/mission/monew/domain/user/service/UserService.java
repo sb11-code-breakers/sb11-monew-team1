@@ -8,12 +8,12 @@ import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
+import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -116,5 +116,20 @@ public class UserService {
 
   @Transactional
   public void updatePassword(UUID userId, UUID requestUserId, UserPasswordUpdateRequest request) {
+    log.debug("비밀번호 변경 시도");
+
+    if (!userId.equals(requestUserId)) {
+      throw UserAccessDeniedException.forUser(requestUserId);
+    }
+
+    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+
+    if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+      throw UserInvalidPasswordException.withoutDetail();
+    }
+
+    user.updatePassword(passwordEncoder.encode(request.newPassword()));
+    log.info("비밀번호 변경 완료: id={}", userId);
   }
 }
