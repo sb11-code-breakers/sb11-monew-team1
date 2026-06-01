@@ -32,6 +32,7 @@ public class CommentLikeService {
   private final CommentRepository commentRepository;
   private final CommentLikeMapper commentLikeMapper;
   private final ApplicationEventPublisher eventPublisher;
+  private final CommentMetrics commentMetrics;
 
   @Transactional
   public CommentLikeResponse create(UUID commentId, UUID userId) {
@@ -64,6 +65,8 @@ public class CommentLikeService {
         userId,
         commentId);
 
+    commentMetrics.countLiked();
+
     UUID authorId = comment.getUser() != null ? comment.getUser().getId() : null;
     if (authorId != null && !authorId.equals(userId)) {
       eventPublisher.publishEvent(
@@ -84,6 +87,7 @@ public class CommentLikeService {
     }
 
     commentRepository.decreaseLikeCount(commentId);
+    commentMetrics.countLikeCanceled();
 
     log.info("[COMMENT_LIKE_CANCEL_SUCCESS] 댓글 좋아요 취소 성공 - 요청자 ID={}, 댓글 ID={}", userId, commentId);
   }

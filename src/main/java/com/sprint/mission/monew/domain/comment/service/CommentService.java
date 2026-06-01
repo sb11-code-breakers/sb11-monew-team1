@@ -37,6 +37,7 @@ public class CommentService {
   private final UserRepository userRepository;
   private final CommentLikeRepository commentLikeRepository;
   private final CommentMapper commentMapper;
+  private final CommentMetrics commentMetrics;
 
   @Transactional
   public CommentResponse create(CommentCreateRequest request) {
@@ -53,6 +54,7 @@ public class CommentService {
 
     Comment comment = Comment.create(article, user, request.content());
     Comment savedComment = commentRepository.save(comment);
+    commentMetrics.countCreated();
 
     log.info("[COMMENT_CREATE_SUCCESS] 댓글 생성 성공 - 댓글 ID={}, 뉴스 기사 ID={}, 댓글 작성자 ID={}",
         savedComment.getId(), request.articleId(), request.userId());
