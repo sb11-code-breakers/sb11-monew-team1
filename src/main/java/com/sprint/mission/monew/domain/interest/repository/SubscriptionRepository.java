@@ -4,6 +4,7 @@ import com.sprint.mission.monew.domain.interest.entity.Subscription;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,7 +15,11 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
 
   Optional<Subscription> findByInterestIdAndUserId(UUID interestId, UUID userId);
 
-  List<Subscription> findByUserId(UUID userId);
+  @Query("SELECT s FROM Subscription s " +
+      "JOIN FETCH s.interest i " +
+      "JOIN FETCH i.keywords " +
+      "WHERE s.user.id = :userId")
+  List<Subscription> findByUserId(@Param("userId") UUID userId, Pageable pageable);
 
   @Query("SELECT s.user.id FROM Subscription s WHERE s.interest.id = :interestId")
   List<UUID> findUserIdsByInterestId(@Param("interestId") UUID interestId);

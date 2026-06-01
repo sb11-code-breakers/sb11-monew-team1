@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
@@ -164,7 +165,7 @@ class SubscriptionRepositoryTest {
       // 구독 없이 user만 있음
 
       // when
-      List<Subscription> result = subscriptionRepository.findByUserId(user.getId());
+      List<Subscription> result = subscriptionRepository.findByUserId(user.getId(), PageRequest.of(0, 10));
 
       // then
       assertThat(result).isEmpty();

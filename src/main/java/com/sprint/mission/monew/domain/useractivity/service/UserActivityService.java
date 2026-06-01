@@ -43,7 +43,7 @@ public class UserActivityService {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
 
-    List<Subscription> subscriptions = subscriptionRepository.findByUserId(userId);
+    List<Subscription> subscriptions = subscriptionRepository.findByUserId(userId, PageRequest.of(0,10));
     List<SubscriptionDto> subscriptionDtos = subscriptions.stream()
         .map(s -> new SubscriptionDto(
             s.getId(),

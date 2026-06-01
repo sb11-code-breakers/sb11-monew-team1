@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 
 @ExtendWith(MockitoExtension.class)
 class UserActivityServiceTest {
@@ -68,8 +69,8 @@ class UserActivityServiceTest {
       UUID userId = UUID.randomUUID();
       User user = User.create("test@test.com", "테스터", "password123");
       given(userRepository.findById(userId)).willReturn(Optional.of(user));
-      given(subscriptionRepository.findByUserId(userId)).willReturn(List.of());
-      given(commentRepository.findTop10RecentCommentsByUserId(userId)).willReturn(List.of());
+      given(subscriptionRepository.findByUserId(userId, PageRequest.of(0, 10))).willReturn(List.of());
+      given(commentRepository.findTop10RecentCommentsByUserId(userId,PageRequest.of(0, 10))).willReturn(List.of());
       given(commentLikeRepository.findTop10ByUserId(userId)).willReturn(List.of());
       given(articleViewRepository.findTop10ByUserIdAndArticleNotDeleted(userId)).willReturn(List.of());
 
