@@ -3,7 +3,10 @@ package com.sprint.mission.monew.domain.useractivity.service;
 import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
+import com.sprint.mission.monew.domain.comment.entity.CommentLike;
+import com.sprint.mission.monew.domain.comment.repository.CommentLikeRepository;
 import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
+import com.sprint.mission.monew.domain.interest.entity.InterestKeyword;
 import com.sprint.mission.monew.domain.interest.entity.Subscription;
 import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepository;
 import com.sprint.mission.monew.domain.user.entity.User;
@@ -11,9 +14,9 @@ import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import com.sprint.mission.monew.domain.useractivity.dto.ArticleViewDto;
 import com.sprint.mission.monew.domain.useractivity.dto.CommentDto;
+import com.sprint.mission.monew.domain.useractivity.dto.CommentLikeDto;
 import com.sprint.mission.monew.domain.useractivity.dto.SubscriptionDto;
 import com.sprint.mission.monew.domain.useractivity.dto.UserActivityResponse;
-import com.sprint.mission.monew.domain.interest.entity.InterestKeyword;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,7 @@ public class UserActivityService {
   private final UserRepository userRepository;
   private final SubscriptionRepository subscriptionRepository;
   private final CommentRepository commentRepository;
+  private final CommentLikeRepository commentLikeRepository;
   private final ArticleViewRepository articleViewRepository;
 
   public UserActivityResponse getUserActivity(UUID userId) {
@@ -66,6 +70,22 @@ public class UserActivityService {
         ))
         .toList();
 
+    List<CommentLike> commentLikes = commentLikeRepository.findTop10ByUserId(userId);
+    List<CommentLikeDto> commentLikeDtos = commentLikes.stream()
+        .map(cl -> new CommentLikeDto(
+            cl.getId(),
+            cl.getCreatedAt(),
+            cl.getComment().getId(),
+            cl.getComment().getArticle().getId(),
+            cl.getComment().getArticle().getTitle(),
+            cl.getComment().getUser() != null ? cl.getComment().getUser().getId() : null,
+            cl.getComment().getUser() != null ? cl.getComment().getUser().getNickname() : null,
+            cl.getComment().getContent(),
+            cl.getComment().getLikeCount(),
+            cl.getComment().getCreatedAt()
+        ))
+        .toList();
+
     List<ArticleView> articleViews = articleViewRepository
         .findTop10ByUserIdAndArticleNotDeleted(userId);
     List<ArticleViewDto> articleViewDtos = articleViews.stream()
@@ -93,7 +113,7 @@ public class UserActivityService {
         user.getCreatedAt(),
         subscriptionDtos,
         commentDtos,
-        List.of(),
+        commentLikeDtos,
         articleViewDtos
     );
   }

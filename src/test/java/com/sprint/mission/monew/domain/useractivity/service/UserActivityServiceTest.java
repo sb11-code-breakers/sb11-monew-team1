@@ -3,8 +3,10 @@ package com.sprint.mission.monew.domain.useractivity.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
+import com.sprint.mission.monew.domain.comment.repository.CommentLikeRepository;
 import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
 import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepository;
 import com.sprint.mission.monew.domain.user.entity.User;
@@ -38,6 +40,9 @@ class UserActivityServiceTest {
   private CommentRepository commentRepository;
 
   @Mock
+  private CommentLikeRepository commentLikeRepository;
+
+  @Mock
   private ArticleViewRepository articleViewRepository;
 
   @Nested
@@ -65,14 +70,16 @@ class UserActivityServiceTest {
       given(userRepository.findById(userId)).willReturn(Optional.of(user));
       given(subscriptionRepository.findByUserId(userId)).willReturn(List.of());
       given(commentRepository.findTop10RecentCommentsByUserId(userId)).willReturn(List.of());
-      given(articleViewRepository.findTop10ByUserIdAndArticleNotDeleted(userId)).willReturn(
-          List.of());
+      given(commentLikeRepository.findTop10ByUserId(userId)).willReturn(List.of());
+      given(articleViewRepository.findTop10ByUserIdAndArticleNotDeleted(userId)).willReturn(List.of());
 
       // when
       UserActivityResponse result = userActivityService.getUserActivity(userId);
 
       // then
       assertThat(result).isNotNull();
+      assertThat(result.commentLikes()).isNotNull();
+      verify(commentLikeRepository).findTop10ByUserId(userId);
     }
   }
 }
