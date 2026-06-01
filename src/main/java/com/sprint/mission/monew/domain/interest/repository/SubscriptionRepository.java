@@ -19,7 +19,7 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
       "JOIN FETCH s.interest i " +
       "JOIN FETCH i.keywords " +
       "WHERE s.user.id = :userId")
-  List<Subscription> findByUserId(@Param("userId") UUID userId, Pageable pageable);
+  List<Subscription> findAllByUserId(@Param("userId") UUID userId, Pageable pageable);
 
   @Query("SELECT s.user.id FROM Subscription s WHERE s.interest.id = :interestId")
   List<UUID> findUserIdsByInterestId(@Param("interestId") UUID interestId);

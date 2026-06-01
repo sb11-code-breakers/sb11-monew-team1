@@ -7,10 +7,10 @@ import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepositor
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
-import com.sprint.mission.monew.domain.useractivity.dto.ArticleViewDto;
-import com.sprint.mission.monew.domain.useractivity.dto.CommentDto;
-import com.sprint.mission.monew.domain.useractivity.dto.CommentLikeDto;
-import com.sprint.mission.monew.domain.useractivity.dto.SubscriptionDto;
+import com.sprint.mission.monew.domain.useractivity.dto.ArticleViewActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.dto.CommentActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.dto.CommentLikeActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.dto.SubscriptionActivityResponse;
 import com.sprint.mission.monew.domain.useractivity.dto.UserActivityResponse;
 import com.sprint.mission.monew.domain.useractivity.mapper.UserActivityMapper;
 import java.util.List;
@@ -37,28 +37,28 @@ public class UserActivityService {
   public UserActivityResponse getUserActivity(UUID userId) {
     log.debug("활동 내역 조회 시도: userId={}", userId);
 
-    User user = userRepository.findById(userId)
+    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
 
-    List<SubscriptionDto> subscriptionDtos = subscriptionRepository
-        .findByUserId(userId, PageRequest.of(0, 10))
+    List<SubscriptionActivityResponse> subscriptionActivityResponses = subscriptionRepository
+        .findAllByUserId(userId, PageRequest.of(0, 10))
         .stream()
         .map(userActivityMapper::toSubscriptionDto)
         .toList();
 
-    List<CommentDto> commentDtos = commentRepository
+    List<CommentActivityResponse> commentDtos = commentRepository
         .findTop10RecentCommentsByUserId(userId, PageRequest.of(0, 10))
         .stream()
         .map(userActivityMapper::toCommentDto)
         .toList();
 
-    List<CommentLikeDto> commentLikeDtos = commentLikeRepository
+    List<CommentLikeActivityResponse> commentLikeActivityRespons = commentLikeRepository
         .findTop10ByUserId(userId)
         .stream()
         .map(userActivityMapper::toCommentLikeDto)
         .toList();
 
-    List<ArticleViewDto> articleViewDtos = articleViewRepository
+    List<ArticleViewActivityResponse> articleViewActivityResponses = articleViewRepository
         .findTop10ByUserIdAndArticleNotDeleted(userId)
         .stream()
         .map(userActivityMapper::toArticleViewDto)
@@ -71,10 +71,10 @@ public class UserActivityService {
         user.getEmail(),
         user.getNickname(),
         user.getCreatedAt(),
-        subscriptionDtos,
+        subscriptionActivityResponses,
         commentDtos,
-        commentLikeDtos,
-        articleViewDtos
+        commentLikeActivityRespons,
+        articleViewActivityResponses
     );
   }
 }

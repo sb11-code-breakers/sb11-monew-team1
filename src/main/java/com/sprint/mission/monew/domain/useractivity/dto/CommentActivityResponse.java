@@ -3,7 +3,7 @@ package com.sprint.mission.monew.domain.useractivity.dto;
 import java.time.Instant;
 import java.util.UUID;
 
-public record CommentDto(
+public record CommentActivityResponse(
     UUID id,
     UUID articleId,
     String articleTitle,

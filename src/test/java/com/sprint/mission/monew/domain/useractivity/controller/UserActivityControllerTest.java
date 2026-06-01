@@ -46,6 +46,7 @@ class UserActivityControllerTest {
 
       // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", userId))
+          .andExpect(status().isOk())
           // 성공 시 200 테스트에 추가:
           .andExpect(jsonPath("$.id").value(userId.toString()))
           .andExpect(jsonPath("$.email").value("test@test.com"))

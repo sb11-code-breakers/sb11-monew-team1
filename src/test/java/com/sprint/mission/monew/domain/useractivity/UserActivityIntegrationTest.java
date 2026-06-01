@@ -18,6 +18,8 @@ import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepository;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import com.sprint.mission.monew.domain.comment.entity.CommentLike;
+import com.sprint.mission.monew.domain.comment.repository.CommentLikeRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -52,6 +54,9 @@ public class UserActivityIntegrationTest {
 
   @Autowired
   private CommentRepository commentRepository;
+
+  @Autowired
+  private CommentLikeRepository commentLikeRepository;
 
   @Autowired
   private InterestRepository interestRepository;
@@ -137,6 +142,19 @@ public class UserActivityIntegrationTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.comments.length()").value(1))
           .andExpect(jsonPath("$.comments[0].content").value("테스트 댓글"));
+    }
+    @Test
+    @DisplayName("최근 좋아요한 댓글이 있으면 응답에 포함된다")
+    void 최근_좋아요한_댓글이_있으면_응답에_포함된다() throws Exception {
+      // given
+      Comment comment = commentRepository.save(Comment.create(article, user, "테스트 댓글"));
+      commentLikeRepository.save(CommentLike.create(user, comment));
+
+      // when & then
+      mockMvc.perform(get("/api/user-activities/{userId}", user.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.commentLikes.length()").value(1))
+          .andExpect(jsonPath("$.commentLikes[0].commentId").value(comment.getId().toString()));
     }
 
     @Test

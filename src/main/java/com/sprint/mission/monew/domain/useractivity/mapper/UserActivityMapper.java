@@ -3,12 +3,11 @@ package com.sprint.mission.monew.domain.useractivity.mapper;
 import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.entity.CommentLike;
-import com.sprint.mission.monew.domain.interest.entity.InterestKeyword;
 import com.sprint.mission.monew.domain.interest.entity.Subscription;
-import com.sprint.mission.monew.domain.useractivity.dto.ArticleViewDto;
-import com.sprint.mission.monew.domain.useractivity.dto.CommentDto;
-import com.sprint.mission.monew.domain.useractivity.dto.CommentLikeDto;
-import com.sprint.mission.monew.domain.useractivity.dto.SubscriptionDto;
+import com.sprint.mission.monew.domain.useractivity.dto.ArticleViewActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.dto.CommentActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.dto.CommentLikeActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.dto.SubscriptionActivityResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -19,13 +18,13 @@ public interface UserActivityMapper {
   @Mapping(target = "interestName", source = "interest.name")
   @Mapping(target = "interestKeywords", expression = "java(subscription.getInterest().getKeywords().stream().map(com.sprint.mission.monew.domain.interest.entity.InterestKeyword::getKeyword).toList())")
   @Mapping(target = "interestSubscriberCount", source = "interest.subscriberCount")
-  SubscriptionDto toSubscriptionDto(Subscription subscription);
+  SubscriptionActivityResponse toSubscriptionDto(Subscription subscription);
 
   @Mapping(target = "articleId", source = "article.id")
   @Mapping(target = "articleTitle", source = "article.title")
   @Mapping(target = "userId", expression = "java(comment.getUser() != null ? comment.getUser().getId() : null)")
   @Mapping(target = "userNickname", expression = "java(comment.getUser() != null ? comment.getUser().getNickname() : \"알 수 없음\")")
-  CommentDto toCommentDto(Comment comment);
+  CommentActivityResponse toCommentDto(Comment comment);
 
   @Mapping(target = "commentId", source = "comment.id")
   @Mapping(target = "articleId", source = "comment.article.id")
@@ -35,7 +34,7 @@ public interface UserActivityMapper {
   @Mapping(target = "commentContent", source = "comment.content")
   @Mapping(target = "commentLikeCount", source = "comment.likeCount")
   @Mapping(target = "commentCreatedAt", source = "comment.createdAt")
-  CommentLikeDto toCommentLikeDto(CommentLike commentLike);
+  CommentLikeActivityResponse toCommentLikeDto(CommentLike commentLike);
 
   @Mapping(target = "viewedBy", source = "userId")
   @Mapping(target = "articleId", source = "article.id")
@@ -46,5 +45,5 @@ public interface UserActivityMapper {
   @Mapping(target = "articleSummary", source = "article.summary")
   @Mapping(target = "articleCommentCount", source = "article.commentCount")
   @Mapping(target = "articleViewCount", source = "article.viewCount")
-  ArticleViewDto toArticleViewDto(ArticleView articleView);
+  ArticleViewActivityResponse toArticleViewDto(ArticleView articleView);
 }

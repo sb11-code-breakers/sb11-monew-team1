@@ -165,7 +165,7 @@ class SubscriptionRepositoryTest {
       // 구독 없이 user만 있음
 
       // when
-      List<Subscription> result = subscriptionRepository.findByUserId(user.getId(), PageRequest.of(0, 10));
+      List<Subscription> result = subscriptionRepository.findAllByUserId(user.getId(), PageRequest.of(0, 10));
 
       // then
       assertThat(result).isEmpty();

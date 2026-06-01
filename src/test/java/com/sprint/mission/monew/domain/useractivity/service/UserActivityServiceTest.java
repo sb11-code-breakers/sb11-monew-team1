@@ -73,7 +73,7 @@ class UserActivityServiceTest {
       UUID userId = UUID.randomUUID();
       User user = User.create("test@test.com", "테스터", "password123");
       given(userRepository.findById(userId)).willReturn(Optional.of(user));
-      given(subscriptionRepository.findByUserId(userId, PageRequest.of(0, 10))).willReturn(
+      given(subscriptionRepository.findAllByUserId(userId, PageRequest.of(0, 10))).willReturn(
           List.of());
       given(commentRepository.findTop10RecentCommentsByUserId(userId,
           PageRequest.of(0, 10))).willReturn(List.of());
@@ -81,13 +81,24 @@ class UserActivityServiceTest {
       given(articleViewRepository.findTop10ByUserIdAndArticleNotDeleted(userId)).willReturn(
           List.of());
 
+
       // when
       UserActivityResponse result = userActivityService.getUserActivity(userId);
 
       // then
       assertThat(result).isNotNull();
-      assertThat(result.commentLikes()).isNotNull();
+      assertThat(result.email()).isEqualTo("test@test.com");
+      assertThat(result.nickname()).isEqualTo("테스터");
+      assertThat(result.subscriptions()).isNotNull().isEmpty();
+      assertThat(result.comments()).isNotNull().isEmpty();
+      assertThat(result.commentLikes()).isNotNull().isEmpty();
+      assertThat(result.articleViews()).isNotNull().isEmpty();
+
+      // 각 Repository 호출 검증
+      verify(subscriptionRepository).findAllByUserId(userId, PageRequest.of(0, 10));
+      verify(commentRepository).findTop10RecentCommentsByUserId(userId, PageRequest.of(0, 10));
       verify(commentLikeRepository).findTop10ByUserId(userId);
+      verify(articleViewRepository).findTop10ByUserIdAndArticleNotDeleted(userId);
     }
   }
 }

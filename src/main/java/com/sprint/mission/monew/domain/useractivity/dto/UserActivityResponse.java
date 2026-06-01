@@ -9,10 +9,10 @@ public record UserActivityResponse(
     String email,
     String nickname,
     Instant createdAt,
-    List<SubscriptionDto> subscriptions,
-    List<CommentDto> comments,
-    List<CommentLikeDto> commentLikes,
-    List<ArticleViewDto> articleViews
+    List<SubscriptionActivityResponse> subscriptions,
+    List<CommentActivityResponse> comments,
+    List<CommentLikeActivityResponse> commentLikes,
+    List<ArticleViewActivityResponse> articleViews
 ) {
 
 }

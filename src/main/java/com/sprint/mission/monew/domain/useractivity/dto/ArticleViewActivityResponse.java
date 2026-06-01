@@ -3,7 +3,7 @@ package com.sprint.mission.monew.domain.useractivity.dto;
 import java.time.Instant;
 import java.util.UUID;
 
-public record ArticleViewDto(
+public record ArticleViewActivityResponse(
     UUID id,
     UUID viewedBy,
     Instant createdAt,
