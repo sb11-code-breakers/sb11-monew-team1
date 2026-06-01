@@ -59,7 +59,19 @@ class UserActivityServiceTest {
     void 존재하지_않는_userId면_예외가_발생한다() {
       // given
       UUID userId = UUID.randomUUID();
-      given(userRepository.findById(userId)).willReturn(Optional.empty());
+      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userActivityService.getUserActivity(userId))
+          .isInstanceOf(UserNotFoundException.class);
+    }
+    @Test
+    @DisplayName("soft-delete된 userId면 예외가 발생한다")
+    void soft_delete된_userId면_예외가_발생한다() {
+      // given
+      UUID userId = UUID.randomUUID();
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willReturn(Optional.empty());
 
       // when & then
       assertThatThrownBy(() -> userActivityService.getUserActivity(userId))
@@ -72,7 +84,7 @@ class UserActivityServiceTest {
       // given
       UUID userId = UUID.randomUUID();
       User user = User.create("test@test.com", "테스터", "password123");
-      given(userRepository.findById(userId)).willReturn(Optional.of(user));
+      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(user));
       given(subscriptionRepository.findAllByUserId(userId, PageRequest.of(0, 10))).willReturn(
           List.of());
       given(commentRepository.findTop10RecentCommentsByUserId(userId,

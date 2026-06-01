@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 @Tag(name = "활동 내역 관리", description = "사용자 활동 내역 관련 API")
 public interface UserActivityApi {
@@ -26,5 +27,6 @@ public interface UserActivityApi {
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   ResponseEntity<UserActivityResponse> getUserActivity(
-      @PathVariable @Parameter(description = "사용자 ID") UUID userId);
+      @PathVariable @Parameter(description = "사용자 ID") UUID userId,
+      @RequestHeader("Monew-Request-User-ID") @Parameter(description = "요청자 ID") UUID requestUserId);
 }

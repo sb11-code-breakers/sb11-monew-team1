@@ -34,6 +34,34 @@ class UserActivityControllerTest {
   class GetUserActivity {
 
     @Test
+    @DisplayName("존재하지 않는 userId면 404를 반환한다")
+    void 존재하지_않는_userId면_404를_반환한다() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      willThrow(UserNotFoundException.withId(userId))
+          .given(userActivityService).getUserActivity(userId);
+
+      // when & then
+      mockMvc.perform(get("/api/user-activities/{userId}", userId)
+              .header("Monew-Request-User-ID", userId))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("soft-delete된 userId면 404를 반환한다")
+    void soft_delete된_userId면_404를_반환한다() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      willThrow(UserNotFoundException.withId(userId))
+          .given(userActivityService).getUserActivity(userId);
+
+      // when & then
+      mockMvc.perform(get("/api/user-activities/{userId}", userId)
+              .header("Monew-Request-User-ID", userId))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("성공 시 200을 반환한다")
     void 성공_시_200을_반환한다() throws Exception {
       // given
@@ -45,9 +73,9 @@ class UserActivityControllerTest {
       given(userActivityService.getUserActivity(userId)).willReturn(response);
 
       // when & then
-      mockMvc.perform(get("/api/user-activities/{userId}", userId))
+      mockMvc.perform(get("/api/user-activities/{userId}", userId)
+              .header("Monew-Request-User-ID", userId))
           .andExpect(status().isOk())
-          // 성공 시 200 테스트에 추가:
           .andExpect(jsonPath("$.id").value(userId.toString()))
           .andExpect(jsonPath("$.email").value("test@test.com"))
           .andExpect(jsonPath("$.nickname").value("테스터"))
@@ -55,19 +83,6 @@ class UserActivityControllerTest {
           .andExpect(jsonPath("$.comments").isArray())
           .andExpect(jsonPath("$.commentLikes").isArray())
           .andExpect(jsonPath("$.articleViews").isArray());
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 userId면 404를 반환한다")
-    void 존재하지_않는_userId면_404를_반환한다() throws Exception {
-      // given
-      UUID userId = UUID.randomUUID();
-      willThrow(UserNotFoundException.withId(userId))
-          .given(userActivityService).getUserActivity(userId);
-
-      // when & then
-      mockMvc.perform(get("/api/user-activities/{userId}", userId))
-          .andExpect(status().isNotFound());
     }
   }
 }

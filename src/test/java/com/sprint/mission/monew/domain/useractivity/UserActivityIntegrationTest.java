@@ -1,6 +1,5 @@
 package com.sprint.mission.monew.domain.useractivity;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -11,6 +10,8 @@ import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
+import com.sprint.mission.monew.domain.comment.entity.CommentLike;
+import com.sprint.mission.monew.domain.comment.repository.CommentLikeRepository;
 import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.entity.Subscription;
@@ -18,8 +19,6 @@ import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepository;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
-import com.sprint.mission.monew.domain.comment.entity.CommentLike;
-import com.sprint.mission.monew.domain.comment.repository.CommentLikeRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -88,10 +87,38 @@ public class UserActivityIntegrationTest {
   class GetUserActivity {
 
     @Test
+    @DisplayName("존재하지 않는 userId면 404와 에러 응답을 반환한다")
+    void 존재하지_않는_userId면_404와_에러_응답을_반환한다() throws Exception {
+      // given
+      UUID nonExistentUserId = UUID.randomUUID();
+
+      // when & then
+      mockMvc.perform(get("/api/user-activities/{userId}", nonExistentUserId)
+              .header("Monew-Request-User-ID", nonExistentUserId))
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.status").value(404))
+          .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    @DisplayName("soft-delete된 userId면 404를 반환한다")
+    void soft_delete된_userId면_404를_반환한다() throws Exception {
+      // given
+      user.softDelete();
+      userRepository.save(user);
+
+      // when & then
+      mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
+              .header("Monew-Request-User-ID", user.getId()))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
     @DisplayName("성공 시 200과 활동 내역을 반환한다")
     void 성공_시_200과_활동_내역을_반환한다() throws Exception {
       // when & then
-      mockMvc.perform(get("/api/user-activities/{userId}", user.getId()))
+      mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
+              .header("Monew-Request-User-ID", user.getId()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.id").value(user.getId().toString()))
           .andExpect(jsonPath("$.email").value("test@test.com"))
@@ -112,23 +139,11 @@ public class UserActivityIntegrationTest {
       subscriptionRepository.save(Subscription.create(interest, user));
 
       // when & then
-      mockMvc.perform(get("/api/user-activities/{userId}", user.getId()))
+      mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
+              .header("Monew-Request-User-ID", user.getId()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.subscriptions.length()").value(1))
           .andExpect(jsonPath("$.subscriptions[0].interestName").value("인공지능"));
-    }
-
-    @Test
-    @DisplayName("최근 본 기사가 있으면 응답에 포함된다")
-    void 최근_본_기사가_있으면_응답에_포함된다() throws Exception {
-      // given
-      articleViewRepository.save(ArticleView.create(user.getId(), article));
-
-      // when & then
-      mockMvc.perform(get("/api/user-activities/{userId}", user.getId()))
-          .andExpect(status().isOk())
-          .andExpect(jsonPath("$.articleViews.length()").value(1))
-          .andExpect(jsonPath("$.articleViews[0].articleTitle").value("테스트 기사"));
     }
 
     @Test
@@ -138,11 +153,13 @@ public class UserActivityIntegrationTest {
       commentRepository.save(Comment.create(article, user, "테스트 댓글"));
 
       // when & then
-      mockMvc.perform(get("/api/user-activities/{userId}", user.getId()))
+      mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
+              .header("Monew-Request-User-ID", user.getId()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.comments.length()").value(1))
           .andExpect(jsonPath("$.comments[0].content").value("테스트 댓글"));
     }
+
     @Test
     @DisplayName("최근 좋아요한 댓글이 있으면 응답에 포함된다")
     void 최근_좋아요한_댓글이_있으면_응답에_포함된다() throws Exception {
@@ -151,23 +168,25 @@ public class UserActivityIntegrationTest {
       commentLikeRepository.save(CommentLike.create(user, comment));
 
       // when & then
-      mockMvc.perform(get("/api/user-activities/{userId}", user.getId()))
+      mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
+              .header("Monew-Request-User-ID", user.getId()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.commentLikes.length()").value(1))
           .andExpect(jsonPath("$.commentLikes[0].commentId").value(comment.getId().toString()));
     }
 
     @Test
-    @DisplayName("존재하지 않는 userId면 404와 에러 응답을 반환한다")
-    void 존재하지_않는_userId면_404와_에러_응답을_반환한다() throws Exception {
+    @DisplayName("최근 본 기사가 있으면 응답에 포함된다")
+    void 최근_본_기사가_있으면_응답에_포함된다() throws Exception {
       // given
-      UUID nonExistentUserId = UUID.randomUUID();
+      articleViewRepository.save(ArticleView.create(user.getId(), article));
 
       // when & then
-      mockMvc.perform(get("/api/user-activities/{userId}", nonExistentUserId))
-          .andExpect(status().isNotFound())
-          .andExpect(jsonPath("$.status").value(404))
-          .andExpect(jsonPath("$.message").exists());
+      mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
+              .header("Monew-Request-User-ID", user.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.articleViews.length()").value(1))
+          .andExpect(jsonPath("$.articleViews[0].articleTitle").value("테스트 기사"));
     }
   }
 }

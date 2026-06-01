@@ -15,7 +15,7 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
   @Query("SELECT c FROM Comment c " +
       "JOIN FETCH c.article a " +
-      "JOIN FETCH c.user u " +
+      "LEFT JOIN FETCH c.user u "  +
       "WHERE c.user.id = :userId " +
       "AND c.deletedAt IS NULL " +
       "AND a.deletedAt IS NULL " +
