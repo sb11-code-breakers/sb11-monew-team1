@@ -13,11 +13,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "User", description = "사용자 API")
 public interface UserApi {
@@ -41,12 +43,22 @@ public interface UserApi {
           content = @Content(schema = @Schema(implementation = UserResponse.class))),
       @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-      @ApiResponse(responseCode = "401", description = "이메일 또는 비밀번호 불일치",
+      @ApiResponse(responseCode = "401", description = "이메일 또는 비밀번호 불일치 / 이메일 미인증",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   ResponseEntity<UserResponse> login(@Valid @RequestBody UserLoginRequest request);
+
+  @Operation(summary = "이메일 인증", description = "이메일 인증 토큰을 검증합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "이메일 인증 성공"),
+      @ApiResponse(responseCode = "400", description = "유효하지 않거나 만료된 토큰",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<Void> verifyEmail(@NotBlank @RequestParam String token);
 
   @Operation(summary = "닉네임 수정", description = "사용자의 닉네임을 수정합니다.")
   @ApiResponses({

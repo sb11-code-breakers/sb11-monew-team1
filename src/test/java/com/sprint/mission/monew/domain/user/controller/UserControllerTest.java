@@ -7,6 +7,7 @@ import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -20,10 +21,13 @@ import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
+import com.sprint.mission.monew.domain.user.exception.UserEmailNotVerifiedException;
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.service.UserService;
+import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
+
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -144,6 +148,24 @@ class UserControllerTest {
     }
 
     @Test
+    @DisplayName("이메일 미인증 시 401 반환")
+    void 이메일_미인증_시_401_반환() throws Exception {
+      // given
+      UserLoginRequest request = new UserLoginRequest(
+          "test@test.com", "password123"
+      );
+
+      given(userService.login(any()))
+          .willThrow(UserEmailNotVerifiedException.withEmail("test@test.com"));
+
+      // when & then
+      mockMvc.perform(post("/api/users/login")
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     @DisplayName("비밀번호가 틀리면 401 반환")
     void 비밀번호가_틀리면_401_반환() throws Exception {
       // given
@@ -181,6 +203,37 @@ class UserControllerTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.email").value("test@test.com"))
           .andExpect(jsonPath("$.nickname").value("테스터"));
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /api/users/verify — 이메일 인증")
+  class VerifyEmail {
+
+    @Test
+    @DisplayName("유효하지 않은 토큰이면 400 반환")
+    void 유효하지_않은_토큰이면_400_반환() throws Exception {
+      // given
+      willThrow(InvalidVerificationTokenException.withToken("invalid-token"))
+          .given(userService).verifyEmail("invalid-token");
+
+      // when & then
+      mockMvc.perform(get("/api/users/verify")
+              .param("token", "invalid-token"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("성공 시 200 반환")
+    void 성공_시_200_반환() throws Exception {
+      // given
+      String token = "valid-token";
+
+      // when & then
+      mockMvc.perform(get("/api/users/verify")
+              .param("token", token))
+          .andExpect(status().isOk());
+      then(userService).should().verifyEmail(eq(token));
     }
   }
 

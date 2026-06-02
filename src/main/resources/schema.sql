@@ -3,16 +3,17 @@
 -- =====================
 CREATE TABLE IF NOT EXISTS users
 (
-    id         UUID                     NOT NULL,
-    email      VARCHAR(255)             NOT NULL,
-    nickname   VARCHAR(255)             NOT NULL,
-    password   VARCHAR(255)             NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE,
-    deleted_at TIMESTAMP WITH TIME ZONE,
-    PRIMARY KEY (id),
+    id             UUID                     NOT NULL,
+    email          VARCHAR(255)             NOT NULL,
+    nickname       VARCHAR(255)             NOT NULL,
+    password       VARCHAR(255)             NOT NULL,
+    email_verified BOOLEAN                  NOT NULL DEFAULT FALSE,
+    created_at     TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at     TIMESTAMP WITH TIME ZONE,
+    deleted_at     TIMESTAMP WITH TIME ZONE,
+                                 PRIMARY KEY (id),
     UNIQUE (email)
-);
+    );
 
 CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users (deleted_at)
     WHERE deleted_at IS NULL;
@@ -207,3 +208,20 @@ CREATE TABLE IF NOT EXISTS notifications
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications (user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_unconfirmed ON notifications (user_id, created_at)
     WHERE confirmed_at IS NULL;
+
+-- =====================
+-- 11. email_verifications
+-- =====================
+CREATE TABLE IF NOT EXISTS email_verifications
+(
+    id         UUID                     NOT NULL,
+    token      VARCHAR(255)             NOT NULL,
+    user_id    UUID                     NOT NULL,
+    expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                             PRIMARY KEY (id),
+    UNIQUE (token),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+
+CREATE INDEX IF NOT EXISTS idx_email_verifications_user_id ON email_verifications (user_id);

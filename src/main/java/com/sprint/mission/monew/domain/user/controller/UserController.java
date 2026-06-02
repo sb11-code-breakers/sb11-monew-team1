@@ -8,21 +8,26 @@ import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
+@Validated
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @RestController
@@ -46,6 +51,15 @@ public class UserController implements UserApi {
     UserResponse response = userService.login(request);
     log.info("로그인 성공: id={}", response.id());
     return ResponseEntity.ok(response);
+  }
+
+  @GetMapping("/verify")
+  @Override
+  public ResponseEntity<Void> verifyEmail(@NotBlank @RequestParam String token) {
+    log.debug("이메일 인증 요청 수신");
+    userService.verifyEmail(token);
+    log.info("이메일 인증 성공");
+    return ResponseEntity.ok().build();
   }
 
   @PatchMapping("/{userId}")

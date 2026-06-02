@@ -12,11 +12,11 @@ import com.sprint.mission.monew.domain.comment.event.CommentLikedEvent;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepository;
+import com.sprint.mission.monew.domain.interest.repository.dto.InterestSubscriber;
 import com.sprint.mission.monew.domain.notification.service.NotificationService;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import org.mockito.ArgumentMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -50,6 +50,20 @@ class NotificationEventListenerTest {
             Instant.now(),
             "AI 기술 발전 요약");
     event = new ArticleCreatedEvent(article);
+  }
+
+  private static InterestSubscriber subscriber(UUID interestId, UUID userId) {
+    return new InterestSubscriber() {
+      @Override
+      public UUID getInterestId() {
+        return interestId;
+      }
+
+      @Override
+      public UUID getUserId() {
+        return userId;
+      }
+    };
   }
 
   @Nested
@@ -102,15 +116,17 @@ class NotificationEventListenerTest {
       List<UUID> subscriberIds1 = List.of(UUID.randomUUID(), UUID.randomUUID());
       List<UUID> subscriberIds2 = List.of(UUID.randomUUID());
 
-      List<Object[]> batchResult =
+      List<InterestSubscriber> batchResult =
           List.of(
-              new Object[] {interest1.getId(), subscriberIds1.get(0)},
-              new Object[] {interest1.getId(), subscriberIds1.get(1)},
-              new Object[] {interest2.getId(), subscriberIds2.get(0)});
+              subscriber(interest1.getId(), subscriberIds1.get(0)),
+              subscriber(interest1.getId(), subscriberIds1.get(1)),
+              subscriber(interest2.getId(), subscriberIds2.get(0)));
 
       given(interestRepository.findMatchingInterests(article.getTitle(), article.getSummary()))
           .willReturn(List.of(interest1, interest2));
-      given(subscriptionRepository.findUserIdsByInterestIds(ArgumentMatchers.anyList()))
+      given(
+              subscriptionRepository.findSubscribersByInterestIds(
+                  List.of(interest1.getId(), interest2.getId())))
           .willReturn(batchResult);
 
       // when

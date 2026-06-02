@@ -5,6 +5,7 @@ import com.sprint.mission.monew.domain.comment.event.CommentLikedEvent;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepository;
+import com.sprint.mission.monew.domain.interest.repository.dto.InterestSubscriber;
 import com.sprint.mission.monew.domain.notification.service.NotificationService;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +13,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -32,7 +32,7 @@ public class NotificationEventListener {
         event.commentId(), event.commentAuthorId(), event.likerNickname());
   }
 
-  @EventListener
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleArticleCreated(ArticleCreatedEvent event) {
     String title = event.article().getTitle();
     String summary = event.article().getSummary();
@@ -44,11 +44,11 @@ public class NotificationEventListener {
 
     List<UUID> interestIds = interests.stream().map(Interest::getId).toList();
     Map<UUID, List<UUID>> subscribersByInterest =
-        subscriptionRepository.findUserIdsByInterestIds(interestIds).stream()
+        subscriptionRepository.findSubscribersByInterestIds(interestIds).stream()
             .collect(
                 Collectors.groupingBy(
-                    row -> (UUID) row[0],
-                    Collectors.mapping(row -> (UUID) row[1], Collectors.toList())));
+                    InterestSubscriber::getInterestId,
+                    Collectors.mapping(InterestSubscriber::getUserId, Collectors.toList())));
 
     for (Interest interest : interests) {
       List<UUID> subscriberIds =

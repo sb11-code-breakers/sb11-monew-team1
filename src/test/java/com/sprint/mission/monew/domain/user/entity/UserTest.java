@@ -45,4 +45,26 @@ class UserTest {
       assertThat(user.getNickname()).isEqualTo("새닉네임");
     }
   }
+
+  @Nested
+  @DisplayName("이메일 인증")
+  class VerifyEmail {
+
+    @Test
+    @DisplayName("회원가입 시 이메일 미인증 상태")
+    void 회원가입_시_이메일_미인증_상태() {
+      // then
+      assertThat(user.isEmailVerified()).isFalse();
+    }
+
+    @Test
+    @DisplayName("이메일 인증 후 인증 상태로 변경")
+    void 이메일_인증_후_인증_상태로_변경() {
+      // when
+      user.verifyEmail();
+
+      // then
+      assertThat(user.isEmailVerified()).isTrue();
+    }
+  }
 }

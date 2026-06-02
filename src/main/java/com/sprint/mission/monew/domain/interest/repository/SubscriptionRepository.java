@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.interest.repository;
 
 import com.sprint.mission.monew.domain.interest.entity.Subscription;
+import com.sprint.mission.monew.domain.interest.repository.dto.InterestSubscriber;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,9 +21,8 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
       "WHERE s.user.id = :userId")
   List<Subscription> findAllByUserId(@Param("userId") UUID userId, Pageable pageable);
 
-  @Query("SELECT s.user.id FROM Subscription s WHERE s.interest.id = :interestId")
-  List<UUID> findUserIdsByInterestId(@Param("interestId") UUID interestId);
-
-  @Query("SELECT s.interest.id, s.user.id FROM Subscription s WHERE s.interest.id IN :interestIds")
-  List<Object[]> findUserIdsByInterestIds(@Param("interestIds") List<UUID> interestIds);
+  @Query("SELECT s.interest.id AS interestId, s.user.id AS userId "
+      + "FROM Subscription s WHERE s.interest.id IN :interestIds")
+  List<InterestSubscriber> findSubscribersByInterestIds(
+      @Param("interestIds") List<UUID> interestIds);
 }

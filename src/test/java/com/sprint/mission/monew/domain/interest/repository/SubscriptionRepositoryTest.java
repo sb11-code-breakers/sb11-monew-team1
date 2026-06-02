@@ -1,16 +1,17 @@
 package com.sprint.mission.monew.domain.interest.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.sprint.mission.monew.common.config.JpaConfig;
 import com.sprint.mission.monew.common.config.QuerydslConfig;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.entity.Subscription;
+import com.sprint.mission.monew.domain.interest.repository.dto.InterestSubscriber;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -173,52 +174,29 @@ class SubscriptionRepositoryTest {
   }
 
   @Nested
-  @DisplayName("관심사 구독자 userId 목록 조회")
-  class FindUserIdsByInterestId {
+  @DisplayName("관심사 목록 구독자 일괄 조회")
+  class FindSubscribersByInterestIds {
 
     @Test
-    @DisplayName("구독자가 있으면 해당 userId 목록을 반환한다")
-    void 구독자가_있으면_해당_userId_목록을_반환한다() {
-      // given
+    @DisplayName("조회 대상 관심사의 (관심사ID, 구독자ID) 쌍만 반환한다")
+    void 조회_대상_관심사의_구독자_쌍만_반환한다() {
+      // given — interest는 조회 대상(구독자 2명), otherInterest는 제외 대상
+      Interest otherInterest = interestRepository.save(Interest.create("스포츠", List.of("축구")));
       User user2 = userRepository.save(User.create("user2@test.com", "유저2", "password123!"));
       subscriptionRepository.save(Subscription.create(interest, user));
       subscriptionRepository.save(Subscription.create(interest, user2));
+      subscriptionRepository.save(Subscription.create(otherInterest, user)); // 제외돼야 함
 
       // when
-      List<UUID> userIds = subscriptionRepository.findUserIdsByInterestId(interest.getId());
+      List<InterestSubscriber> result =
+          subscriptionRepository.findSubscribersByInterestIds(List.of(interest.getId()));
 
       // then
-      assertThat(userIds).hasSize(2);
-      assertThat(userIds).containsExactlyInAnyOrder(user.getId(), user2.getId());
-    }
-
-    @Test
-    @DisplayName("다른 관심사 구독자는 포함되지 않는다")
-    void 다른_관심사_구독자는_포함되지_않는다() {
-      // given
-      Interest otherInterest = interestRepository.save(Interest.create("스포츠", List.of("축구")));
-      User otherUser = userRepository.save(User.create("other@test.com", "타인", "password123!"));
-      subscriptionRepository.save(Subscription.create(interest, user));
-      subscriptionRepository.save(Subscription.create(otherInterest, otherUser));
-
-      // when
-      List<UUID> userIds = subscriptionRepository.findUserIdsByInterestId(interest.getId());
-
-      // then
-      assertThat(userIds).hasSize(1);
-      assertThat(userIds).containsExactly(user.getId());
-    }
-
-    @Test
-    @DisplayName("구독자가 없으면 빈 목록을 반환한다")
-    void 구독자가_없으면_빈_목록을_반환한다() {
-      // given — 구독 없음
-
-      // when
-      List<UUID> userIds = subscriptionRepository.findUserIdsByInterestId(interest.getId());
-
-      // then
-      assertThat(userIds).isEmpty();
+      assertThat(result)
+          .extracting(InterestSubscriber::getInterestId, InterestSubscriber::getUserId)
+          .containsExactlyInAnyOrder(
+              tuple(interest.getId(), user.getId()),
+              tuple(interest.getId(), user2.getId()));
     }
   }
 }

@@ -23,11 +23,15 @@ public class User extends BaseSoftDeletableEntity {
   @Column(nullable = false)
   private String password;
 
+  @Column(nullable = false)
+  private boolean emailVerified = false;
+
   public static User create(String email, String nickname, String password) {
     User user = new User();
     user.email = email;
     user.nickname = nickname;
     user.password = password;
+    user.emailVerified = false;
     return user;
   }
 
@@ -37,5 +41,9 @@ public class User extends BaseSoftDeletableEntity {
 
   public void updatePassword(String encodedPassword) {
     this.password = encodedPassword;
+  }
+
+  public void verifyEmail() {
+    this.emailVerified = true;
   }
 }
