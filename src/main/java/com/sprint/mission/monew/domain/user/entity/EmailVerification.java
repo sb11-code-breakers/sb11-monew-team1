@@ -24,25 +24,17 @@ public class EmailVerification extends BaseEntity {
   private UUID userId;
 
   @Column(nullable = false)
-  private Instant expiresAt;
-
-  @Column(nullable = false)
-  private boolean used = false;
+  private Instant expiredAt;
 
   public static EmailVerification create(UUID userId) {
     EmailVerification ev = new EmailVerification();
     ev.token = UUID.randomUUID().toString();
     ev.userId = userId;
-    ev.expiresAt = Instant.now().plus(24, ChronoUnit.HOURS);
-    ev.used = false;
+    ev.expiredAt = Instant.now().plus(24, ChronoUnit.HOURS);
     return ev;
   }
 
   public boolean isExpired() {
-    return Instant.now().isAfter(expiresAt);
-  }
-
-  public void use() {
-    this.used = true;
+    return Instant.now().isAfter(expiredAt);
   }
 }

@@ -78,18 +78,14 @@ public class UserService {
   public void verifyEmail(String token) {
     log.debug("이메일 인증 시도");
     EmailVerification verification = emailVerificationRepository
-        .findByTokenAndUsedFalse(token)
+        .findByTokenAndExpiredAtAfter(token, Instant.now())
         .orElseThrow(() -> InvalidVerificationTokenException.withToken(token));
 
-    if (verification.isExpired()) {
-      throw new IllegalArgumentException("만료된 토큰");
-    }
-
-    User user = userRepository.findById(verification.getUserId())
+    User user = userRepository.findByIdAndDeletedAtIsNull(verification.getUserId())
         .orElseThrow(() -> UserNotFoundException.withId(verification.getUserId()));
 
     user.verifyEmail();
-    verification.use();
+    emailVerificationRepository.delete(verification);
     log.info("이메일 인증 완료: userId={}", user.getId());
   }
 

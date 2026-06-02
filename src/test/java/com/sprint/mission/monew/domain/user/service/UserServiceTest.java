@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -15,6 +16,7 @@ import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.User;
+import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailNotVerifiedException;
@@ -24,8 +26,6 @@ import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
-import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
-
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -197,7 +197,8 @@ class UserServiceTest {
     @DisplayName("유효하지 않은 토큰이면 예외 발생")
     void 유효하지_않은_토큰이면_예외_발생() {
       // given
-      given(emailVerificationRepository.findByTokenAndUsedFalse("invalid-token"))
+      given(emailVerificationRepository.findByTokenAndExpiredAtAfter(
+          eq("invalid-token"), any(Instant.class)))
           .willReturn(Optional.empty());
 
       // when & then
@@ -213,16 +214,17 @@ class UserServiceTest {
       User user = User.create("test@test.com", "테스터", "encodedPassword");
       EmailVerification verification = EmailVerification.create(userId);
 
-      given(emailVerificationRepository.findByTokenAndUsedFalse(verification.getToken()))
+      given(emailVerificationRepository.findByTokenAndExpiredAtAfter(
+          eq(verification.getToken()), any(Instant.class)))
           .willReturn(Optional.of(verification));
-      given(userRepository.findById(userId)).willReturn(Optional.of(user));
+      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(user));
 
       // when
       userService.verifyEmail(verification.getToken());
 
       // then
       assertThat(user.isEmailVerified()).isTrue();
-      assertThat(verification.isUsed()).isTrue();
+      then(emailVerificationRepository).should().delete(verification);
     }
   }
 
