@@ -15,10 +15,10 @@ public class EmailService {
 
   private final SesClient sesClient;
 
-  @Value("${mail.sender:no-reply@monew.dev}")
+  @Value("${monew.mail.sender}")
   private String sender;
 
-  @Value("${app.verification-base-url:https://monew.dev}")
+  @Value("${monew.base-url}")
   private String verificationBaseUrl;
 
   @Async

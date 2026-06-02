@@ -9,7 +9,7 @@ import software.amazon.awssdk.services.ses.SesClient;
 @Configuration
 public class SesConfig {
 
-  @Value("${cloud.aws.region.static:ap-northeast-2}")
+  @Value("${cloud.aws.region.static}")
   private String region;
 
   @Bean
