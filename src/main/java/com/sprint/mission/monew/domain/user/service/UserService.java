@@ -53,9 +53,9 @@ public class UserService {
     User saved = userRepository.save(user);
 
     EmailVerification verification = EmailVerification.create(saved.getId());
-    emailVerificationRepository.save(verification);
+    EmailVerification savedVerification = emailVerificationRepository.save(verification);
     eventPublisher.publishEvent(
-        new EmailVerificationCreatedEvent(saved.getEmail(), verification.getToken()));
+        new EmailVerificationCreatedEvent(saved.getEmail(), savedVerification.getToken()));
 
     log.info("회원가입 완료: id={}", saved.getId());
     return userMapper.toResponse(saved);
