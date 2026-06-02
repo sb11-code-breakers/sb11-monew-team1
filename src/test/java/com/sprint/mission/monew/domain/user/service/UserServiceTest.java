@@ -3,6 +3,7 @@ package com.sprint.mission.monew.domain.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
@@ -12,13 +13,16 @@ import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
+import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
+import com.sprint.mission.monew.domain.user.exception.UserEmailNotVerifiedException;
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
+import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
 import java.util.Optional;
@@ -48,6 +52,12 @@ class UserServiceTest {
   @Mock
   private PasswordEncoder passwordEncoder;
 
+  @Mock
+  private EmailVerificationRepository emailVerificationRepository;
+
+  @Mock
+  private EmailService emailService;
+
   @Nested
   @DisplayName("회원가입")
   class Create {
@@ -73,8 +83,8 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("성공 시 저장된 사용자 반환")
-    void 성공_시_저장된_사용자_반환() {
+    @DisplayName("성공 시 저장된 사용자 반환 및 이메일 발송")
+    void 성공_시_저장된_사용자_반환_및_이메일_발송() {
       // given
       User user = User.create("test@test.com", "테스터", "encodedPassword");
       UserResponse userResponse = new UserResponse(
@@ -84,6 +94,8 @@ class UserServiceTest {
       given(userRepository.existsByEmail(request.email())).willReturn(false);
       given(passwordEncoder.encode(request.password())).willReturn("encodedPassword");
       given(userRepository.save(any(User.class))).willReturn(user);
+      given(emailVerificationRepository.save(any(EmailVerification.class)))
+          .willReturn(EmailVerification.create(UUID.randomUUID()));
       given(userMapper.toResponse(user)).willReturn(userResponse);
 
       // when
@@ -92,6 +104,8 @@ class UserServiceTest {
       // then
       then(passwordEncoder).should().encode(request.password());
       then(userRepository).should().save(any(User.class));
+      then(emailVerificationRepository).should().save(any(EmailVerification.class));
+      then(emailService).should().sendVerificationEmail(anyString(), anyString());
       then(userMapper).should().toResponse(user);
       assertThat(result).isNotNull();
       assertThat(result.email()).isEqualTo("test@test.com");
@@ -123,10 +137,24 @@ class UserServiceTest {
     }
 
     @Test
+    @DisplayName("이메일 미인증 시 예외 발생")
+    void 이메일_미인증_시_예외_발생() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+
+      // when & then
+      assertThatThrownBy(() -> userService.login(request))
+          .isInstanceOf(UserEmailNotVerifiedException.class);
+    }
+
+    @Test
     @DisplayName("비밀번호가 틀리면 예외 발생")
     void 비밀번호가_틀리면_예외_발생() {
       // given
       User user = User.create("test@test.com", "테스터", "encodedPassword");
+      user.verifyEmail();
       given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
           .willReturn(Optional.of(user));
       given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
@@ -141,6 +169,7 @@ class UserServiceTest {
     void 성공_시_사용자_반환() {
       // given
       User user = User.create("test@test.com", "테스터", "encodedPassword");
+      user.verifyEmail();
       UserResponse userResponse = new UserResponse(
           UUID.randomUUID(), "test@test.com", "테스터", Instant.now()
       );
@@ -155,6 +184,43 @@ class UserServiceTest {
       // then
       assertThat(result).isNotNull();
       assertThat(result.email()).isEqualTo("test@test.com");
+    }
+  }
+
+  @Nested
+  @DisplayName("이메일 인증")
+  class VerifyEmail {
+
+    @Test
+    @DisplayName("유효하지 않은 토큰이면 예외 발생")
+    void 유효하지_않은_토큰이면_예외_발생() {
+      // given
+      given(emailVerificationRepository.findByTokenAndUsedFalse("invalid-token"))
+          .willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userService.verifyEmail("invalid-token"))
+          .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("성공 시 이메일 인증 완료")
+    void 성공_시_이메일_인증_완료() {
+      // given
+      UUID userId = UUID.randomUUID();
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      EmailVerification verification = EmailVerification.create(userId);
+
+      given(emailVerificationRepository.findByTokenAndUsedFalse(verification.getToken()))
+          .willReturn(Optional.of(verification));
+      given(userRepository.findById(userId)).willReturn(Optional.of(user));
+
+      // when
+      userService.verifyEmail(verification.getToken());
+
+      // then
+      assertThat(user.isEmailVerified()).isTrue();
+      assertThat(verification.isUsed()).isTrue();
     }
   }
 
