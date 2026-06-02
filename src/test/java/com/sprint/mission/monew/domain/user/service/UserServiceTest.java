@@ -24,6 +24,8 @@ import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
+
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -200,7 +202,7 @@ class UserServiceTest {
 
       // when & then
       assertThatThrownBy(() -> userService.verifyEmail("invalid-token"))
-          .isInstanceOf(IllegalArgumentException.class);
+          .isInstanceOf(InvalidVerificationTokenException.class);
     }
 
     @Test
