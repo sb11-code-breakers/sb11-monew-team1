@@ -1,4 +1,4 @@
-package com.sprint.mission.monew.domain.comment.dto.request;
+package com.sprint.mission.monew.domain.comment.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

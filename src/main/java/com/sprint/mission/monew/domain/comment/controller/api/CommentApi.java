@@ -1,9 +1,11 @@
 package com.sprint.mission.monew.domain.comment.controller.api;
 
+import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.common.dto.ErrorResponse;
-import com.sprint.mission.monew.domain.comment.dto.request.CommentCreateRequest;
-import com.sprint.mission.monew.domain.comment.dto.request.CommentUpdateRequest;
-import com.sprint.mission.monew.domain.comment.dto.response.CommentResponse;
+import com.sprint.mission.monew.domain.comment.dto.CommentCreateRequest;
+import com.sprint.mission.monew.domain.comment.dto.CommentQueryCondition;
+import com.sprint.mission.monew.domain.comment.dto.CommentUpdateRequest;
+import com.sprint.mission.monew.domain.comment.dto.CommentResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -13,7 +15,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -75,4 +79,16 @@ public interface CommentApi {
   ResponseEntity<Void> hardDeleteComment(
       @PathVariable @Parameter(description = "댓글 ID") UUID commentId
   );
+
+  @Operation(summary = "댓글 목록 조회", description = "조건에 맞는 댓글 목록을 조회합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "조회 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청(정렬 기준 오류, 페이지네이션 파라미터 오류 등)",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<CursorPageResponse<CommentResponse>> getComments(
+      @ModelAttribute @ParameterObject CommentQueryCondition condition,
+      @RequestHeader("Monew-Request-User-ID") @Parameter(description = "요청자 ID") UUID userId);
 }

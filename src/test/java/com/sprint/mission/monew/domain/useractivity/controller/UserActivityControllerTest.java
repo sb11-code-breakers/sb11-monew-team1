@@ -52,13 +52,15 @@ class UserActivityControllerTest {
     void soft_delete된_userId면_404를_반환한다() throws Exception {
       // given
       UUID userId = UUID.randomUUID();
+      // soft-delete된 유저는 findByIdAndDeletedAtIsNull에서 걸러져 UserNotFoundException 발생
       willThrow(UserNotFoundException.withId(userId))
           .given(userActivityService).getUserActivity(userId, userId);
 
       // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", userId)
               .header("Monew-Request-User-ID", userId))
-          .andExpect(status().isNotFound());
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.message").exists());  // ← 에러 메시지 검증!
     }
 
     @Test

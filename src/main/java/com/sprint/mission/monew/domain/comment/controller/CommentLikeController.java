@@ -1,7 +1,7 @@
 package com.sprint.mission.monew.domain.comment.controller;
 
 import com.sprint.mission.monew.domain.comment.controller.api.CommentLikeApi;
-import com.sprint.mission.monew.domain.comment.dto.response.CommentLikeResponse;
+import com.sprint.mission.monew.domain.comment.dto.CommentLikeResponse;
 import com.sprint.mission.monew.domain.comment.service.CommentLikeService;
 import io.swagger.v3.oas.annotations.Parameter;
 import java.util.UUID;

@@ -7,22 +7,28 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.sprint.mission.monew.common.dto.CursorPageResponse;
+import com.sprint.mission.monew.common.dto.SortDirection;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.exception.ArticleNotFoundException;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
-import com.sprint.mission.monew.domain.comment.dto.request.CommentCreateRequest;
-import com.sprint.mission.monew.domain.comment.dto.request.CommentUpdateRequest;
-import com.sprint.mission.monew.domain.comment.dto.response.CommentResponse;
+import com.sprint.mission.monew.domain.comment.dto.CommentCreateRequest;
+import com.sprint.mission.monew.domain.comment.dto.CommentOrderBy;
+import com.sprint.mission.monew.domain.comment.dto.CommentQueryCondition;
+import com.sprint.mission.monew.domain.comment.dto.CommentUpdateRequest;
+import com.sprint.mission.monew.domain.comment.dto.CommentResponse;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.exception.CommentAccessDeniedException;
 import com.sprint.mission.monew.domain.comment.exception.CommentNotFoundException;
 import com.sprint.mission.monew.domain.comment.mapper.CommentMapper;
+import com.sprint.mission.monew.domain.comment.repository.CommentLikeRepository;
 import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 public class CommentServiceTest {
@@ -48,6 +55,9 @@ public class CommentServiceTest {
 
   @Mock
   private UserRepository userRepository;
+
+  @Mock
+  private CommentLikeRepository commentLikeRepository;
 
   @Mock
   private CommentMapper commentMapper;
@@ -199,7 +209,8 @@ public class CommentServiceTest {
       given(commentMapper.toResponse(eq(comment), eq(false))).willReturn(expectedResponse);
 
       // when
-      CommentResponse response = commentService.update(comment.getId(), user.getId(), updateRequest);
+      CommentResponse response = commentService.update(comment.getId(), user.getId(),
+          updateRequest);
 
       // then
       assertThat(response).isNotNull();
@@ -282,6 +293,587 @@ public class CommentServiceTest {
 
       // then
       verify(commentRepository).delete(comment);
+    }
+  }
+
+  @Nested
+  @DisplayName("댓글 목록 조회하기")
+  class Service_Comment_Find {
+
+    @Test
+    @DisplayName("hasNext True 테스트(임시 limit 2로 고정)")
+    void hasNext_True() {
+      // given
+      Comment firstComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(firstComment, "createdAt", Instant.now());
+
+      Comment secondComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(secondComment, "createdAt", Instant.now().plusSeconds(1));
+
+      Comment thirdComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(thirdComment, "createdAt", Instant.now().plusSeconds(2));
+
+      CommentResponse firstResponse = new CommentResponse(
+          firstComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "첫 번째 댓글",
+          0L,
+          false,
+          firstComment.getCreatedAt()
+      );
+      CommentResponse secondResponse = new CommentResponse(
+          secondComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "두 번째 댓글",
+          0L,
+          false,
+          secondComment.getCreatedAt()
+      );
+      CommentResponse thirdResponse = new CommentResponse(
+          thirdComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "세 번째 댓글",
+          0L,
+          false,
+          thirdComment.getCreatedAt()
+      );
+
+      CursorPageResponse<CommentResponse> response = CursorPageResponse.of(
+          List.of(firstResponse, secondResponse),
+          "cursor",
+          secondResponse.createdAt(),
+          true,
+          2,
+          3L
+      );
+
+      given(commentRepository.getComments(any(), any())).willReturn(response);
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.CREATED_AT,
+          SortDirection.DESC,
+          null,
+          null,
+          2
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> result = commentService.getComments(condition, userId);
+
+      // then
+      assertThat(result.hasNext()).isTrue();
+      assertThat(result.content().size()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("다음 페이지가 없을 때 hasNext false")
+    void hasNext_False() {
+      // given
+      Comment firstComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(firstComment, "createdAt", Instant.now());
+
+      Comment secondComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(secondComment, "createdAt", Instant.now().plusSeconds(1));
+
+      Comment thirdComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(thirdComment, "createdAt", Instant.now().plusSeconds(2));
+
+      CommentResponse firstResponse = new CommentResponse(
+          firstComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "첫 번째 댓글",
+          0L,
+          false,
+          firstComment.getCreatedAt()
+      );
+      CommentResponse secondResponse = new CommentResponse(
+          secondComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "두 번째 댓글",
+          0L,
+          false,
+          secondComment.getCreatedAt()
+      );
+      CommentResponse thirdResponse = new CommentResponse(
+          thirdComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "세 번째 댓글",
+          0L,
+          false,
+          thirdComment.getCreatedAt()
+      );
+
+      CursorPageResponse<CommentResponse> response = CursorPageResponse.of(
+          List.of(firstResponse, secondResponse),
+          "cursor",
+          secondResponse.createdAt(),
+          false,
+          2,
+          3L
+      );
+
+      given(commentRepository.getComments(any(), any())).willReturn(response);
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.CREATED_AT,
+          SortDirection.DESC,
+          null,
+          null,
+          5
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> result = commentService.getComments(condition, userId);
+
+      // then
+      assertThat(result.hasNext()).isFalse();
+    }
+
+    @Test
+    @DisplayName("등록순 조회 시 nextCursor 반환")
+    void 등록순_nextCursor() {
+      // given
+      Comment firstComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(firstComment, "createdAt", Instant.now());
+
+      Comment secondComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(secondComment, "createdAt", Instant.now().plusSeconds(1));
+
+      Comment thirdComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(thirdComment, "createdAt", Instant.now().plusSeconds(2));
+
+      CommentResponse firstResponse = new CommentResponse(
+          firstComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "첫 번째 댓글",
+          0L,
+          false,
+          firstComment.getCreatedAt()
+      );
+      CommentResponse secondResponse = new CommentResponse(
+          secondComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "두 번째 댓글",
+          0L,
+          false,
+          secondComment.getCreatedAt()
+      );
+      CommentResponse thirdResponse = new CommentResponse(
+          thirdComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "세 번째 댓글",
+          0L,
+          false,
+          thirdComment.getCreatedAt()
+      );
+
+      CursorPageResponse<CommentResponse> response = CursorPageResponse.of(
+          List.of(firstResponse, secondResponse),
+          secondResponse.createdAt().toString(),
+          secondResponse.createdAt(),
+          true,
+          2,
+          3L
+      );
+
+      given(commentRepository.getComments(any(), any())).willReturn(response);
+
+      CommentQueryCondition condition =
+          new CommentQueryCondition(
+              articleId,
+              CommentOrderBy.CREATED_AT,
+              SortDirection.DESC,
+              null,
+              null,
+              2
+          );
+
+      // when
+      CursorPageResponse<CommentResponse> result = commentService.getComments(condition, userId);
+
+      // then
+      assertThat(result.nextCursor()).isEqualTo(secondComment.getCreatedAt().toString());
+    }
+
+    @Test
+    @DisplayName("등록순 조회 시 nextAfter 반환")
+    void 등록순_nextAfter() {
+      // given
+      Comment firstComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(firstComment, "createdAt", Instant.now());
+      Comment secondComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(secondComment, "createdAt", Instant.now().plusSeconds(1));
+      Comment thirdComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(thirdComment, "createdAt", Instant.now().plusSeconds(2));
+
+      CommentResponse firstResponse = new CommentResponse(
+          firstComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "첫 번째 댓글",
+          0L,
+          false,
+          firstComment.getCreatedAt()
+      );
+      CommentResponse secondResponse = new CommentResponse(
+          secondComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "두 번째 댓글",
+          0L,
+          false,
+          secondComment.getCreatedAt()
+      );
+      CommentResponse thirdResponse = new CommentResponse(
+          thirdComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "세 번째 댓글",
+          0L,
+          false,
+          thirdComment.getCreatedAt()
+      );
+
+      CursorPageResponse<CommentResponse> response = CursorPageResponse.of(
+          List.of(firstResponse, secondResponse),
+          "cursor",
+          secondResponse.createdAt(),
+          true,
+          2,
+          3L
+      );
+
+      given(commentRepository.getComments(any(), any())).willReturn(response);
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.CREATED_AT,
+          SortDirection.DESC,
+          null,
+          null,
+          2
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> result = commentService.getComments(condition, userId);
+
+      // then
+      assertThat(result.nextAfter()).isEqualTo(secondComment.getCreatedAt().toString());
+    }
+
+    @Test
+    @DisplayName("좋아요 순 nextCursor 반환")
+    void 좋아요순_nextCursor() {
+      // given
+      Comment firstComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(firstComment, "createdAt", Instant.now());
+      ReflectionTestUtils.setField(firstComment, "likeCount", 2);
+      Comment secondComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(secondComment, "createdAt", Instant.now().plusSeconds(1));
+      ReflectionTestUtils.setField(secondComment, "likeCount", 2);
+      Comment thirdComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(thirdComment, "createdAt", Instant.now().plusSeconds(2));
+      ReflectionTestUtils.setField(thirdComment, "likeCount", 1);
+
+      CommentResponse firstResponse = new CommentResponse(
+          firstComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "첫 번째 댓글",
+          2L,
+          false,
+          firstComment.getCreatedAt()
+      );
+      CommentResponse secondResponse = new CommentResponse(
+          secondComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "두 번째 댓글",
+          2L,
+          false,
+          secondComment.getCreatedAt()
+      );
+      CommentResponse thirdResponse = new CommentResponse(
+          thirdComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "세 번째 댓글",
+          1L,
+          false,
+          thirdComment.getCreatedAt()
+      );
+
+      CursorPageResponse<CommentResponse> response = CursorPageResponse.of(
+          List.of(firstResponse, secondResponse),
+          String.valueOf(secondResponse.likeCount()),
+          secondResponse.createdAt(),
+          true,
+          2,
+          3L
+      );
+
+      given(commentRepository.getComments(any(), any())).willReturn(response);
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.LIKE_COUNT,
+          SortDirection.DESC,
+          null,
+          null,
+          2
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> result = commentService.getComments(condition, userId);
+
+      // then
+      assertThat(result.nextCursor()).isEqualTo("2");
+    }
+
+    @Test
+    @DisplayName("좋아요 순 nextAfter 반환")
+    void 좋아요순_nextAfter() {
+      // given
+      Comment firstComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(firstComment, "createdAt", Instant.now());
+      ReflectionTestUtils.setField(firstComment, "likeCount", 2);
+      Comment secondComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(secondComment, "createdAt", Instant.now().plusSeconds(1));
+      ReflectionTestUtils.setField(secondComment, "likeCount", 2);
+      Comment thirdComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(thirdComment, "createdAt", Instant.now().plusSeconds(2));
+      ReflectionTestUtils.setField(thirdComment, "likeCount", 1);
+
+      CommentResponse firstResponse = new CommentResponse(
+          firstComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "첫 번째 댓글",
+          0L,
+          false,
+          firstComment.getCreatedAt()
+      );
+      CommentResponse secondResponse = new CommentResponse(
+          secondComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "두 번째 댓글",
+          0L,
+          false,
+          secondComment.getCreatedAt()
+      );
+      CommentResponse thirdResponse = new CommentResponse(
+          thirdComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "세 번째 댓글",
+          0L,
+          false,
+          thirdComment.getCreatedAt()
+      );
+
+      CursorPageResponse<CommentResponse> response = CursorPageResponse.of(
+          List.of(firstResponse, secondResponse),
+          "cursor",
+          secondResponse.createdAt(),
+          true,
+          2,
+          3L
+      );
+
+      given(commentRepository.getComments(any(), any())).willReturn(response);
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.LIKE_COUNT,
+          SortDirection.DESC,
+          null,
+          null,
+          2
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> result = commentService.getComments(condition, userId);
+
+      // then
+      assertThat(result.nextAfter()).isEqualTo(secondComment.getCreatedAt().toString());
+    }
+
+    @Test
+    @DisplayName("likedByMe false 테스트")
+    void likedByMe_false() {
+      // given
+      UUID requestId = UUID.randomUUID();
+      Comment comment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(comment, "createdAt", Instant.now());
+
+      CommentResponse commentResponse = new CommentResponse(
+          comment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "댓글 내용",
+          0L,
+          false,
+          comment.getCreatedAt()
+      );
+      CursorPageResponse<CommentResponse> response = CursorPageResponse.of(
+          List.of(commentResponse),
+          "cursor",
+          commentResponse.createdAt(),
+          true,
+          2,
+          1L
+      );
+
+      given(commentRepository.getComments(any(), any())).willReturn(response);
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.CREATED_AT,
+          SortDirection.DESC,
+          null,
+          null,
+          5
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> result = commentService.getComments(condition, requestId);
+
+      // then
+      assertThat(result.content().get(0).likedByMe()).isFalse();
+    }
+
+    @Test
+    @DisplayName("likedByMe true 테스트")
+    void likedByMe_true() {
+      // given
+      UUID requestId = UUID.randomUUID();
+      Comment comment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(comment, "createdAt", Instant.now());
+
+      CommentResponse commentResponse = new CommentResponse(
+          comment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "댓글 내용",
+          0L,
+          true,
+          comment.getCreatedAt()
+      );
+      CursorPageResponse<CommentResponse> response = CursorPageResponse.of(
+          List.of(commentResponse),
+          "cursor",
+          commentResponse.createdAt(),
+          true,
+          2,
+          1L
+      );
+
+      given(commentRepository.getComments(any(), any())).willReturn(response);
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.CREATED_AT,
+          SortDirection.DESC,
+          null,
+          null,
+          5
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> result = commentService.getComments(condition, requestId);
+
+      // then
+      assertThat(result.content().get(0).likedByMe()).isTrue();
+    }
+
+    @Test
+    @DisplayName("댓글 목록 조회 성공")
+    void 댓글_목록_조회_성공() {
+      // given
+      Comment firstComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(firstComment, "createdAt", Instant.now());
+      Comment secondComment = Comment.create(article, user, content);
+      ReflectionTestUtils.setField(secondComment, "createdAt", Instant.now().plusSeconds(1));
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.CREATED_AT,
+          SortDirection.DESC,
+          null,
+          null,
+          5
+      );
+
+      CommentResponse firstResponse = new CommentResponse(
+          firstComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "첫 번째 댓글",
+          0L,
+          false,
+          firstComment.getCreatedAt()
+      );
+      CommentResponse secondResponse = new CommentResponse(
+          secondComment.getId(),
+          article.getId(),
+          user.getId(),
+          user.getNickname(),
+          "첫 번째 댓글",
+          0L,
+          false,
+          secondComment.getCreatedAt()
+      );
+
+      CursorPageResponse<CommentResponse> response = CursorPageResponse.of(
+          List.of(firstResponse, secondResponse),
+          "cursor",
+          secondResponse.createdAt(),
+          true,
+          2,
+          2L
+      );
+
+      given(commentRepository.getComments(any(), any())).willReturn(response);
+
+      // when
+      CursorPageResponse<CommentResponse> result = commentService.getComments(condition,
+          user.getId());
+
+      // then
+      assertThat(result.content()).hasSize(2);
     }
   }
 }

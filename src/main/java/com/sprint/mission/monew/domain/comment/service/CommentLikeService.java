@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.domain.comment.service;
 
-import com.sprint.mission.monew.domain.comment.dto.response.CommentLikeResponse;
+import com.sprint.mission.monew.domain.comment.dto.CommentLikeResponse;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.entity.CommentLike;
 import com.sprint.mission.monew.domain.comment.event.CommentLikedEvent;

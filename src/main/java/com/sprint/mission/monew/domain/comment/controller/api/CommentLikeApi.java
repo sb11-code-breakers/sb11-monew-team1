@@ -1,7 +1,7 @@
 package com.sprint.mission.monew.domain.comment.controller.api;
 
 import com.sprint.mission.monew.common.dto.ErrorResponse;
-import com.sprint.mission.monew.domain.comment.dto.response.CommentLikeResponse;
+import com.sprint.mission.monew.domain.comment.dto.CommentLikeResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;

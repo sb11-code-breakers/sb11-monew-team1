@@ -81,12 +81,14 @@ class UserActivityServiceTest {
     @DisplayName("soft-delete된 userId면 예외가 발생한다")
     void soft_delete된_userId면_예외가_발생한다() {
       // given
+      // soft-delete된 유저는 findByIdAndDeletedAtIsNull에서 걸러져 empty 반환
       given(userRepository.findByIdAndDeletedAtIsNull(userId))
           .willReturn(Optional.empty());
 
       // when & then
       assertThatThrownBy(() -> userActivityService.getUserActivity(userId, userId))
-          .isInstanceOf(UserNotFoundException.class);
+          .isInstanceOf(UserNotFoundException.class)
+          .hasMessageContaining(userId.toString()); // ← 메시지로 구분
     }
 
     @Test

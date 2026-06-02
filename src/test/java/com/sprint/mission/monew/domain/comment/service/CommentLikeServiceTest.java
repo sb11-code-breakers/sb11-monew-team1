@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
-import com.sprint.mission.monew.domain.comment.dto.response.CommentLikeResponse;
+import com.sprint.mission.monew.domain.comment.dto.CommentLikeResponse;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.entity.CommentLike;
 import com.sprint.mission.monew.domain.comment.event.CommentLikedEvent;
@@ -40,17 +40,23 @@ import org.springframework.context.ApplicationEventPublisher;
 @ExtendWith(MockitoExtension.class)
 public class CommentLikeServiceTest {
 
-  @InjectMocks private CommentLikeService commentLikeService;
+  @InjectMocks
+  private CommentLikeService commentLikeService;
 
-  @Mock private CommentLikeRepository commentLikeRepository;
+  @Mock
+  private CommentLikeRepository commentLikeRepository;
 
-  @Mock private UserRepository userRepository;
+  @Mock
+  private UserRepository userRepository;
 
-  @Mock private CommentRepository commentRepository;
+  @Mock
+  private CommentRepository commentRepository;
 
-  @Mock private CommentLikeMapper commentLikeMapper;
+  @Mock
+  private CommentLikeMapper commentLikeMapper;
 
-  @Mock private ApplicationEventPublisher eventPublisher;
+  @Mock
+  private ApplicationEventPublisher eventPublisher;
 
   private UUID articleId;
   private UUID userId;
@@ -112,6 +118,7 @@ public class CommentLikeServiceTest {
       // given
       given(commentLikeRepository.existsByUserIdAndCommentId(userId, commentId)).willReturn(true);
 
+      // when & then
       assertThatThrownBy(() -> commentLikeService.create(commentId, userId))
           .isInstanceOf(CommentLikeAlreadyExistsException.class);
     }
@@ -189,6 +196,9 @@ public class CommentLikeServiceTest {
     @Test
     @DisplayName("댓글 좋아요 취소 실패 - 좋아요가 존재하지 않음")
     void 댓글_좋아요_취소_실패_좋아요_없음() {
+      // given
+      given(commentLikeRepository.deleteByUserIdAndCommentId(userId, commentId)).willReturn(0);
+
       // when & then
       assertThatThrownBy(() -> commentLikeService.cancel(commentId, userId))
           .isInstanceOf(CommentLikeNotFoundException.class);

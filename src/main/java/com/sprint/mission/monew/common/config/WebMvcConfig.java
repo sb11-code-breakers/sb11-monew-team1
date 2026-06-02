@@ -3,6 +3,7 @@ package com.sprint.mission.monew.common.config;
 import com.sprint.mission.monew.common.exception.InvalidOrderByException;
 import com.sprint.mission.monew.common.interceptor.MdcLoggingInterceptor;
 import com.sprint.mission.monew.domain.article.dto.ArticleOrderBy;
+import com.sprint.mission.monew.domain.comment.dto.CommentOrderBy;
 import com.sprint.mission.monew.domain.interest.dto.InterestOrderBy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
@@ -50,6 +51,13 @@ public class WebMvcConfig implements WebMvcConfigurer {
       case "subscriberCount" -> InterestOrderBy.SUBSCRIBER_COUNT;
       default ->
           throw new InvalidOrderByException(value, InterestOrderBy.class, "지원하는 정렬 기준이 아닙니다.");
+    });
+
+    registry.addConverter(String.class, CommentOrderBy.class, value -> switch(value) {
+      case "createdAt" -> CommentOrderBy.CREATED_AT;
+      case "likeCount" -> CommentOrderBy.LIKE_COUNT;
+      default ->
+        throw new InvalidOrderByException(value, CommentOrderBy.class, "지원하는 정렬 기준이 아닙니다.");
     });
   }
 }

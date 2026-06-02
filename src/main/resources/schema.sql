@@ -149,7 +149,7 @@ CREATE TABLE IF NOT EXISTS comments
     article_id UUID                     NOT NULL,
     user_id    UUID,
     content    VARCHAR(500)             NOT NULL,
-    like_count INT                      NOT NULL DEFAULT 0,
+    like_count BIGINT                      NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE,
     deleted_at TIMESTAMP WITH TIME ZONE,

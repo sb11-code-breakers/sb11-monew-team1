@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.comment;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -12,6 +13,7 @@ import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
+import com.sprint.mission.monew.domain.comment.service.CommentService;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
@@ -37,7 +39,6 @@ public class CommentIntegrationTest {
   @Autowired
   private MockMvc mockMvc;
 
-
   @Autowired
   private CommentRepository commentRepository;
 
@@ -47,6 +48,9 @@ public class CommentIntegrationTest {
   @Autowired
   private UserRepository userRepository;
 
+  @Autowired
+  private CommentService commentService;
+
   private Article article;
   private User user;
   private String content;
@@ -54,6 +58,7 @@ public class CommentIntegrationTest {
 
   @BeforeEach
   void setUp() {
+
     article = articleRepository.save(
         Article.create(
             ArticleSource.NAVER,
@@ -195,7 +200,7 @@ public class CommentIntegrationTest {
     @Test
     @DisplayName("댓글 수정 실패 - 수정할 댓글 내용 공백(유효성 검증)")
     void 댓글_수정_실패_수정댓글내용_blank() throws Exception {
-      // when
+      // given
       // comment는 BeforeEach에서 초기화
       String requestBody = """
           {
@@ -308,6 +313,141 @@ public class CommentIntegrationTest {
 
       // DB 검증
       assertThat(commentRepository.findById(comment.getId())).isEmpty();
+    }
+  }
+
+  @Nested
+  @DisplayName("댓글 목록 조회하기")
+  class Find {
+
+    @Test
+    @DisplayName("댓글 목록 조회 실패 - orderBy Null")
+    void 댓글_목록조회_실패_orderBy_Null() throws Exception {
+      // given
+      // 유효성 검증 실패 시 데이터 불필요
+
+      // when & then
+      mockMvc.perform(get("/api/comments")
+              .param("articleId", article.getId().toString())
+              .param("direction", "DESC")
+              .param("limit", "5")
+              .header("Monew-Request-User-ID", user.getId()))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("댓글 목록 조회 실패 - direction Null")
+    void 댓글_목록조회_실패_direction_Null() throws Exception {
+      // given
+      // 유효성 검증 실패 시 데이터 불필요
+
+      // when & then
+      mockMvc.perform(get("/api/comments")
+              .param("articleId", article.getId().toString())
+              .param("orderBy", "CREATED_AT")
+              .param("limit", "5")
+              .header("Monew-Request-User-ID", user.getId()))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("댓글 목록 조회 실패 - limit가 Null")
+    void 댓글_목록조회_실패_limit_Null() throws Exception {
+      // given
+      // 유효성 검증 실패 시 데이터 불필요
+
+      // when & then
+      mockMvc.perform(get("/api/comments")
+              .param("articleId", article.getId().toString())
+              .param("orderBy", "CREATED_AT")
+              .param("direction", "DESC")
+              .header("Monew-Request-User-ID", user.getId()))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("댓글 목록 조회 실패 - limit는 최소 1")
+    void 댓글_목록조회_실패_limit_Min_One() throws Exception {
+      // given
+      // 유효성 검증 실패 시 데이터 불필요
+
+      // when & then
+      mockMvc.perform(get("/api/comments")
+              .param("articleId", article.getId().toString())
+              .param("orderBy", "CREATED_AT")
+              .param("direction", "DESC")
+              .param("limit", "0")
+              .header("Monew-Request-User-ID", user.getId()))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("댓글 목록 조회 실패 - LIKE_COUNT가 숫자가 아님")
+    void 댓글_목록조회_실패_LIKE_COUNT가_숫자아님() throws Exception {
+      // given
+      // 유효성 검증 실패 시 서비스 호출되지 않음
+
+      // when & then
+      mockMvc.perform(
+              get("/api/comments")
+                  .param("articleId", article.getId().toString())
+                  .param("orderBy", "LIKE_COUNT")
+                  .param("direction", "DESC")
+                  .param("cursor", "notNumber")
+                  .param("limit", "0")
+                  .header("Monew-Request-User-ID", user.getId().toString()))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("댓글 목록 조회 성공 - 등록순")
+    void 댓글_목록조회_성공_등록순() throws Exception {
+      // given
+      // comment도 commentRepository에 save() 되어있음, content.length(), size는 3이 나와야 함
+      Comment firstComment = commentRepository.save(Comment.create(article, user, "첫 번째 댓글"));
+      Thread.sleep(1000);
+
+      Comment secondComment = commentRepository.save(Comment.create(article, user, "두 번째 댓글"));
+
+      // when & then
+      mockMvc.perform(get("/api/comments")
+              .param("articleId", article.getId().toString())
+              .param("orderBy", "CREATED_AT")
+              .param("direction", "DESC")
+              .param("limit", "5")
+              .header("Monew-Request-User-ID", user.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content").isArray())
+          .andExpect(jsonPath("$.content.length()").value(3))
+          .andExpect(jsonPath("$.size").value(3))
+          .andExpect(jsonPath("$.hasNext").value(false));
+    }
+
+    @Test
+    @DisplayName("댓글 목록 조회 성공 - 좋아요순")
+    void 댓글_목록조회_성공_좋아요순() throws Exception {
+      // given
+      Comment firstComment = commentRepository.save(Comment.create(article, user, "첫 번째 댓글"));
+      commentRepository.increaseLikeCount(firstComment.getId());
+      commentRepository.increaseLikeCount(firstComment.getId());
+      Thread.sleep(1000);
+
+      Comment secondComment = commentRepository.save(Comment.create(article, user, "두 번째 댓글"));
+      commentRepository.increaseLikeCount(secondComment.getId());
+
+      // when & then
+      mockMvc.perform(get("/api/comments")
+              .param("articleId", article.getId().toString())
+              .param("orderBy", "LIKE_COUNT")
+              .param("direction", "DESC")
+              .param("cursor", "1")
+              .param("after", secondComment.getCreatedAt().toString())
+              .param("limit", "5")
+              .header("Monew-Request-User-ID", user.getId()))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content").isArray())
+          .andExpect(jsonPath("$.content.length()").value(1))
+          .andExpect(jsonPath("$.nextCursor").exists());
     }
   }
 }

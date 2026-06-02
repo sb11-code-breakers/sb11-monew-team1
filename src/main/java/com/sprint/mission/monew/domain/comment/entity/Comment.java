@@ -42,9 +42,9 @@ public class Comment extends BaseSoftDeletableEntity {
   @Column(nullable = false, length = 500)
   private String content;
 
-  // int, not null(default 0)
+  // long, not null(default 0)
   @Column(name = "like_count", nullable = false)
-  private int likeCount = 0;
+  private long likeCount = 0;
 
   // 생성자
   private Comment(Article article, User user, String content) {

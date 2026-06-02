@@ -1,4 +1,4 @@
-package com.sprint.mission.monew.domain.comment.dto.response;
+package com.sprint.mission.monew.domain.comment.dto;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -10,7 +10,7 @@ public record CommentResponse(
     UUID userId,
     String userNickname,
     String content,
-    int likeCount,
+    long likeCount,
     boolean likedByMe,
     Instant createdAt
 ) {

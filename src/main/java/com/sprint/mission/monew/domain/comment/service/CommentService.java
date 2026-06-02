@@ -1,19 +1,25 @@
 package com.sprint.mission.monew.domain.comment.service;
 
+import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.exception.ArticleNotFoundException;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
-import com.sprint.mission.monew.domain.comment.dto.request.CommentCreateRequest;
-import com.sprint.mission.monew.domain.comment.dto.request.CommentUpdateRequest;
-import com.sprint.mission.monew.domain.comment.dto.response.CommentResponse;
+import com.sprint.mission.monew.domain.comment.dto.CommentCreateRequest;
+import com.sprint.mission.monew.domain.comment.dto.CommentQueryCondition;
+import com.sprint.mission.monew.domain.comment.dto.CommentUpdateRequest;
+import com.sprint.mission.monew.domain.comment.dto.CommentResponse;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.exception.CommentAccessDeniedException;
 import com.sprint.mission.monew.domain.comment.exception.CommentNotFoundException;
 import com.sprint.mission.monew.domain.comment.mapper.CommentMapper;
+import com.sprint.mission.monew.domain.comment.repository.CommentLikeRepository;
 import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import java.time.Instant;
+import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +35,7 @@ public class CommentService {
   private final CommentRepository commentRepository;
   private final ArticleRepository articleRepository;
   private final UserRepository userRepository;
+  private final CommentLikeRepository commentLikeRepository;
   private final CommentMapper commentMapper;
 
   @Transactional
@@ -105,6 +112,21 @@ public class CommentService {
     commentRepository.delete(comment);
 
     log.info("[COMMENT_HARD_DELETE_SUCCESS] 댓글 물리삭제 성공 - 댓글 ID={}", commentId);
+  }
+
+  @Transactional(readOnly = true)
+  public CursorPageResponse<CommentResponse> getComments(CommentQueryCondition condition,
+      UUID requestId) {
+    log.debug("[COMMENT_READ_START] 댓글 목록 조회 시작 - 뉴스 기사 ID={}, 정렬={}, 방향={}, 페이지 크기={}, 요청자 ID={}",
+        condition.articleId(), condition.orderBy(), condition.direction(), condition.limit(),
+        requestId);
+
+    CursorPageResponse<CommentResponse> response = commentRepository.getComments(condition, requestId);
+
+    log.info("[COMMENT_READ_SUCCESS] 댓글 목록 조회 성공 - 조회된 댓글 수={}, 다음 페이지 여부={}, 다음 커서={}",
+        response.content().size(), response.hasNext(), response.nextCursor());
+
+    return response;
   }
 
 }

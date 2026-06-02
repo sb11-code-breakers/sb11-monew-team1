@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.domain.comment.mapper;
 
-import com.sprint.mission.monew.domain.comment.dto.response.CommentResponse;
+import com.sprint.mission.monew.domain.comment.dto.CommentResponse;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

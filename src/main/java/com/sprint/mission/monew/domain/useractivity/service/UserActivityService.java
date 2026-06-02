@@ -51,13 +51,13 @@ public class UserActivityService {
         .map(userActivityMapper::toSubscriptionDto)
         .toList();
 
-    List<CommentActivityResponse> commentDtos = commentRepository
+    List<CommentActivityResponse> commentActivityResponses = commentRepository
         .findTop10RecentCommentsByUserId(userId, PageRequest.of(0, 10))
         .stream()
         .map(userActivityMapper::toCommentDto)
         .toList();
 
-    List<CommentLikeActivityResponse> commentLikeActivityRespons = commentLikeRepository
+    List<CommentLikeActivityResponse> commentLikeActivityResponses = commentLikeRepository
         .findTop10ByUserId(userId, PageRequest.of(0, 10))
         .stream()
         .map(userActivityMapper::toCommentLikeDto)
@@ -77,8 +77,8 @@ public class UserActivityService {
         user.getNickname(),
         user.getCreatedAt(),
         subscriptionActivityResponses,
-        commentDtos,
-        commentLikeActivityRespons,
+        commentActivityResponses,
+        commentLikeActivityResponses,
         articleViewActivityResponses
     );
   }

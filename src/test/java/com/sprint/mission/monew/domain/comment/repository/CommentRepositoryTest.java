@@ -1,13 +1,16 @@
 package com.sprint.mission.monew.domain.comment.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-
 import com.sprint.mission.monew.common.config.JpaConfig;
 import com.sprint.mission.monew.common.config.QuerydslConfig;
+import com.sprint.mission.monew.common.dto.CursorPageResponse;
+import com.sprint.mission.monew.common.dto.SortDirection;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
+import com.sprint.mission.monew.domain.comment.dto.CommentOrderBy;
+import com.sprint.mission.monew.domain.comment.dto.CommentQueryCondition;
+import com.sprint.mission.monew.domain.comment.dto.CommentResponse;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
@@ -16,6 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -27,7 +31,6 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
-
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -50,6 +53,7 @@ public class CommentRepositoryTest {
   private Article article;
   private User user;
   private Comment comment;
+  private Instant baseTime;
 
   @BeforeEach
   void setUp() {
@@ -65,6 +69,8 @@ public class CommentRepositoryTest {
         "Test@naver.com", "test", "12345678"
     ));
     comment = Comment.create(article, user, "댓글 내용");
+
+    baseTime = Instant.parse("2024-01-01T00:00:00Z");
   }
 
   @Nested
@@ -279,5 +285,332 @@ public class CommentRepositoryTest {
       Comment after = commentRepository.findById(savedComment.getId()).orElseThrow();
       assertThat(after.getLikeCount()).isEqualTo(0);
     }
+  }
+
+  @Nested
+  @DisplayName("댓글 목록 조회하기")
+  class Find {
+
+    @Test
+    @DisplayName("등록순(createdAt DESC) 조회")
+    void 등록순_조회() {
+      // given
+      UUID articleId = article.getId();
+
+      Comment firstComment = commentRepository.save(Comment.create(article, user, "첫 번째 댓글"));
+
+      Comment secondComment = commentRepository.save(Comment.create(article, user, "두 번째 댓글"));
+
+      testEntityManager.flush();
+      testEntityManager.clear();
+
+      firstComment = commentRepository.findById(firstComment.getId()).orElseThrow();
+      secondComment = commentRepository.findById(secondComment.getId()).orElseThrow();
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.CREATED_AT,
+          SortDirection.DESC,
+          null,
+          null,
+          5
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> response = commentRepository.getComments(condition,
+          user.getId());
+      List<CommentResponse> comments = response.content();
+
+      // then
+      assertThat(comments).hasSize(2);
+      assertThat(comments).extracting(CommentResponse::createdAt)
+          .isSortedAccordingTo(Comparator.reverseOrder());
+    }
+
+    @Test
+    @DisplayName("좋아요순(likeCount DESC), 2순위 등록순(createdAt DESC) 조회")
+    void 좋아요순_등록순_조회() {
+      // given
+      UUID articleId = article.getId();
+
+      Comment firstComment = commentRepository.save(Comment.create(article, user, "첫 번째 댓글"));
+
+      Comment secondComment = commentRepository.save(Comment.create(article, user, "두 번째 댓글"));
+
+      Comment thirdComment = commentRepository.save(Comment.create(article, user, "세 번째 댓글"));
+
+      // 첫 번째 댓글 : 좋아요 2개
+      commentRepository.increaseLikeCount(firstComment.getId());
+      commentRepository.increaseLikeCount(firstComment.getId());
+
+      // 두 번째 댓글 : 좋아요 2개
+      commentRepository.increaseLikeCount(secondComment.getId());
+      commentRepository.increaseLikeCount(secondComment.getId());
+
+      // 세 번째 댓글 : 좋아요 1개
+      commentRepository.increaseLikeCount(thirdComment.getId());
+
+      testEntityManager.flush();
+      testEntityManager.clear();
+
+      firstComment = commentRepository.findById(firstComment.getId()).orElseThrow();
+      secondComment = commentRepository.findById(secondComment.getId()).orElseThrow();
+      thirdComment = commentRepository.findById(thirdComment.getId()).orElseThrow();
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.LIKE_COUNT,
+          SortDirection.DESC,
+          null,
+          null,
+          5
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> response = commentRepository.getComments(condition,
+          user.getId());
+      List<CommentResponse> comments = response.content();
+
+      // then
+      assertThat(comments).hasSize(3);
+
+      // 2번째(좋아요2개, 등록순 2번째), 1번째(좋아요 2개, 등록순 1번째), 3번째(좋아요 1개) 순으로 정렬되어야 함
+      assertThat(comments.get(0).id()).isEqualTo(secondComment.getId());
+      assertThat(comments.get(1).id()).isEqualTo(firstComment.getId());
+      assertThat(comments.get(2).id()).isEqualTo(thirdComment.getId());
+    }
+
+    @Test
+    @DisplayName("등록순 첫 페이지 조회")
+    void 등록순_조회_cursor_null() {
+      // given
+      Comment firstComment = commentRepository.save(Comment.create(article, user, "첫 번째 댓글"));
+
+      Comment secondComment = commentRepository.save(Comment.create(article, user, "두 번째 댓글"));
+
+      testEntityManager.flush();
+      testEntityManager.clear();
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          article.getId(),
+          CommentOrderBy.CREATED_AT,
+          SortDirection.DESC,
+          null,
+          null,
+          5
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> response = commentRepository.getComments(condition,
+          user.getId());
+      List<CommentResponse> comments = response.content();
+
+      // then
+      assertThat(comments).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("등록순 다음 페이지 조회")
+    void 등록순_조회_cursor() {
+      // given
+      Comment firstComment = commentRepository.save(Comment.create(article, user, "첫 번째 댓글"));
+
+      Comment secondComment = commentRepository.save(Comment.create(article, user, "두 번째 댓글"));
+
+      Comment thirdComment = commentRepository.save(Comment.create(article, user, "세 번째 댓글"));
+
+      testEntityManager.flush();
+      testEntityManager.clear();
+
+      firstComment = commentRepository.findById(firstComment.getId()).orElseThrow();
+      secondComment = commentRepository.findById(secondComment.getId()).orElseThrow();
+      thirdComment = commentRepository.findById(thirdComment.getId()).orElseThrow();
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          article.getId(),
+          CommentOrderBy.CREATED_AT,
+          SortDirection.DESC,
+          secondComment.getCreatedAt().toString(), // 두번째 시간 이전의 댓글(firstComment)만 조회됨
+          null,
+          5
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> response = commentRepository.getComments(condition,
+          user.getId());
+      List<CommentResponse> comments = response.content();
+
+      // then
+      assertThat(comments).hasSize(1); // 그래서 size는 3이 아닌 1이 나옴
+      assertThat(comments.get(0).id()).isEqualTo(firstComment.getId());
+    }
+
+    @Test
+    @DisplayName("좋아요순(2순위 등록순) 커서 조회")
+    void 좋아요순_등록순_조회_cursor() {
+      // given
+      UUID articleId = article.getId();
+
+      Comment firstComment = commentRepository.save(Comment.create(article, user, "첫 번째 댓글"));
+
+      Comment secondComment = commentRepository.save(Comment.create(article, user, "두 번째 댓글"));
+
+      Comment thirdComment = commentRepository.save(Comment.create(article, user, "세 번째 댓글"));
+
+      testEntityManager.flush();
+      testEntityManager.clear();
+
+      firstComment = commentRepository.findById(firstComment.getId()).orElseThrow();
+      secondComment = commentRepository.findById(secondComment.getId()).orElseThrow();
+      thirdComment = commentRepository.findById(thirdComment.getId()).orElseThrow();
+
+      // 첫 번째 댓글 : 좋아요 2개
+      commentRepository.increaseLikeCount(firstComment.getId());
+      commentRepository.increaseLikeCount(firstComment.getId());
+
+      // 두 번째 댓글 : 좋아요 2개
+      commentRepository.increaseLikeCount(secondComment.getId());
+      commentRepository.increaseLikeCount(secondComment.getId());
+
+      // 세 번째 댓글 : 좋아요 1개
+      commentRepository.increaseLikeCount(thirdComment.getId());
+
+      CommentQueryCondition condition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.LIKE_COUNT,
+          SortDirection.DESC,
+          "2",
+          secondComment.getCreatedAt(),
+          5
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> response = commentRepository.getComments(condition,
+          user.getId());
+      List<CommentResponse> comments = response.content();
+
+      // then
+      // 첫번째 페이지(2번째 댓글) 이후 다음 페이지에 1번째, 3번째 댓글이 나와야 함
+      assertThat(comments).hasSize(2);
+      assertThat(comments.get(0).id()).isEqualTo(firstComment.getId());
+      assertThat(comments.get(1).id()).isEqualTo(thirdComment.getId());
+    }
+
+    @Test
+    @DisplayName("좋아요 수가 같을 때 2순위 등록순 정렬(좋아요순 ASC)")
+    void 좋아요순_오름차순_동일_2순위_등록순_조회() throws InterruptedException {
+      // given
+      UUID articleId = article.getId();
+
+      Comment firstComment = commentRepository.save(Comment.create(article, user, "첫 번째 댓글"));
+      Thread.sleep(100);
+      Comment secondComment = commentRepository.save(Comment.create(article, user, "두 번째 댓글"));
+      Thread.sleep(100);
+      Comment thirdComment = commentRepository.save(Comment.create(article, user, "세 번째 댓글"));
+      Thread.sleep(100);
+      Comment fourthComment = commentRepository.save(Comment.create(article, user, "네 번째 댓글"));
+
+      // 좋아요 수 세팅(첫 번째 : 1, 두 번째 : 2, 세 번째 : 2, 네 번째 : 3)
+      commentRepository.increaseLikeCount(firstComment.getId());
+
+      commentRepository.increaseLikeCount(secondComment.getId());
+      commentRepository.increaseLikeCount(secondComment.getId());
+
+      commentRepository.increaseLikeCount(thirdComment.getId());
+      commentRepository.increaseLikeCount(thirdComment.getId());
+
+      commentRepository.increaseLikeCount(fourthComment.getId());
+      commentRepository.increaseLikeCount(fourthComment.getId());
+      commentRepository.increaseLikeCount(fourthComment.getId());
+
+      testEntityManager.flush();
+      testEntityManager.clear();
+
+      firstComment = commentRepository.findById(firstComment.getId()).orElseThrow();
+      secondComment = commentRepository.findById(secondComment.getId()).orElseThrow();
+      thirdComment = commentRepository.findById(thirdComment.getId()).orElseThrow();
+      fourthComment = commentRepository.findById(fourthComment.getId()).orElseThrow();
+
+      CommentQueryCondition firstCondition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.LIKE_COUNT,
+          SortDirection.ASC,
+          null,
+          null,
+          2
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> response1 = commentRepository.getComments(firstCondition,
+          user.getId());
+      List<CommentResponse> comments1 = response1.content();
+
+      // then
+      // 첫 페이지
+      assertThat(comments1)
+          .extracting(CommentResponse::likeCount)
+          .contains(1L, 2L);
+
+      CommentResponse lastOfTwoGroup = comments1.stream()
+          .filter(c -> c.likeCount() == 2L)
+          .max(Comparator.comparing(CommentResponse::createdAt))
+          .orElseThrow();
+
+      CommentQueryCondition secondCondition = new CommentQueryCondition(
+          articleId,
+          CommentOrderBy.LIKE_COUNT,
+          SortDirection.ASC,
+          String.valueOf(lastOfTwoGroup.likeCount()),
+          lastOfTwoGroup.createdAt(),
+          5
+      );
+
+      CursorPageResponse<CommentResponse> response2 = commentRepository.getComments(secondCondition,
+          user.getId());
+      List<CommentResponse> comments2 = response2.content();
+
+      // 2 페이지
+      assertThat(comments2)
+          .extracting(CommentResponse::likeCount)
+          .contains(2L, 3L);
+
+      // tie-break 검증
+      List<CommentResponse> tieGroup = Stream.concat(comments1.stream(), comments2.stream())
+          .filter(c -> c.likeCount() == 2L)
+          .toList();
+
+      assertThat(tieGroup)
+          .extracting(CommentResponse::createdAt)
+          .isSortedAccordingTo(Comparator.naturalOrder()); // ASC 기준
+    }
+
+    @Test
+    @DisplayName("기사별 댓글 수 조회")
+    void 기사별_댓글_수_조회() {
+      // given
+      Article anotherArticle = articleRepository.save(Article.create(
+          ArticleSource.NAVER,
+          "https://example.com/news/2",
+          "테스트 기사 제목2",
+          Instant.parse("2024-01-02T00:00:00Z"),
+          "기사 요약 내용"
+      ));
+
+      commentRepository.save(Comment.create(article, user, "기사1 첫 번째 댓글"));
+      commentRepository.save(Comment.create(article, user, "기사1 두 번째 댓글"));
+      commentRepository.save(Comment.create(anotherArticle, user, "기사2 첫 번째 댓글"));
+      commentRepository.save(Comment.create(article, user, "기사1 세 번째 댓글"));
+
+      testEntityManager.flush();
+      testEntityManager.clear();
+
+      // when
+      long count = commentRepository.countByArticleId(article.getId());
+      long count2 = commentRepository.countByArticleId(anotherArticle.getId());
+      // then
+      assertThat(count).isEqualTo(3);
+      assertThat(count2).isEqualTo(1);
+    }
+
   }
 }
