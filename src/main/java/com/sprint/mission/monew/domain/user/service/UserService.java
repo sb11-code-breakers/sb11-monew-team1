@@ -30,6 +30,7 @@ public class UserService {
   private final UserRepository userRepository;
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
+  private final UserMetrics userMetrics;
 
   @Transactional
   public UserResponse create(UserCreateRequest request) {
@@ -87,6 +88,7 @@ public class UserService {
   public int deleteExpiredUsers(Instant threshold) {
     log.info("물리 삭제 실행: threshold={}", threshold);
     int deleted = userRepository.deleteAllByDeletedAtBefore(threshold);
+    userMetrics.countDeleted(deleted);
     log.info("물리 삭제 완료: {}건 삭제", deleted);
     return deleted;
   }
