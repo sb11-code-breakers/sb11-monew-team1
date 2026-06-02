@@ -16,6 +16,7 @@ public class NewsCollectMetrics {
   private static final String COLLECTED = "monew.news.collected";
   private static final String CREATED = "monew.news.created";
   private static final String DUPLICATED = "monew.news.duplicated";
+  private static final String FAILED = "monew.news.failed";
   private static final String COLLECT_DURATION = "monew.news.collect.duration";
 
   private final MeterRegistry registry;
@@ -38,6 +39,10 @@ public class NewsCollectMetrics {
 
   public void countCollected(ArticleSource source, int count) {
     registry.counter(COLLECTED, "source", source.name()).increment(count);
+  }
+
+  public void countFailed(ArticleSource source) {
+    registry.counter(FAILED, "source", source.name()).increment();
   }
 
   public void countCreated() {

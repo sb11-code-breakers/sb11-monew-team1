@@ -56,6 +56,7 @@ public class NewsCollectService {
           upsert(ArticleSource.NAVER, sourceUrl, title,
               NaverNewsClient.parseNaverDate(item.pubDate()), summary);
         } catch (Exception e) {
+          newsCollectMetrics.countFailed(ArticleSource.NAVER);
           log.warn("Naver 기사 단건 처리 실패: link={}", item.link(), e);
         }
       }
@@ -73,6 +74,7 @@ public class NewsCollectService {
         try {
           upsert(item.source(), item.sourceUrl(), item.title(), item.publishDate(), item.summary());
         } catch (Exception e) {
+          newsCollectMetrics.countFailed(source);
           log.warn("{} 기사 단건 처리 실패: url={}", source, item.sourceUrl(), e);
         }
       }
