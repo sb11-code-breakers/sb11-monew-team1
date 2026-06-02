@@ -7,6 +7,7 @@ import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.User;
+import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailNotVerifiedException;
@@ -78,7 +79,7 @@ public class UserService {
     log.debug("이메일 인증 시도");
     EmailVerification verification = emailVerificationRepository
         .findByTokenAndUsedFalse(token)
-        .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 토큰"));
+        .orElseThrow(() -> InvalidVerificationTokenException.withToken(token));
 
     if (verification.isExpired()) {
       throw new IllegalArgumentException("만료된 토큰");

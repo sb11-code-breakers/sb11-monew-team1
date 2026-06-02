@@ -26,6 +26,8 @@ import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordExcepti
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.service.UserService;
+import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
+
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -212,7 +214,7 @@ class UserControllerTest {
     @DisplayName("유효하지 않은 토큰이면 400 반환")
     void 유효하지_않은_토큰이면_400_반환() throws Exception {
       // given
-      willThrow(new IllegalArgumentException("유효하지 않은 토큰"))
+      willThrow(InvalidVerificationTokenException.withToken("invalid-token"))
           .given(userService).verifyEmail("invalid-token");
 
       // when & then
