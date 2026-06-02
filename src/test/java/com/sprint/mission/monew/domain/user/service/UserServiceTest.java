@@ -3,7 +3,6 @@ package com.sprint.mission.monew.domain.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -16,6 +15,7 @@ import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.User;
+import com.sprint.mission.monew.domain.user.event.EmailVerificationCreatedEvent;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
@@ -37,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,7 +59,7 @@ class UserServiceTest {
   private EmailVerificationRepository emailVerificationRepository;
 
   @Mock
-  private EmailService emailService;
+  private ApplicationEventPublisher eventPublisher;
 
   @Nested
   @DisplayName("회원가입")
@@ -85,8 +86,8 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("성공 시 저장된 사용자 반환 및 이메일 발송")
-    void 성공_시_저장된_사용자_반환_및_이메일_발송() {
+    @DisplayName("성공 시 저장된 사용자 반환 및 이메일 인증 이벤트 발행")
+    void 성공_시_저장된_사용자_반환_및_이메일_인증_이벤트_발행() {
       // given
       User user = User.create("test@test.com", "테스터", "encodedPassword");
       UserResponse userResponse = new UserResponse(
@@ -107,7 +108,7 @@ class UserServiceTest {
       then(passwordEncoder).should().encode(request.password());
       then(userRepository).should().save(any(User.class));
       then(emailVerificationRepository).should().save(any(EmailVerification.class));
-      then(emailService).should().sendVerificationEmail(anyString(), anyString());
+      then(eventPublisher).should().publishEvent(any(EmailVerificationCreatedEvent.class));
       then(userMapper).should().toResponse(user);
       assertThat(result).isNotNull();
       assertThat(result.email()).isEqualTo("test@test.com");
