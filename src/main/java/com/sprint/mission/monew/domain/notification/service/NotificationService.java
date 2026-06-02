@@ -39,6 +39,7 @@ public class NotificationService {
   public void deleteExpiredNotifications() {
     Instant cutoff = Instant.now().minus(7, ChronoUnit.DAYS);
     int deleted = notificationRepository.deleteConfirmedBefore(cutoff);
+    notificationMetrics.countDeleted(deleted);
     log.info("만료 알림 삭제 완료: {}건", deleted);
   }
 
