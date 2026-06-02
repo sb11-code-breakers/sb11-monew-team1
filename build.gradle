@@ -38,6 +38,7 @@ dependencies {
     implementation 'com.rometools:rome:2.1.0'
     implementation platform('software.amazon.awssdk:bom:2.31.0')
     implementation 'software.amazon.awssdk:s3'
+    implementation 'software.amazon.awssdk:ses'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
