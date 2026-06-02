@@ -7,7 +7,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.ses.SesClient;
 
 @Configuration
-public class AwsSesConfig {
+public class SesConfig {
 
   @Value("${cloud.aws.region.static}")
   private String region;
