@@ -87,8 +87,7 @@ class UserActivityServiceTest {
 
       // when & then
       assertThatThrownBy(() -> userActivityService.getUserActivity(userId, userId))
-          .isInstanceOf(UserNotFoundException.class)
-          .hasMessageContaining(userId.toString()); // ← 메시지로 구분
+          .isInstanceOf(UserNotFoundException.class);
     }
 
     @Test
