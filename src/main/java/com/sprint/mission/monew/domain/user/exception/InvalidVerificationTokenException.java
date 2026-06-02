@@ -6,7 +6,7 @@ import java.util.Map;
 public class InvalidVerificationTokenException extends UserException {
 
   private InvalidVerificationTokenException(Map<String, Object> details) {
-    super(ErrorCode.EMAIL_VERIFICATION_INVALID_TOKEN, details);
+    super(ErrorCode.USER_INVALID_EMAIL_VERIFICATION_TOKEN, details);
   }
 
   public static InvalidVerificationTokenException withToken(String token) {
