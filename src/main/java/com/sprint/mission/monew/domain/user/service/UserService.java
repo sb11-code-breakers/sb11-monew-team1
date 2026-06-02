@@ -5,13 +5,16 @@ import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
+import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
+import com.sprint.mission.monew.domain.user.exception.UserEmailNotVerifiedException;
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
+import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
 import java.util.UUID;
@@ -30,6 +33,8 @@ public class UserService {
   private final UserRepository userRepository;
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
+  private final EmailVerificationRepository emailVerificationRepository;
+  private final EmailService emailService;
 
   @Transactional
   public UserResponse create(UserCreateRequest request) {
@@ -43,6 +48,11 @@ public class UserService {
         passwordEncoder.encode(request.password())
     );
     User saved = userRepository.save(user);
+
+    EmailVerification verification = EmailVerification.create(saved.getId());
+    emailVerificationRepository.save(verification);
+    emailService.sendVerificationEmail(saved.getEmail(), verification.getToken());
+
     log.info("회원가입 완료: id={}", saved.getId());
     return userMapper.toResponse(saved);
   }
@@ -51,11 +61,35 @@ public class UserService {
     log.debug("로그인 시도");
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
         .orElseThrow(UserLoginFailedException::withEmail);
+
+    if (!user.isEmailVerified()) {
+      throw UserEmailNotVerifiedException.withEmail(request.email());
+    }
+
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
       throw UserLoginFailedException.withPassword();
     }
     log.info("로그인 완료: id={}", user.getId());
     return userMapper.toResponse(user);
+  }
+
+  @Transactional
+  public void verifyEmail(String token) {
+    log.debug("이메일 인증 시도");
+    EmailVerification verification = emailVerificationRepository
+        .findByTokenAndUsedFalse(token)
+        .orElseThrow(() -> new IllegalArgumentException("유효하지 않은 토큰"));
+
+    if (verification.isExpired()) {
+      throw new IllegalArgumentException("만료된 토큰");
+    }
+
+    User user = userRepository.findById(verification.getUserId())
+        .orElseThrow(() -> UserNotFoundException.withId(verification.getUserId()));
+
+    user.verifyEmail();
+    verification.use();
+    log.info("이메일 인증 완료: userId={}", user.getId());
   }
 
   @Transactional
