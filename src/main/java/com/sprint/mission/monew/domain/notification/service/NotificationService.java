@@ -74,7 +74,7 @@ public class NotificationService {
                         interestId))
             .toList();
     List<Notification> saved = notificationRepository.saveAll(notifications);
-    notificationMetrics.countArticleNotifications(notifications.size());
+    notificationMetrics.countArticleNotifications(saved.size());
     log.info("기사 등록 알림 생성 완료: 관심사={}, 수신자={}명", interestName, saved.size());
   }
 

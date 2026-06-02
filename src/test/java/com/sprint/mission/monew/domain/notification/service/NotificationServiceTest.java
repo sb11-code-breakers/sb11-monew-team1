@@ -29,11 +29,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class NotificationServiceTest {
+class
+NotificationServiceTest {
 
-  @InjectMocks NotificationService notificationService;
-  @Mock NotificationRepository notificationRepository;
-  @Mock NotificationMetrics notificationMetrics;
+  @InjectMocks
+  NotificationService notificationService;
+  @Mock
+  NotificationRepository notificationRepository;
+  @Mock
+  NotificationMetrics notificationMetrics;
 
   UUID userId;
 
@@ -202,6 +206,8 @@ class NotificationServiceTest {
       // given
       UUID interestId = UUID.randomUUID();
       List<UUID> subscriberIds = List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+      given(notificationRepository.saveAll(any()))
+          .willAnswer(invocation -> invocation.getArgument(0));
 
       // when
       notificationService.createArticleNotifications(interestId, "인공지능", subscriberIds);
