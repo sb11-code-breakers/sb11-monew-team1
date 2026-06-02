@@ -48,6 +48,9 @@ class UserServiceTest {
   @Mock
   private PasswordEncoder passwordEncoder;
 
+  @Mock
+  private UserMetrics userMetrics;
+
   @Nested
   @DisplayName("회원가입")
   class Create {
@@ -356,6 +359,25 @@ class UserServiceTest {
 
       // then
       assertThat(user.getPassword()).isEqualTo("newEncodedPassword");
+    }
+  }
+
+  @Nested
+  @DisplayName("만료 사용자 물리 삭제")
+  class DeleteExpiredUsers {
+
+    @Test
+    @DisplayName("물리 삭제된 사용자 건수를 메트릭으로 집계한다")
+    void 물리_삭제된_사용자_건수를_메트릭으로_집계한다() {
+      // given — repository가 3건 삭제를 반환
+      Instant threshold = Instant.now();
+      given(userRepository.deleteAllByDeletedAtBefore(threshold)).willReturn(3);
+
+      // when
+      userService.deleteExpiredUsers(threshold);
+
+      // then
+      then(userMetrics).should().countDeleted(3);
     }
   }
 }
