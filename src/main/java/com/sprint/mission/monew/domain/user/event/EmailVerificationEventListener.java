@@ -3,7 +3,6 @@ package com.sprint.mission.monew.domain.user.event;
 import com.sprint.mission.monew.domain.user.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -15,7 +14,6 @@ public class EmailVerificationEventListener {
 
   private final EmailService emailService;
 
-  @Async
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handleEmailVerificationCreated(EmailVerificationCreatedEvent event) {
     log.debug("이메일 인증 이벤트 수신");
