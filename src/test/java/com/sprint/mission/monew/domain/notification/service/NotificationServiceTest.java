@@ -146,6 +146,19 @@ class NotificationServiceTest {
                       !cutoff.isBefore(before.minus(7, ChronoUnit.DAYS))
                           && !cutoff.isAfter(after.minus(7, ChronoUnit.DAYS))));
     }
+
+    @Test
+    @DisplayName("삭제된 알림 건수를 메트릭으로 집계한다")
+    void 삭제된_알림_건수를_메트릭으로_집계한다() {
+      // given — repository가 5건 삭제를 반환
+      given(notificationRepository.deleteConfirmedBefore(any())).willReturn(5);
+
+      // when
+      notificationService.deleteExpiredNotifications();
+
+      // then
+      then(notificationMetrics).should().countDeleted(5);
+    }
   }
 
   @Nested
