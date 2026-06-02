@@ -15,13 +15,16 @@ public class EmailService {
 
   private final SesClient sesClient;
 
-  @Value("${mail.sender}")
+  @Value("${mail.sender:no-reply@monew.dev}")
   private String sender;
+
+  @Value("${app.verification-base-url:https://monew.dev}")
+  private String verificationBaseUrl;
 
   @Async
   public void sendVerificationEmail(String to, String token) {
     try {
-      String verificationUrl = "https://monew.dev/api/users/verify?token=" + token;
+      String verificationUrl = verificationBaseUrl + "/api/users/verify?token=" + token;
 
       SendEmailRequest request = SendEmailRequest.builder()
           .destination(d -> d.toAddresses(to))
@@ -38,9 +41,15 @@ public class EmailService {
           .build();
 
       sesClient.sendEmail(request);
-      log.info("인증 이메일 발송 완료: to={}", to);
+      log.info("인증 이메일 발송 완료: to={}", maskEmail(to));
     } catch (Exception e) {
-      log.error("인증 이메일 발송 실패: to={}", to, e);
+      log.error("인증 이메일 발송 실패: to={}", maskEmail(to), e);
     }
+  }
+
+  private String maskEmail(String email) {
+    int atIndex = email.indexOf('@');
+    if (atIndex <= 1) return "***";
+    return email.charAt(0) + "***" + email.substring(atIndex);
   }
 }
