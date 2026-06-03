@@ -14,26 +14,33 @@ jobs:
     permissions:
       actions: read
       contents: read
+      pull-requests: read
 
     steps:
-      - name: Extract PR number from commit message
+      - name: Find PR for this commit
         id: pr
         run: |
-          PR_NUMBER=$(echo "$COMMIT_MESSAGE" | grep -oP '#\K\d+' || true)
-          echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          PR_INFO=$(gh api \
+            "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
+            --jq '.[0] | {number: (.number // ""), sha: (.head.sha // "")}' \
+            2>/dev/null || echo '{"number":"","sha":""}')
+          echo "number=$(echo "$PR_INFO" | jq -r '.number')" >> "$GITHUB_OUTPUT"
+          echo "sha=$(echo "$PR_INFO" | jq -r '.sha')" >> "$GITHUB_OUTPUT"
         env:
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find PR CI run ID
         id: run
-        if: steps.pr.outputs.number != ''
+        if: steps.pr.outputs.sha != ''
         run: |
           RUN_ID=$(gh api \
-            "repos/${{ github.repository }}/actions/workflows/ci-pr.yml/runs" \
-            --jq "[.workflow_runs[] | select((.pull_requests[].number | tostring) == \"${{ steps.pr.outputs.number }}\") | {id, created_at}] | sort_by(.created_at) | reverse | first | .id")
-          echo "id=$RUN_ID" >> $GITHUB_OUTPUT
+            "repos/${{ github.repository }}/actions/workflows/ci-pr.yml/runs?head_sha=$PR_HEAD_SHA&status=completed" \
+            --jq "[.workflow_runs[] | {id, created_at}] | sort_by(.created_at) | reverse | first | .id" \
+            2>/dev/null || true)
+          echo "id=${RUN_ID:-}" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_HEAD_SHA: ${{ steps.pr.outputs.sha }}
 
       - name: Download Jacoco report from PR CI
         id: download
@@ -62,5 +69,9 @@ jobs:
           fail_ci_if_error: true
 
       - name: Skip (no PR artifact found)
-        if: steps.pr.outputs.number == '' || steps.run.outputs.id == '' || steps.run.outputs.id == 'null' || steps.download.outcome != 'success'
+        if: >-
+          steps.pr.outputs.sha == '' ||
+          steps.run.outputs.id == '' ||
+          steps.run.outputs.id == 'null' ||
+          steps.download.outcome != 'success'
         run: echo "No PR artifact found — Codecov upload skipped"
