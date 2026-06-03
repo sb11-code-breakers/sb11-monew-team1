@@ -58,6 +58,7 @@ public class UserService {
     eventPublisher.publishEvent(
         new EmailVerificationCreatedEvent(saved.getEmail(), savedVerification.getToken()));
 
+    userMetrics.countRegistered();
     log.info("회원가입 완료: id={}", saved.getId());
     return userMapper.toResponse(saved);
   }
