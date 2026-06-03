@@ -3,6 +3,7 @@ package com.sprint.mission.monew.batch;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +37,7 @@ class LogBackupServiceTest {
 
   @InjectMocks LogBackupService logBackupService;
   @Mock S3Client s3Client;
+  @Mock LogBackupMetrics logBackupMetrics;
 
   @TempDir Path tempDir;
 
@@ -131,6 +134,24 @@ class LogBackupServiceTest {
       // then
       verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
       assertThat(logFile).doesNotExist();
+    }
+
+    @Test
+    @DisplayName("업로드 성공 시 업로드 건수·바이트·소요 시간을 집계한다")
+    void 업로드_성공_시_업로드_건수_바이트_소요_시간을_집계한다() throws IOException {
+      // given
+      LocalDate yesterday = LocalDate.now().minusDays(1);
+      Files.writeString(tempDir.resolve("monew." + yesterday + ".log"), "log content");
+      given(s3Client.headObject(any(HeadObjectRequest.class)))
+          .willThrow(NoSuchKeyException.builder().build());
+
+      // when
+      logBackupService.upload();
+
+      // then
+      verify(logBackupMetrics).countUploaded();
+      verify(logBackupMetrics).recordBytes(anyLong());
+      verify(logBackupMetrics).recordDuration(any(Duration.class));
     }
   }
 }
