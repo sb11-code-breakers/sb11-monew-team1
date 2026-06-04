@@ -12,8 +12,8 @@ import static org.mockito.Mockito.times;
 
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
-import com.sprint.mission.monew.domain.user.dto.UserPasswordResetDto;
-import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequestDto;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
@@ -120,7 +120,7 @@ class UserServiceTest {
       then(passwordEncoder).should().encode(request.password());
       then(userRepository).should().save(any(User.class));
       then(emailVerificationRepository).should().save(any(EmailVerification.class));
-      then(emailQueue).should().enqueue(anyString(), anyString());
+      then(emailQueue).should().enqueueVerification(anyString(), anyString());
       then(userMapper).should().toResponse(user);
       then(userMetrics).should().countRegistered();
       assertThat(result).isNotNull();
@@ -154,7 +154,7 @@ class UserServiceTest {
             .forEach(sync -> sync.afterCommit());
 
         // then
-        then(emailQueue).should(times(1)).enqueue(anyString(), anyString());
+        then(emailQueue).should(times(1)).enqueueVerification(anyString(), anyString());
       } finally {
         TransactionSynchronizationManager.clearSynchronization();
       }
@@ -502,7 +502,7 @@ class UserServiceTest {
     @DisplayName("존재하지 않는 이메일이면 예외 발생")
     void 존재하지_않는_이메일이면_예외_발생() {
       // given
-      UserPasswordResetRequestDto request = new UserPasswordResetRequestDto("notfound@test.com");
+      UserPasswordResetRequest request = new UserPasswordResetRequest("notfound@test.com");
       given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
           .willReturn(Optional.empty());
 
@@ -515,7 +515,7 @@ class UserServiceTest {
     @DisplayName("성공 시 비밀번호 재설정 이메일 큐 등록")
     void 성공_시_비밀번호_재설정_이메일_큐_등록() {
       // given
-      UserPasswordResetRequestDto request = new UserPasswordResetRequestDto("test@test.com");
+      UserPasswordResetRequest request = new UserPasswordResetRequest("test@test.com");
       User user = User.create("test@test.com", "테스터", "encodedPassword");
       PasswordResetToken token = PasswordResetToken.create(UUID.randomUUID());
 
@@ -536,7 +536,7 @@ class UserServiceTest {
     @DisplayName("재설정 요청 시 기존 토큰 무효화")
     void 재설정_요청_시_기존_토큰_무효화() {
       // given
-      UserPasswordResetRequestDto request = new UserPasswordResetRequestDto("test@test.com");
+      UserPasswordResetRequest request = new UserPasswordResetRequest("test@test.com");
       User user = User.create("test@test.com", "테스터", "encodedPassword");
       PasswordResetToken token = PasswordResetToken.create(UUID.randomUUID());
 
@@ -559,7 +559,7 @@ class UserServiceTest {
       // given
       TransactionSynchronizationManager.initSynchronization();
       try {
-        UserPasswordResetRequestDto request = new UserPasswordResetRequestDto("test@test.com");
+        UserPasswordResetRequest request = new UserPasswordResetRequest("test@test.com");
         User user = User.create("test@test.com", "테스터", "encodedPassword");
         PasswordResetToken token = PasswordResetToken.create(UUID.randomUUID());
 
@@ -594,7 +594,7 @@ class UserServiceTest {
     @DisplayName("유효하지 않은 코드이면 예외 발생")
     void 유효하지_않은_코드이면_예외_발생() {
       // given
-      UserPasswordResetDto request = new UserPasswordResetDto("invalid-code", "newPassword123");
+      UserPasswordResetCodeRequest request = new UserPasswordResetCodeRequest("invalid-code", "newPassword123");
       given(passwordResetTokenRepository.findByCodeAndExpiredAtAfter(
           eq("invalid-code"), any(Instant.class)))
           .willReturn(Optional.empty());
@@ -609,7 +609,7 @@ class UserServiceTest {
     void 성공_시_비밀번호_변경_및_토큰_삭제() {
       // given
       UUID userId = UUID.randomUUID();
-      UserPasswordResetDto request = new UserPasswordResetDto("valid-code", "newPassword123");
+      UserPasswordResetCodeRequest request = new UserPasswordResetCodeRequest("valid-code", "newPassword123");
       User user = User.create("test@test.com", "테스터", "encodedPassword");
       PasswordResetToken token = PasswordResetToken.create(userId);
 

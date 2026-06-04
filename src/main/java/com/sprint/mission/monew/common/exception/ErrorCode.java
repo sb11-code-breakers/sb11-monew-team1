@@ -25,7 +25,6 @@ public enum ErrorCode {
   USER_INVALID_EMAIL_VERIFICATION_TOKEN(HttpStatus.BAD_REQUEST, "유효하지 않거나 만료된 인증 토큰입니다."),
   USER_INVALID_PASSWORD_RESET_CODE(HttpStatus.BAD_REQUEST, "유효하지 않거나 만료된 비밀번호 재설정 코드입니다."),
 
-
   // Interest
   INTEREST_NOT_FOUND(HttpStatus.NOT_FOUND, "관심사를 찾을 수 없습니다."),
   INTEREST_ALREADY_EXISTS(HttpStatus.CONFLICT, "유사한 관심사가 이미 존재합니다."),

@@ -3,8 +3,8 @@ package com.sprint.mission.monew.domain.user.controller;
 import com.sprint.mission.monew.domain.user.controller.api.UserApi;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
-import com.sprint.mission.monew.domain.user.dto.UserPasswordResetDto;
-import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequestDto;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
@@ -88,10 +88,10 @@ public class UserController implements UserApi {
     return ResponseEntity.noContent().build();
   }
 
-  @PostMapping("/password/reset-request")
+  @PostMapping("/password/reset")
   @Override
-  public ResponseEntity<Void> requestPasswordReset(
-      @Valid @RequestBody UserPasswordResetRequestDto request) {
+  public ResponseEntity<Void> resetPassword(
+      @Valid @RequestBody UserPasswordResetRequest request) {
     userService.requestPasswordReset(request);
     return ResponseEntity.noContent().build();
   }
@@ -99,7 +99,7 @@ public class UserController implements UserApi {
   @PatchMapping("/password/reset")
   @Override
   public ResponseEntity<Void> resetPassword(
-      @Valid @RequestBody UserPasswordResetDto request) {
+      @Valid @RequestBody UserPasswordResetCodeRequest request) {
     userService.resetPassword(request);
     return ResponseEntity.noContent().build();
   }

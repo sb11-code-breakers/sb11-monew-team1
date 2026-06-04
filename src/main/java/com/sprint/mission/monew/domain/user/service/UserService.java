@@ -2,8 +2,8 @@ package com.sprint.mission.monew.domain.user.service;
 
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
-import com.sprint.mission.monew.domain.user.dto.UserPasswordResetDto;
-import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequestDto;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
@@ -66,11 +66,11 @@ public class UserService {
       TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
         @Override
         public void afterCommit() {
-          emailQueue.enqueue(email, token);
+          emailQueue.enqueueVerification(email, token);
         }
       });
     } else {
-      emailQueue.enqueue(email, token);
+      emailQueue.enqueueVerification(email, token);
     }
 
     userMetrics.countRegistered();
@@ -161,7 +161,7 @@ public class UserService {
   }
 
   @Transactional
-  public void requestPasswordReset(UserPasswordResetRequestDto request) {
+  public void requestPasswordReset(UserPasswordResetRequest request) {
     log.debug("비밀번호 재설정 요청 시도");
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
         .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
@@ -188,7 +188,7 @@ public class UserService {
   }
 
   @Transactional
-  public void resetPassword(UserPasswordResetDto request) {
+  public void resetPassword(UserPasswordResetCodeRequest request) {
     log.debug("비밀번호 재설정 시도");
     PasswordResetToken token = passwordResetTokenRepository
         .findByCodeAndExpiredAtAfter(request.code(), Instant.now())

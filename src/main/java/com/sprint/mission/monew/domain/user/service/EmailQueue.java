@@ -17,7 +17,7 @@ public class EmailQueue {
   private final LinkedBlockingQueue<EmailTask> queue = new LinkedBlockingQueue<>();
   private final EmailService emailService;
 
-  public void enqueue(String email, String token) {
+  public void enqueueVerification(String email, String token) {
     queue.offer(new EmailTask(email, token, EmailTaskType.VERIFICATION));
     log.debug("이메일 큐 등록: to={}", MonewUtil.maskEmail(email));
   }

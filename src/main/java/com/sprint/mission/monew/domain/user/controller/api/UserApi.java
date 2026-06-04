@@ -3,8 +3,8 @@ package com.sprint.mission.monew.domain.user.controller.api;
 import com.sprint.mission.monew.common.dto.ErrorResponse;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
-import com.sprint.mission.monew.domain.user.dto.UserPasswordResetDto;
-import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequestDto;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
@@ -130,8 +130,8 @@ public interface UserApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
-  ResponseEntity<Void> requestPasswordReset(
-      @Valid @RequestBody UserPasswordResetRequestDto request);
+  ResponseEntity<Void> resetPassword(
+      @Valid @RequestBody UserPasswordResetRequest request);
 
   @Operation(summary = "비밀번호 재설정", description = "인증 코드로 비밀번호를 재설정합니다.")
   @ApiResponses({
@@ -141,5 +141,6 @@ public interface UserApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
-  ResponseEntity<Void> resetPassword(@Valid @RequestBody UserPasswordResetDto request);
+  ResponseEntity<Void> resetPassword(
+      @Valid @RequestBody UserPasswordResetCodeRequest request);
 }
