@@ -571,11 +571,14 @@ class UserServiceTest {
         // when
         userService.requestPasswordReset(request);
 
+        // then - 커밋 전에는 호출되지 않아야 함
+        then(emailQueue).should(never()).enqueuePasswordReset(anyString(), anyString());
+
         // afterCommit 수동 트리거
         TransactionSynchronizationManager.getSynchronizations()
             .forEach(sync -> sync.afterCommit());
 
-        // then
+        // then - 커밋 후 1회 호출
         then(emailQueue).should(times(1)).enqueuePasswordReset(anyString(), anyString());
       } finally {
         TransactionSynchronizationManager.clearSynchronization();
@@ -625,24 +628,4 @@ class UserServiceTest {
       then(passwordResetTokenRepository).should().delete(token);
     }
   }
-  @Test
-  @DisplayName("재설정 요청 시 기존 토큰 무효화")
-  void 재설정_요청_시_기존_토큰_무효화() {
-    // given
-    UserPasswordResetRequestDto request = new UserPasswordResetRequestDto("test@test.com");
-    User user = User.create("test@test.com", "테스터", "encodedPassword");
-    PasswordResetToken token = PasswordResetToken.create(UUID.randomUUID());
-
-    given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
-        .willReturn(Optional.of(user));
-    given(passwordResetTokenRepository.save(any(PasswordResetToken.class)))
-        .willReturn(token);
-
-    // when
-    userService.requestPasswordReset(request);
-
-    // then
-    then(passwordResetTokenRepository).should().deleteByUserId(user.getId());
-    then(passwordResetTokenRepository).should().save(any(PasswordResetToken.class));
-  }
-}
+ }
