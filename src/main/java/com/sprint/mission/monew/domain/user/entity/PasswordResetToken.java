@@ -1,8 +1,8 @@
 package com.sprint.mission.monew.domain.user.entity;
 
+import com.sprint.mission.monew.common.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
@@ -13,13 +13,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 @Table(name = "password_reset_tokens")
-public class PasswordResetToken {
+public class PasswordResetToken extends BaseEntity {
 
   private static final long EXPIRY_HOURS = 1;
-
-  @Id
-  @Column(columnDefinition = "uuid", nullable = false, updatable = false)
-  private UUID id = UUID.randomUUID();
 
   @Column(nullable = false)
   private UUID userId;

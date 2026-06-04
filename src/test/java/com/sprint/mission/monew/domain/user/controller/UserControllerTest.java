@@ -349,7 +349,7 @@ class UserControllerTest {
     void 존재하지_않는_이메일이면_404_반환() throws Exception {
       // given
       UserPasswordResetRequestDto request = new UserPasswordResetRequestDto("notfound@test.com");
-      willThrow(UserNotFoundException.withId(UUID.randomUUID()))
+      willThrow(UserNotFoundException.withEmail("notfound@test.com"))
           .given(userService).requestPasswordReset(any());
 
       // when & then
@@ -370,6 +370,7 @@ class UserControllerTest {
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isNoContent());
+      then(userService).should().requestPasswordReset(any());
     }
   }
 
@@ -416,6 +417,7 @@ class UserControllerTest {
               .contentType(APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isNoContent());
+      then(userService).should().resetPassword(any());
     }
   }
 

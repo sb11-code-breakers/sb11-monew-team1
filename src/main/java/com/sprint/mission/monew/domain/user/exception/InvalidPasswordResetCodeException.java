@@ -12,6 +12,6 @@ public class InvalidPasswordResetCodeException extends UserException {
   public static InvalidPasswordResetCodeException withCode(String code) {
     return new InvalidPasswordResetCodeException(
         ErrorCode.USER_INVALID_PASSWORD_RESET_CODE,
-        Map.of("code", code));
+        Map.of("code", "REDACTED"));
   }
 }
