@@ -12,5 +12,7 @@ public interface ArticleRepository extends JpaRepository<Article, UUID>, Article
 
   Optional<Article> findBySourceUrl(String sourceUrl);
 
+  List<Article> findBySourceUrlIn(List<String> sourceUrls);
+
   List<Article> findByCreatedAtAfterAndDeletedAtIsNull(Instant since);
 }
