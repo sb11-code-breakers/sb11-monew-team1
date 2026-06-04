@@ -236,8 +236,9 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens
     code       VARCHAR(255)             NOT NULL,
     expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                             PRIMARY KEY (id),
+    PRIMARY KEY (id),
     UNIQUE (code),
+    UNIQUE (user_id),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );
 
