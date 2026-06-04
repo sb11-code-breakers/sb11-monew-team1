@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
@@ -38,6 +39,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -116,6 +118,38 @@ class UserServiceTest {
       assertThat(result).isNotNull();
       assertThat(result.email()).isEqualTo("test@test.com");
       assertThat(result.nickname()).isEqualTo("테스터");
+    }
+
+    @Test
+    @DisplayName("트랜잭션 활성 시 커밋 후 이메일 큐 등록")
+    void 트랜잭션_활성_시_커밋_후_이메일_큐_등록() {
+      // given
+      TransactionSynchronizationManager.initSynchronization();
+      try {
+        User user = User.create("test@test.com", "테스터", "encodedPassword");
+        UserResponse userResponse = new UserResponse(
+            UUID.randomUUID(), "test@test.com", "테스터", Instant.now()
+        );
+
+        given(userRepository.existsByEmail(request.email())).willReturn(false);
+        given(passwordEncoder.encode(request.password())).willReturn("encodedPassword");
+        given(userRepository.save(any(User.class))).willReturn(user);
+        given(emailVerificationRepository.save(any(EmailVerification.class)))
+            .willReturn(EmailVerification.create(UUID.randomUUID()));
+        given(userMapper.toResponse(user)).willReturn(userResponse);
+
+        // when
+        userService.create(request);
+
+        // afterCommit 수동 트리거
+        TransactionSynchronizationManager.getSynchronizations()
+            .forEach(sync -> sync.afterCommit());
+
+        // then
+        then(emailQueue).should(times(1)).enqueue(anyString(), anyString());
+      } finally {
+        TransactionSynchronizationManager.clearSynchronization();
+      }
     }
   }
 
