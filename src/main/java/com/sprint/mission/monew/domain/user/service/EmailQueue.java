@@ -16,14 +16,24 @@ public class EmailQueue {
 
   public void enqueue(String email, String token) {
     queue.offer(new EmailTask(email, token));
-    log.debug("이메일 큐 등록: email={}", email);
+    log.debug("이메일 큐 등록: to={}", maskEmail(email));
   }
 
   @Scheduled(fixedDelay = 500)
   public void processQueue() {
     EmailTask task;
     while ((task = queue.poll()) != null) {
-      emailService.sendVerificationEmail(task.email(), task.token());
+      boolean success = emailService.sendVerificationEmail(task.email(), task.token());
+      if (!success) {
+        log.warn("이메일 발송 실패, 재적재: to={}", maskEmail(task.email()));
+        queue.offer(task);
+      }
     }
+  }
+
+  private String maskEmail(String email) {
+    int atIndex = email.indexOf('@');
+    if (atIndex <= 1) return "***";
+    return email.charAt(0) + "***" + email.substring(atIndex);
   }
 }

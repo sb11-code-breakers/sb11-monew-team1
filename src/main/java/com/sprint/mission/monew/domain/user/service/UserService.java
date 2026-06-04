@@ -24,6 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 
 @Slf4j
 @Transactional(readOnly = true)
@@ -53,7 +56,22 @@ public class UserService {
 
     EmailVerification verification = EmailVerification.create(saved.getId());
     EmailVerification savedVerification = emailVerificationRepository.save(verification);
-    emailQueue.enqueue(saved.getEmail(), savedVerification.getToken());
+
+    String email = saved.getEmail();
+    String token = savedVerification.getToken();
+
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronizationAdapter() {
+            @Override
+            public void afterCommit() {
+              emailQueue.enqueue(email, token);
+            }
+          }
+      );
+    } else {
+      emailQueue.enqueue(email, token);
+    }
 
     userMetrics.countRegistered();
     log.info("회원가입 완료: id={}", saved.getId());

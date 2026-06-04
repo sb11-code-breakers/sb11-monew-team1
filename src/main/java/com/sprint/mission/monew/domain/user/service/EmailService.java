@@ -20,7 +20,7 @@ public class EmailService {
   @Value("${monew.base-url}")
   private String verificationBaseUrl;
 
-  public void sendVerificationEmail(String to, String token) {
+  public boolean sendVerificationEmail(String to, String token) {
     try {
       String verificationUrl = verificationBaseUrl + "/api/users/verify?token=" + token;
 
@@ -40,8 +40,10 @@ public class EmailService {
 
       sesClient.sendEmail(request);
       log.info("인증 이메일 발송 완료: to={}", maskEmail(to));
+      return true;
     } catch (Exception e) {
       log.error("인증 이메일 발송 실패: to={}", maskEmail(to), e);
+      return false;
     }
   }
 
