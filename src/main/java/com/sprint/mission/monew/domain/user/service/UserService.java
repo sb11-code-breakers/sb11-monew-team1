@@ -2,11 +2,15 @@ package com.sprint.mission.monew.domain.user.service;
 
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetDto;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequestDto;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
+import com.sprint.mission.monew.domain.user.entity.PasswordResetToken;
 import com.sprint.mission.monew.domain.user.entity.User;
+import com.sprint.mission.monew.domain.user.exception.InvalidPasswordResetCodeException;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
@@ -16,6 +20,7 @@ import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
+import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
 import java.util.UUID;
@@ -37,6 +42,7 @@ public class UserService {
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
   private final EmailVerificationRepository emailVerificationRepository;
+  private final PasswordResetTokenRepository passwordResetTokenRepository;
   private final EmailQueue emailQueue;
   private final UserMetrics userMetrics;
 
@@ -159,5 +165,45 @@ public class UserService {
     }
     user.updatePassword(passwordEncoder.encode(request.newPassword()));
     log.info("비밀번호 변경 완료 | userId={}", requestUserId);
+  }
+
+  @Transactional
+  public void requestPasswordReset(UserPasswordResetRequestDto request) {
+    log.debug("비밀번호 재설정 요청 시도");
+    User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
+        .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
+
+    PasswordResetToken token = PasswordResetToken.create(user.getId());
+    PasswordResetToken savedToken = passwordResetTokenRepository.save(token);
+
+    String email = user.getEmail();
+    String code = savedToken.getCode();
+
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          emailQueue.enqueuePasswordReset(email, code);
+        }
+      });
+    } else {
+      emailQueue.enqueuePasswordReset(email, code);
+    }
+    log.info("비밀번호 재설정 이메일 발송 | userId={}", user.getId());
+  }
+
+  @Transactional
+  public void resetPassword(UserPasswordResetDto request) {
+    log.debug("비밀번호 재설정 시도");
+    PasswordResetToken token = passwordResetTokenRepository
+        .findByCodeAndExpiredAtAfter(request.code(), Instant.now())
+        .orElseThrow(() -> InvalidPasswordResetCodeException.withCode(request.code()));
+
+    User user = userRepository.findByIdAndDeletedAtIsNull(token.getUserId())
+        .orElseThrow(() -> UserNotFoundException.withId(token.getUserId()));
+
+    user.updatePassword(passwordEncoder.encode(request.newPassword()));
+    passwordResetTokenRepository.delete(token);
+    log.info("비밀번호 재설정 완료 | userId={}", user.getId());
   }
 }

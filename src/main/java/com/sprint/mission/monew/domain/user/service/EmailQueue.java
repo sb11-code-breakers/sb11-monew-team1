@@ -22,6 +22,11 @@ public class EmailQueue {
     log.debug("이메일 큐 등록: to={}", MonewUtil.maskEmail(email));
   }
 
+  public void enqueuePasswordReset(String email, String code) {
+    queue.offer(new EmailTask(email, code));
+    log.debug("비밀번호 재설정 이메일 큐 등록: to={}", MonewUtil.maskEmail(email));
+  }
+
   @Scheduled(fixedDelay = 500)
   public void processQueue() {
     List<EmailTask> failedTasks = new ArrayList<>();
