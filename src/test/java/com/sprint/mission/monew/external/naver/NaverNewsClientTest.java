@@ -9,6 +9,7 @@ import com.sprint.mission.monew.external.naver.dto.NaverNewsItem;
 import com.sprint.mission.monew.external.naver.dto.NaverNewsResponse;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -100,44 +101,36 @@ class NaverNewsClientTest {
   class ParseNaverDate {
 
     @Test
-    @DisplayName("RFC 1123 형식 날짜 문자열을 Instant로 변환한다")
-    void RFC_1123_날짜를_Instant로_변환한다() {
+    @DisplayName("정상 날짜는 Optional에 담긴 Instant를 반환한다")
+    void 정상_날짜는_Optional에_담긴_Instant를_반환한다() {
       // given — 2026-05-29는 금요일, +0900이면 UTC는 -9h → 2026-05-28T15:00:00Z
       String pubDate = "Fri, 29 May 2026 00:00:00 +0900";
 
       // when
-      Instant result = NaverNewsClient.parseNaverDate(pubDate);
+      Optional<Instant> result = NaverNewsClient.parseNaverDate(pubDate);
 
       // then
-      assertThat(result).isEqualTo(Instant.parse("2026-05-28T15:00:00Z"));
+      assertThat(result).contains(Instant.parse("2026-05-28T15:00:00Z"));
     }
 
     @Test
-    @DisplayName("파싱 불가능한 날짜는 현재 시각을 반환한다")
-    void 파싱_불가능한_날짜는_현재_시각을_반환한다() {
-      // given
-      Instant before = Instant.now();
-
+    @DisplayName("파싱 불가능한 날짜는 Optional.empty를 반환한다")
+    void 파싱_불가능한_날짜는_Optional_empty를_반환한다() {
       // when
-      Instant result = NaverNewsClient.parseNaverDate("invalid-date");
+      Optional<Instant> result = NaverNewsClient.parseNaverDate("invalid-date");
 
       // then
-      Instant after = Instant.now();
-      assertThat(result).isBetween(before, after);
+      assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("null 날짜는 현재 시각을 반환한다")
-    void null_날짜는_현재_시각을_반환한다() {
-      // given
-      Instant before = Instant.now();
-
+    @DisplayName("null 날짜는 Optional.empty를 반환한다")
+    void null_날짜는_Optional_empty를_반환한다() {
       // when
-      Instant result = NaverNewsClient.parseNaverDate(null);
+      Optional<Instant> result = NaverNewsClient.parseNaverDate(null);
 
       // then
-      Instant after = Instant.now();
-      assertThat(result).isBetween(before, after);
+      assertThat(result).isEmpty();
     }
   }
 }

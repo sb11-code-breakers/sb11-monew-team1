@@ -31,13 +31,13 @@ class RssNewsParserTest {
   class Parse {
 
     @Test
-    @DisplayName("정상 RSS를 파싱하면 link 없는 기사는 제외하고 반환한다")
-    void 정상_RSS를_파싱하면_link_없는_기사는_제외하고_반환한다() {
+    @DisplayName("link 없는 기사와 pubDate 없는 기사는 제외하고 반환한다")
+    void link_없는_기사와_pubDate_없는_기사는_제외하고_반환한다() {
       // when
       List<RssArticleDto> result = rssNewsParser.parse(ArticleSource.HANKYUNG);
 
-      // then — link 없는 항목 제외 → 3건
-      assertThat(result).hasSize(3);
+      // then — link 없는 항목 1건 + pubDate 없는 항목 1건 제외 → 2건
+      assertThat(result).hasSize(2);
       assertThat(result.get(0).sourceUrl()).isEqualTo("https://test.com/news/1");
       assertThat(result.get(0).source()).isEqualTo(ArticleSource.HANKYUNG);
     }
@@ -58,22 +58,18 @@ class RssNewsParserTest {
       // when
       List<RssArticleDto> result = rssNewsParser.parse(ArticleSource.YONHAP);
 
-      // then — 두 번째 기사(요약 없는 기사)
+      // then — 두 번째 기사(요약 없는 기사, pubDate 없는 기사는 이미 제외됨)
       assertThat(result.get(1).summary()).isEmpty();
     }
 
     @Test
-    @DisplayName("pubDate 없는 기사는 publishDate가 현재 시각으로 설정된다")
-    void pubDate_없는_기사는_publishDate가_현재_시각으로_설정된다() {
-      // given
-      java.time.Instant before = java.time.Instant.now();
-
+    @DisplayName("pubDate 없는 기사는 결과에서 제외된다")
+    void pubDate_없는_기사는_결과에서_제외된다() {
       // when
       List<RssArticleDto> result = rssNewsParser.parse(ArticleSource.HANKYUNG);
 
-      // then — 세 번째 기사(날짜 없는 기사)
-      java.time.Instant after = java.time.Instant.now();
-      assertThat(result.get(2).publishDate()).isBetween(before, after);
+      // then — 날짜 없는 기사(news/3)는 포함되지 않음
+      assertThat(result).noneMatch(dto -> dto.sourceUrl().equals("https://test.com/news/3"));
     }
 
     @Test

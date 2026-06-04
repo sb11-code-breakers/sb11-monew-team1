@@ -40,6 +40,7 @@ public class RssNewsParser {
       SyndFeed feed = input.build(reader);
       return feed.getEntries().stream()
           .filter(entry -> entry.getLink() != null && !entry.getLink().isBlank())
+          .filter(entry -> entry.getPublishedDate() != null)
           .map(entry -> toDto(source, entry))
           .toList();
     } catch (Exception e) {
@@ -51,9 +52,7 @@ public class RssNewsParser {
   private RssArticleDto toDto(ArticleSource source, SyndEntry entry) {
     String title = HtmlUtils.strip(entry.getTitle());
     String sourceUrl = entry.getLink();
-    Instant publishDate = entry.getPublishedDate() != null
-        ? entry.getPublishedDate().toInstant()
-        : Instant.now();
+    Instant publishDate = entry.getPublishedDate().toInstant();
     String summary = entry.getDescription() != null
         ? HtmlUtils.strip(entry.getDescription().getValue())
         : "";

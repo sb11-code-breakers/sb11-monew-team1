@@ -5,6 +5,7 @@ import com.sprint.mission.monew.external.naver.dto.NaverNewsItem;
 import com.sprint.mission.monew.external.naver.dto.NaverNewsResponse;
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -54,18 +55,18 @@ public class NaverNewsClient {
     return response.items();
   }
 
-  public static Instant parseNaverDate(String pubDate) {
+  public static Optional<Instant> parseNaverDate(String pubDate) {
     if (pubDate == null) {
-      log.warn("Naver 기사 날짜가 null입니다");
-      return Instant.now();
+      log.debug("Naver 기사 날짜가 null입니다");
+      return Optional.empty();
     }
     try {
       // "Mon, 29 May 2026 ..." → "29 May 2026 ..." (요일 부분 제거)
       String dateStr = pubDate.contains(",") ? pubDate.substring(pubDate.indexOf(',') + 2) : pubDate;
-      return OffsetDateTime.parse(dateStr, NAVER_DATE_FORMATTER).toInstant();
+      return Optional.of(OffsetDateTime.parse(dateStr, NAVER_DATE_FORMATTER).toInstant());
     } catch (Exception e) {
-      log.warn("Naver 기사 날짜 파싱 실패: pubDate={}", pubDate, e);
-      return Instant.now();
+      log.debug("Naver 기사 날짜 파싱 실패: pubDate={}", pubDate);
+      return Optional.empty();
     }
   }
 

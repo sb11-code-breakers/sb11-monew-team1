@@ -183,6 +183,22 @@ class NewsCollectServiceTest {
     }
 
     @Test
+    @DisplayName("pubDate가 null인 Naver 기사는 upsert를 호출하지 않고 건너뛴다")
+    void pubDate가_null인_Naver_기사는_건너뛴다() {
+      // given — pubDate null → parseNaverDate() → Optional.empty() → skip
+      NaverNewsItem item = new NaverNewsItem("제목", "https://example.com/1", "https://example.com/1",
+          "요약", null);
+      given(naverNewsClient.fetchNews()).willReturn(List.of(item));
+      given(rssNewsParser.parse(any())).willReturn(List.of());
+
+      // when
+      newsCollectService.collect();
+
+      // then
+      verify(articleUpsertService, never()).upsert(any(), any(), any(), any(), any());
+    }
+
+    @Test
     @DisplayName("RSS 기사 단건 처리 실패 시 같은 출처의 다른 기사는 계속 처리한다")
     void RSS_기사_단건_처리_실패_시_다른_기사는_계속_처리한다() {
       // given
