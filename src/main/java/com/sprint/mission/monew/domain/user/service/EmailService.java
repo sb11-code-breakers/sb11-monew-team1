@@ -47,7 +47,7 @@ public class EmailService {
     }
   }
 
-  private String maskEmail(String email) {
+  public static String maskEmail(String email) {
     int atIndex = email.indexOf('@');
     if (atIndex <= 1) return "***";
     return email.charAt(0) + "***" + email.substring(atIndex);

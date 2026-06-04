@@ -18,7 +18,7 @@ public class EmailQueue {
 
   public void enqueue(String email, String token) {
     queue.offer(new EmailTask(email, token));
-    log.debug("이메일 큐 등록: to={}", maskEmail(email));
+    log.debug("이메일 큐 등록: to={}", EmailService.maskEmail(email));
   }
 
   @Scheduled(fixedDelay = 500)
@@ -28,18 +28,15 @@ public class EmailQueue {
     while ((task = queue.poll()) != null) {
       boolean success = emailService.sendVerificationEmail(task.email(), task.token());
       if (!success) {
-        log.warn("이메일 발송 실패 (시도 {}회): to={}", task.retryCount() + 1, maskEmail(task.email()));
+        log.warn("이메일 발송 실패 (시도 {}회): to={}", task.retryCount() + 1,
+            EmailService.maskEmail(task.email()));
+        if (task.hasReachedMaxRetry()) {
+          log.error("이메일 발송 최종 실패: to={}", EmailService.maskEmail(task.email()));
+          continue;
+        }
         failedTasks.add(task.incrementRetry());
       }
     }
-    failedTasks.stream()
-        .filter(t -> !t.hasReachedMaxRetry())
-        .forEach(queue::offer);
-  }
-
-  private String maskEmail(String email) {
-    int atIndex = email.indexOf('@');
-    if (atIndex <= 1) return "***";
-    return email.charAt(0) + "***" + email.substring(atIndex);
+    failedTasks.forEach(queue::offer);
   }
 }
