@@ -1,9 +1,12 @@
 package com.sprint.mission.monew.domain.notification.listener;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 
 import com.sprint.mission.monew.domain.comment.event.CommentLikedNotificationEvent;
 import com.sprint.mission.monew.domain.notification.entity.ResourceType;
+import com.sprint.mission.monew.domain.notification.service.NotificationMetrics;
 import com.sprint.mission.monew.domain.notification.service.NotificationService;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -20,6 +23,8 @@ class NotificationEventListenerTest {
   @InjectMocks NotificationEventListener notificationEventListener;
 
   @Mock NotificationService notificationService;
+
+  @Mock NotificationMetrics notificationMetrics;
 
   @Nested
   @DisplayName("CommentLikedNotificationEvent 처리")
@@ -42,6 +47,24 @@ class NotificationEventListenerTest {
       then(notificationService)
           .should()
           .create(recipientId, message, ResourceType.COMMENT, resourceId);
+    }
+
+    @Test
+    @DisplayName("알림 생성 실패 시 예외를 전파하지 않고 실패 메트릭을 증가시킨다")
+    void 알림_생성_실패_시_예외를_전파하지_않고_실패_메트릭을_증가시킨다() {
+      // given
+      UUID recipientId = UUID.randomUUID();
+      CommentLikedNotificationEvent event =
+          new CommentLikedNotificationEvent(
+              recipientId, "메시지", ResourceType.COMMENT, UUID.randomUUID());
+      willThrow(new RuntimeException("DB 오류"))
+          .given(notificationService)
+          .create(recipientId, "메시지", ResourceType.COMMENT, event.resourceId());
+
+      // when & then
+      assertThatCode(() -> notificationEventListener.handleCommentLiked(event))
+          .doesNotThrowAnyException();
+      then(notificationMetrics).should().countCommentLikeFailure();
     }
   }
 }
