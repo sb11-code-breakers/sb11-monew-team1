@@ -1,67 +1,79 @@
 package com.sprint.mission.monew.domain.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
-import software.amazon.awssdk.services.ses.SesClient;
-import software.amazon.awssdk.services.ses.model.SendEmailRequest;
-import software.amazon.awssdk.services.ses.model.SendEmailResponse;
 
-@ExtendWith(MockitoExtension.class)
-class EmailServiceTest {
-
-  @InjectMocks
-  private EmailService emailService;
-
-  @Mock
-  private SesClient sesClient;
-
-  @BeforeEach
-  void setUp() {
-    ReflectionTestUtils.setField(emailService, "sender", "no-reply@monew.dev");
-    ReflectionTestUtils.setField(emailService, "verificationBaseUrl", "https://monew.dev");
-  }
+class EmailTaskTest {
 
   @Nested
-  @DisplayName("인증 이메일 발송")
-  class SendVerificationEmail {
+  @DisplayName("EmailTask 생성")
+  class Create {
 
     @Test
-    @DisplayName("발송 성공 시 true 반환")
-    void 발송_성공_시_true_반환() {
-      // given
-      given(sesClient.sendEmail(any(SendEmailRequest.class)))
-          .willReturn(SendEmailResponse.builder().messageId("msg-id").build());
-
+    @DisplayName("생성 시 retryCount는 0")
+    void 생성_시_retryCount는_0() {
       // when
-      boolean result = emailService.sendVerificationEmail("test@test.com", "token123");
+      EmailTask task = new EmailTask("test@test.com", "token123");
 
       // then
-      assertThat(result).isTrue();
+      assertThat(task.retryCount()).isEqualTo(0);
     }
 
     @Test
-    @DisplayName("발송 실패 시 false 반환")
-    void 발송_실패_시_false_반환() {
-      // given
-      given(sesClient.sendEmail(any(SendEmailRequest.class)))
-          .willThrow(new RuntimeException("SES 오류"));
-
+    @DisplayName("생성 시 MAX_RETRY 미달성")
+    void 생성_시_MAX_RETRY_미달성() {
       // when
-      boolean result = emailService.sendVerificationEmail("test@test.com", "token123");
+      EmailTask task = new EmailTask("test@test.com", "token123");
 
       // then
-      assertThat(result).isFalse();
+      assertThat(task.hasReachedMaxRetry()).isFalse();
+    }
+  }
+
+  @Nested
+  @DisplayName("재시도 횟수 증가")
+  class IncrementRetry {
+
+    @Test
+    @DisplayName("incrementRetry 호출 시 retryCount 1 증가")
+    void incrementRetry_호출_시_retryCount_1_증가() {
+      // given
+      EmailTask task = new EmailTask("test@test.com", "token123");
+
+      // when
+      EmailTask retried = task.incrementRetry();
+
+      // then
+      assertThat(retried.retryCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("세번 재시도 시 MAX_RETRY 달성")
+    void 세번_재시도_시_MAX_RETRY_달성() {
+      // given
+      EmailTask task = new EmailTask("test@test.com", "token123");
+
+      // when
+      EmailTask retried = task.incrementRetry().incrementRetry().incrementRetry();
+
+      // then
+      assertThat(retried.hasReachedMaxRetry()).isTrue();
+    }
+
+    @Test
+    @DisplayName("두번 재시도는 MAX_RETRY 미달성")
+    void 두번_재시도는_MAX_RETRY_미달성() {
+      // given
+      EmailTask task = new EmailTask("test@test.com", "token123");
+
+      // when
+      EmailTask retried = task.incrementRetry().incrementRetry();
+
+      // then
+      assertThat(retried.hasReachedMaxRetry()).isFalse();
     }
   }
 }
