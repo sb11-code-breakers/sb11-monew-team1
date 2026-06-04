@@ -531,6 +531,56 @@ class UserServiceTest {
       then(passwordResetTokenRepository).should().save(any(PasswordResetToken.class));
       then(emailQueue).should().enqueuePasswordReset(anyString(), anyString());
     }
+
+    @Test
+    @DisplayName("재설정 요청 시 기존 토큰 무효화")
+    void 재설정_요청_시_기존_토큰_무효화() {
+      // given
+      UserPasswordResetRequestDto request = new UserPasswordResetRequestDto("test@test.com");
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      PasswordResetToken token = PasswordResetToken.create(UUID.randomUUID());
+
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+      given(passwordResetTokenRepository.save(any(PasswordResetToken.class)))
+          .willReturn(token);
+
+      // when
+      userService.requestPasswordReset(request);
+
+      // then
+      then(passwordResetTokenRepository).should().deleteByUserId(user.getId());
+      then(passwordResetTokenRepository).should().save(any(PasswordResetToken.class));
+    }
+
+    @Test
+    @DisplayName("트랜잭션 활성 시 커밋 후 비밀번호 재설정 이메일 큐 등록")
+    void 트랜잭션_활성_시_커밋_후_비밀번호_재설정_이메일_큐_등록() {
+      // given
+      TransactionSynchronizationManager.initSynchronization();
+      try {
+        UserPasswordResetRequestDto request = new UserPasswordResetRequestDto("test@test.com");
+        User user = User.create("test@test.com", "테스터", "encodedPassword");
+        PasswordResetToken token = PasswordResetToken.create(UUID.randomUUID());
+
+        given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+            .willReturn(Optional.of(user));
+        given(passwordResetTokenRepository.save(any(PasswordResetToken.class)))
+            .willReturn(token);
+
+        // when
+        userService.requestPasswordReset(request);
+
+        // afterCommit 수동 트리거
+        TransactionSynchronizationManager.getSynchronizations()
+            .forEach(sync -> sync.afterCommit());
+
+        // then
+        then(emailQueue).should(times(1)).enqueuePasswordReset(anyString(), anyString());
+      } finally {
+        TransactionSynchronizationManager.clearSynchronization();
+      }
+    }
   }
 
   @Nested
