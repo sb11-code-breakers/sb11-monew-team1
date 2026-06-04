@@ -17,6 +17,12 @@ jobs:
       pull-requests: read
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
       - name: Find PR for this commit
         id: pr
         run: |
@@ -68,6 +74,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{ steps.report.outputs.file }}
+          override_commit: ${{ steps.pr.outputs.sha }}
           fail_ci_if_error: true
 
       - name: Skip (no PR artifact found)
