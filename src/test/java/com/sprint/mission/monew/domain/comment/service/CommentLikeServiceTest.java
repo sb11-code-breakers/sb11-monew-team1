@@ -14,7 +14,8 @@ import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.comment.dto.CommentLikeResponse;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.entity.CommentLike;
-import com.sprint.mission.monew.domain.comment.event.CommentLikedEvent;
+import com.sprint.mission.monew.domain.comment.event.CommentLikedNotificationEvent;
+import com.sprint.mission.monew.domain.notification.entity.ResourceType;
 import com.sprint.mission.monew.domain.comment.exception.CommentLikeAlreadyExistsException;
 import com.sprint.mission.monew.domain.comment.exception.CommentLikeNotFoundException;
 import com.sprint.mission.monew.domain.comment.exception.CommentNotFoundException;
@@ -126,8 +127,8 @@ public class CommentLikeServiceTest {
     }
 
     @Test
-    @DisplayName("좋아요 등록 성공 시 CommentLikedEvent가 발행된다")
-    void 좋아요_등록_성공_시_CommentLikedEvent가_발행된다() {
+    @DisplayName("좋아요 등록 성공 시 수신자·메시지가 포함된 CommentLikedNotificationEvent가 발행된다")
+    void 좋아요_등록_성공_시_CommentLikedNotificationEvent가_발행된다() {
       // given
       given(commentLikeRepository.existsByUserIdAndCommentId(userId, commentId)).willReturn(false);
       given(userRepository.findById(userId)).willReturn(Optional.of(user));
@@ -140,15 +141,17 @@ public class CommentLikeServiceTest {
       commentLikeService.create(commentId, userId);
 
       // then
+      String expectedMessage = "[" + user.getNickname() + "]님이 나의 댓글을 좋아합니다.";
       then(eventPublisher)
           .should()
           .publishEvent(
               argThat(
                   (Object event) ->
-                      event instanceof CommentLikedEvent e
-                          && e.commentId().equals(commentId)
-                          && e.commentAuthorId().equals(comment.getUser().getId())
-                          && e.likerNickname().equals(user.getNickname())));
+                      event instanceof CommentLikedNotificationEvent e
+                          && e.recipientId().equals(commentAuthor.getId())
+                          && e.message().equals(expectedMessage)
+                          && e.resourceType() == ResourceType.COMMENT
+                          && e.resourceId().equals(commentId)));
     }
 
     @Test

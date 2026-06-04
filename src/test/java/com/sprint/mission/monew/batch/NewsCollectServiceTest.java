@@ -2,6 +2,7 @@ package com.sprint.mission.monew.batch;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
@@ -9,6 +10,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
+import com.sprint.mission.monew.domain.interest.service.InterestNotificationService;
+import java.time.Instant;
 import com.sprint.mission.monew.external.naver.NaverNewsClient;
 import com.sprint.mission.monew.external.naver.dto.NaverNewsItem;
 import com.sprint.mission.monew.external.rss.RssNewsParser;
@@ -31,6 +34,7 @@ class NewsCollectServiceTest {
   @Mock NaverNewsClient naverNewsClient;
   @Mock RssNewsParser rssNewsParser;
   @Mock NewsCollectMetrics newsCollectMetrics;
+  @Mock InterestNotificationService interestNotificationService;
 
   @Nested
   @DisplayName("뉴스 수집")
@@ -218,6 +222,22 @@ class NewsCollectServiceTest {
       assertThatNoException().isThrownBy(() -> newsCollectService.collect());
       verify(articleUpsertService).upsert(
           eq(ArticleSource.HANKYUNG), eq("https://hankyung.com/2"), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("수집 완료 후 관심사별 기사 알림 집계를 실행한다")
+    void 수집_완료_후_관심사별_기사_알림_집계를_실행한다() {
+      // given
+      given(naverNewsClient.fetchNews()).willReturn(List.of());
+      given(rssNewsParser.parse(any())).willReturn(List.of());
+
+      // when
+      Instant before = Instant.now();
+      newsCollectService.collect();
+
+      // then — 수집 시작 시각 이후를 기준으로 집계 실행
+      verify(interestNotificationService)
+          .notifyNewArticles(argThat(since -> !since.isBefore(before)));
     }
   }
 }

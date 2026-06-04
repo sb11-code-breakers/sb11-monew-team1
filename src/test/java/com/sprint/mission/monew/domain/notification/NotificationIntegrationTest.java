@@ -213,9 +213,11 @@ public class NotificationIntegrationTest {
               .header("Monew-Request-User-ID", user.getId()))
           .andExpect(status().isNoContent());
 
-      // then — DB 상태 검증
-      long unconfirmedCount = notificationRepository.countByUserIdAndConfirmedAtIsNull(user.getId());
-      assertThat(unconfirmedCount).isZero();
+      // then — DB 상태 검증: 해당 유저의 모든 알림이 확인 처리됐는지 직접 조회
+      boolean anyUnconfirmed = notificationRepository.findAll().stream()
+          .filter(n -> n.getUserId().equals(user.getId()))
+          .anyMatch(n -> !n.isConfirmed());
+      assertThat(anyUnconfirmed).isFalse();
     }
 
     @Test

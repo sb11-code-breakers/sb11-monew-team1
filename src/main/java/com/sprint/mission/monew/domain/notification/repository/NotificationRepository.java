@@ -15,8 +15,6 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 
   Optional<Notification> findByIdAndUserIdAndConfirmedAtIsNull(UUID id, UUID userId);
 
-  long countByUserIdAndConfirmedAtIsNull(UUID userId);
-
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("""
       UPDATE Notification n

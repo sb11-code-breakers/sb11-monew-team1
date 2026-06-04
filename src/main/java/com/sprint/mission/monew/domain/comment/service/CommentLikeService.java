@@ -3,7 +3,8 @@ package com.sprint.mission.monew.domain.comment.service;
 import com.sprint.mission.monew.domain.comment.dto.CommentLikeResponse;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.entity.CommentLike;
-import com.sprint.mission.monew.domain.comment.event.CommentLikedEvent;
+import com.sprint.mission.monew.domain.comment.event.CommentLikedNotificationEvent;
+import com.sprint.mission.monew.domain.notification.entity.ResourceType;
 import com.sprint.mission.monew.domain.comment.exception.CommentLikeAlreadyExistsException;
 import com.sprint.mission.monew.domain.comment.exception.CommentLikeNotFoundException;
 import com.sprint.mission.monew.domain.comment.exception.CommentNotFoundException;
@@ -66,8 +67,9 @@ public class CommentLikeService {
 
     UUID authorId = comment.getUser() != null ? comment.getUser().getId() : null;
     if (authorId != null && !authorId.equals(userId)) {
+      String message = "[" + user.getNickname() + "]님이 나의 댓글을 좋아합니다.";
       eventPublisher.publishEvent(
-          new CommentLikedEvent(commentId, authorId, user.getNickname()));
+          new CommentLikedNotificationEvent(authorId, message, ResourceType.COMMENT, commentId));
     }
 
     return commentLikeMapper.toResponse(savedCommentLike);

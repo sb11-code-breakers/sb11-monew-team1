@@ -1,11 +1,13 @@
 package com.sprint.mission.monew.batch;
 
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
+import com.sprint.mission.monew.domain.interest.service.InterestNotificationService;
 import com.sprint.mission.monew.external.naver.NaverNewsClient;
 import com.sprint.mission.monew.external.naver.dto.NaverNewsItem;
 import com.sprint.mission.monew.external.rss.RssNewsParser;
 import com.sprint.mission.monew.external.rss.dto.RssArticleDto;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -24,10 +26,12 @@ public class NewsCollectService {
   private final NaverNewsClient naverNewsClient;
   private final RssNewsParser rssNewsParser;
   private final NewsCollectMetrics newsCollectMetrics;
+  private final InterestNotificationService interestNotificationService;
 
   // 네트워크 호출이 포함되므로 트랜잭션 없이 실행, upsert는 ArticleUpsertService의 @Transactional로 처리
   @Transactional(propagation = Propagation.NOT_SUPPORTED)
   public void collect() {
+    Instant batchStartTime = Instant.now();
     long start = System.nanoTime();
     try {
       collectNaver();
@@ -37,6 +41,7 @@ public class NewsCollectService {
     } finally {
       newsCollectMetrics.recordCollectDuration(Duration.ofNanos(System.nanoTime() - start));
     }
+    interestNotificationService.notifyNewArticles(batchStartTime);
   }
 
   private void collectNaver() {

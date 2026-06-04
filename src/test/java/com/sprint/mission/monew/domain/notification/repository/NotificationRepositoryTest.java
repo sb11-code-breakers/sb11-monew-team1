@@ -247,45 +247,6 @@ class NotificationRepositoryTest {
   }
 
   @Nested
-  @DisplayName("countByUserIdAndConfirmedAtIsNull")
-  class CountByUserIdAndConfirmedAtIsNull {
-
-    @Test
-    @DisplayName("미확인 알림 수를 반환한다")
-    void 미확인_알림_수를_반환한다() {
-      // given
-      notificationRepository.save(
-          Notification.create(userId, "알림1", ResourceType.INTEREST, UUID.randomUUID()));
-      notificationRepository.save(
-          Notification.create(userId, "알림2", ResourceType.INTEREST, UUID.randomUUID()));
-
-      // when
-      long count = notificationRepository.countByUserIdAndConfirmedAtIsNull(userId);
-
-      // then
-      assertThat(count).isEqualTo(2);
-    }
-
-    @Test
-    @DisplayName("확인된 알림은 카운트에 포함되지 않는다")
-    void 확인된_알림은_카운트에_포함되지_않는다() {
-      // given
-      notificationRepository.save(
-          Notification.create(userId, "미확인", ResourceType.INTEREST, UUID.randomUUID()));
-      Notification confirmed = notificationRepository.save(
-          Notification.create(userId, "확인됨", ResourceType.INTEREST, UUID.randomUUID()));
-      confirmed.confirm();
-      notificationRepository.save(confirmed);
-
-      // when
-      long count = notificationRepository.countByUserIdAndConfirmedAtIsNull(userId);
-
-      // then
-      assertThat(count).isEqualTo(1);
-    }
-  }
-
-  @Nested
   @DisplayName("deleteConfirmedBefore")
   class DeleteConfirmedBefore {
 

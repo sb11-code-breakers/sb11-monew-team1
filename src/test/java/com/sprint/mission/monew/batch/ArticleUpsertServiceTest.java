@@ -9,7 +9,6 @@ import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
-import com.sprint.mission.monew.domain.article.event.ArticleCreatedEvent;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import java.time.Instant;
 import java.util.Optional;
@@ -20,14 +19,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class ArticleUpsertServiceTest {
 
   @InjectMocks ArticleUpsertService articleUpsertService;
   @Mock ArticleRepository articleRepository;
-  @Mock ApplicationEventPublisher eventPublisher;
   @Mock NewsCollectMetrics newsCollectMetrics;
 
   @Nested
@@ -35,8 +32,8 @@ class ArticleUpsertServiceTest {
   class Upsert {
 
     @Test
-    @DisplayName("신규 기사는 저장하고 ArticleCreatedEvent를 발행한다")
-    void 신규_기사는_저장하고_이벤트를_발행한다() {
+    @DisplayName("신규 기사는 저장하고 이벤트를 발행하지 않는다")
+    void 신규_기사는_저장하고_이벤트를_발행하지_않는다() {
       // given
       Article saved = Article.create(
           ArticleSource.NAVER, "https://example.com/1", "제목", Instant.now(), "요약");
@@ -49,7 +46,6 @@ class ArticleUpsertServiceTest {
 
       // then
       verify(articleRepository).save(any(Article.class));
-      verify(eventPublisher).publishEvent(any(ArticleCreatedEvent.class));
       verify(newsCollectMetrics).countCreated();
     }
 
@@ -68,7 +64,6 @@ class ArticleUpsertServiceTest {
 
       // then
       verify(articleRepository).save(existing);
-      verify(eventPublisher, never()).publishEvent(any());
       verify(newsCollectMetrics).countDuplicated();
       assertThat(existing.getTitle()).isEqualTo("수정된 제목");
       assertThat(existing.getSummary()).isEqualTo("수정된 요약");
@@ -90,7 +85,6 @@ class ArticleUpsertServiceTest {
 
       // then
       verify(articleRepository, never()).save(any());
-      verify(eventPublisher, never()).publishEvent(any());
       assertThat(deleted.getTitle()).isEqualTo("원래 제목");
     }
 

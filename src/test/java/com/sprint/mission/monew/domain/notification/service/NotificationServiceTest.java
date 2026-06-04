@@ -166,21 +166,21 @@ NotificationServiceTest {
   }
 
   @Nested
-  @DisplayName("댓글 좋아요 알림 생성")
-  class CreateCommentLikeNotification {
+  @DisplayName("알림 생성")
+  class Create {
 
     @Test
-    @DisplayName("댓글 작성자에게 좋아요 알림이 저장된다")
-    void 댓글_작성자에게_좋아요_알림이_저장된다() {
+    @DisplayName("수신자에게 전달된 메시지 그대로 알림이 저장된다")
+    void 수신자에게_전달된_메시지_그대로_알림이_저장된다() {
       // given
-      UUID commentId = UUID.randomUUID();
-      UUID commentAuthorId = UUID.randomUUID();
-      String likerNickname = "닉네임";
+      UUID recipientId = UUID.randomUUID();
+      String message = "[닉네임]님이 나의 댓글을 좋아합니다.";
+      UUID resourceId = UUID.randomUUID();
       given(notificationRepository.save(any(Notification.class)))
           .willAnswer(invocation -> invocation.getArgument(0));
 
       // when
-      notificationService.createCommentLikeNotification(commentId, commentAuthorId, likerNickname);
+      notificationService.create(recipientId, message, ResourceType.COMMENT, resourceId);
 
       // then
       then(notificationRepository)
@@ -188,11 +188,29 @@ NotificationServiceTest {
           .save(
               argThat(
                   n ->
-                      n.getUserId().equals(commentAuthorId)
+                      n.getUserId().equals(recipientId)
                           && n.getResourceType() == ResourceType.COMMENT
-                          && n.getResourceId().equals(commentId)
-                          && n.getContent().contains(likerNickname)));
+                          && n.getResourceId().equals(resourceId)
+                          && n.getContent().equals(message)));
       then(notificationMetrics).should().countCommentLikeNotification();
+    }
+
+    @Test
+    @DisplayName("INTEREST 타입 알림은 기사 알림 메트릭으로 집계된다")
+    void INTEREST_타입_알림은_기사_알림_메트릭으로_집계된다() {
+      // given
+      UUID recipientId = UUID.randomUUID();
+      String message = "[인공지능]와 관련된 기사가 1건 등록되었습니다.";
+      UUID resourceId = UUID.randomUUID();
+      given(notificationRepository.save(any(Notification.class)))
+          .willAnswer(invocation -> invocation.getArgument(0));
+
+      // when
+      notificationService.create(recipientId, message, ResourceType.INTEREST, resourceId);
+
+      // then — 댓글 메트릭이 아닌 기사 알림 메트릭으로 집계된다
+      then(notificationMetrics).should().countArticleNotifications(1);
+      then(notificationMetrics).should(org.mockito.Mockito.never()).countCommentLikeNotification();
     }
   }
 
@@ -201,22 +219,32 @@ NotificationServiceTest {
   class CreateArticleNotifications {
 
     @Test
-    @DisplayName("구독자 수만큼 알림이 saveAll로 저장된다")
-    void 구독자_수만큼_알림이_saveAll로_저장된다() {
+    @DisplayName("전달받은 메시지로 구독자 수만큼 알림이 saveAll로 저장된다")
+    void 전달받은_메시지로_구독자_수만큼_알림이_saveAll로_저장된다() {
       // given
       UUID interestId = UUID.randomUUID();
+      String message = "[인공지능]와 관련된 기사가 5건 등록되었습니다.";
       List<UUID> subscriberIds = List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
       given(notificationRepository.saveAll(any()))
           .willAnswer(invocation -> invocation.getArgument(0));
 
       // when
-      notificationService.createArticleNotifications(interestId, "인공지능", subscriberIds);
+      notificationService.createArticleNotifications(interestId, message, subscriberIds);
 
-      // then
+      // then — 구독자 수만큼 저장되고 전달받은 메시지를 그대로 저장한다
       then(notificationRepository)
           .should()
           .saveAll(
-              argThat(notifications -> ((List<?>) notifications).size() == subscriberIds.size()));
+              argThat(
+                  notifications ->
+                      ((List<?>) notifications).size() == subscriberIds.size()
+                          && ((List<com.sprint.mission.monew.domain.notification.entity.Notification>) notifications)
+                              .stream()
+                              .allMatch(
+                                  n ->
+                                      n.getContent().equals(message)
+                                          && n.getResourceType() == ResourceType.INTEREST
+                                          && n.getResourceId().equals(interestId))));
       then(notificationMetrics).should().countArticleNotifications(subscriberIds.size());
     }
   }
