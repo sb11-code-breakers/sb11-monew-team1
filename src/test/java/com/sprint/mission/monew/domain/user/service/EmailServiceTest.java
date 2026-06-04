@@ -64,4 +64,37 @@ class EmailServiceTest {
       assertThat(result).isFalse();
     }
   }
+
+  @Nested
+  @DisplayName("비밀번호 재설정 이메일 발송")
+  class SendPasswordResetEmail {
+
+    @Test
+    @DisplayName("발송 성공 시 true 반환")
+    void 발송_성공_시_true_반환() {
+      // given
+      given(sesClient.sendEmail(any(SendEmailRequest.class)))
+          .willReturn(SendEmailResponse.builder().messageId("msg-id").build());
+
+      // when
+      boolean result = emailService.sendPasswordResetEmail("test@test.com", "reset-code-123");
+
+      // then
+      assertThat(result).isTrue();
+    }
+
+    @Test
+    @DisplayName("발송 실패 시 false 반환")
+    void 발송_실패_시_false_반환() {
+      // given
+      given(sesClient.sendEmail(any(SendEmailRequest.class)))
+          .willThrow(new RuntimeException("SES 오류"));
+
+      // when
+      boolean result = emailService.sendPasswordResetEmail("test@test.com", "reset-code-123");
+
+      // then
+      assertThat(result).isFalse();
+    }
+  }
 }
