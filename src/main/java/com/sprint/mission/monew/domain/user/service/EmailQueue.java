@@ -1,5 +1,7 @@
 package com.sprint.mission.monew.domain.user.service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,14 +23,18 @@ public class EmailQueue {
 
   @Scheduled(fixedDelay = 500)
   public void processQueue() {
+    List<EmailTask> failedTasks = new ArrayList<>();
     EmailTask task;
     while ((task = queue.poll()) != null) {
       boolean success = emailService.sendVerificationEmail(task.email(), task.token());
       if (!success) {
-        log.warn("이메일 발송 실패, 재적재: to={}", maskEmail(task.email()));
-        queue.offer(task);
+        log.warn("이메일 발송 실패 (시도 {}회): to={}", task.retryCount() + 1, maskEmail(task.email()));
+        failedTasks.add(task.incrementRetry());
       }
     }
+    failedTasks.stream()
+        .filter(t -> !t.hasReachedMaxRetry())
+        .forEach(queue::offer);
   }
 
   private String maskEmail(String email) {
