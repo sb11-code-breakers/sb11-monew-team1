@@ -58,6 +58,8 @@ public class CommentLikeServiceTest {
   @Mock
   private ApplicationEventPublisher eventPublisher;
 
+  @Mock private CommentMetrics commentMetrics;
+
   private UUID articleId;
   private UUID userId;
   private UUID commentId;
@@ -186,6 +188,7 @@ public class CommentLikeServiceTest {
       verify(commentRepository).increaseLikeCount(commentId);
       verify(commentLikeRepository).saveAndFlush(any(CommentLike.class));
       verify(commentLikeMapper).toResponse(any(CommentLike.class));
+      verify(commentMetrics).countLiked();
     }
   }
 
@@ -216,6 +219,7 @@ public class CommentLikeServiceTest {
       // then
       verify(commentLikeRepository).deleteByUserIdAndCommentId(userId, commentId);
       verify(commentRepository).decreaseLikeCount(commentId);
+      verify(commentMetrics).countLikeCanceled();
     }
   }
 }

@@ -29,10 +29,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class NotificationServiceTest {
+class
+NotificationServiceTest {
 
-  @InjectMocks NotificationService notificationService;
-  @Mock NotificationRepository notificationRepository;
+  @InjectMocks
+  NotificationService notificationService;
+  @Mock
+  NotificationRepository notificationRepository;
+  @Mock
+  NotificationMetrics notificationMetrics;
 
   UUID userId;
 
@@ -145,6 +150,19 @@ class NotificationServiceTest {
                       !cutoff.isBefore(before.minus(7, ChronoUnit.DAYS))
                           && !cutoff.isAfter(after.minus(7, ChronoUnit.DAYS))));
     }
+
+    @Test
+    @DisplayName("삭제된 알림 건수를 메트릭으로 집계한다")
+    void 삭제된_알림_건수를_메트릭으로_집계한다() {
+      // given — repository가 5건 삭제를 반환
+      given(notificationRepository.deleteConfirmedBefore(any())).willReturn(5);
+
+      // when
+      notificationService.deleteExpiredNotifications();
+
+      // then
+      then(notificationMetrics).should().countDeleted(5);
+    }
   }
 
   @Nested
@@ -174,6 +192,7 @@ class NotificationServiceTest {
                           && n.getResourceType() == ResourceType.COMMENT
                           && n.getResourceId().equals(commentId)
                           && n.getContent().contains(likerNickname)));
+      then(notificationMetrics).should().countCommentLikeNotification();
     }
   }
 
@@ -187,6 +206,8 @@ class NotificationServiceTest {
       // given
       UUID interestId = UUID.randomUUID();
       List<UUID> subscriberIds = List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+      given(notificationRepository.saveAll(any()))
+          .willAnswer(invocation -> invocation.getArgument(0));
 
       // when
       notificationService.createArticleNotifications(interestId, "인공지능", subscriberIds);
@@ -196,6 +217,7 @@ class NotificationServiceTest {
           .should()
           .saveAll(
               argThat(notifications -> ((List<?>) notifications).size() == subscriberIds.size()));
+      then(notificationMetrics).should().countArticleNotifications(subscriberIds.size());
     }
   }
 }

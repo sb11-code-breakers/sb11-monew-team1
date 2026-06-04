@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.user.scheduler;
 
 import com.sprint.mission.monew.domain.user.service.UserService;
+import io.micrometer.core.annotation.Timed;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class UserCleanupScheduler {
 
   private final UserService userService;
 
+  @Timed(value = "monew.user.cleanup.duration", description = "만료 사용자 물리 삭제 배치 1회 소요 시간")
   @Scheduled(cron = "${scheduler.user-cleanup.cron}")
   public void cleanUpDeletedUsers() {
     log.debug("물리 삭제 스케줄러 실행");

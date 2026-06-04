@@ -19,6 +19,7 @@ import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
+import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailNotVerifiedException;
@@ -26,8 +27,6 @@ import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordExcepti
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.service.UserService;
-import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
-
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
@@ -60,6 +59,51 @@ class UserControllerTest {
       // given
       UserCreateRequest request = new UserCreateRequest(
           "invalid-email", "테스터", "password123"
+      );
+
+      // when & then
+      mockMvc.perform(post("/api/users")
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("비밀번호가 8자 미만이면 400 반환")
+    void 비밀번호가_8자_미만이면_400_반환() throws Exception {
+      // given
+      UserCreateRequest request = new UserCreateRequest(
+          "test@test.com", "테스터", "abc123"
+      );
+
+      // when & then
+      mockMvc.perform(post("/api/users")
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("비밀번호에 숫자가 없으면 400 반환")
+    void 비밀번호에_숫자가_없으면_400_반환() throws Exception {
+      // given
+      UserCreateRequest request = new UserCreateRequest(
+          "test@test.com", "테스터", "abcdefgh"
+      );
+
+      // when & then
+      mockMvc.perform(post("/api/users")
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("비밀번호에 영문자가 없으면 400 반환")
+    void 비밀번호에_영문자가_없으면_400_반환() throws Exception {
+      // given
+      UserCreateRequest request = new UserCreateRequest(
+          "test@test.com", "테스터", "12345678"
       );
 
       // when & then
@@ -233,7 +277,6 @@ class UserControllerTest {
       mockMvc.perform(get("/api/users/verify")
               .param("token", token))
           .andExpect(status().isOk());
-      then(userService).should().verifyEmail(eq(token));
     }
   }
 

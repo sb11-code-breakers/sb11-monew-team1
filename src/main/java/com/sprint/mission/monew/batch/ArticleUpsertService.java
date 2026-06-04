@@ -19,6 +19,7 @@ public class ArticleUpsertService {
 
   private final ArticleRepository articleRepository;
   private final ApplicationEventPublisher eventPublisher;
+  private final NewsCollectMetrics newsCollectMetrics;
 
   // save() + publishEvent()를 같은 트랜잭션으로 묶어 @TransactionalEventListener(AFTER_COMMIT) 안전 보장
   @Transactional
@@ -37,11 +38,13 @@ public class ArticleUpsertService {
               }
               existing.update(title, summary);
               articleRepository.save(existing);
+              newsCollectMetrics.countDuplicated();
             },
             () -> {
               Article saved = articleRepository.save(
                   Article.create(source, sourceUrl, title, publishDate, summary));
               eventPublisher.publishEvent(new ArticleCreatedEvent(saved));
+              newsCollectMetrics.countCreated();
             });
   }
 }

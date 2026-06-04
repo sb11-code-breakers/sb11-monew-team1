@@ -23,6 +23,7 @@
     <item>
       <title>요약 없는 기사</title>
       <link>https://test.com/news/2</link>
+      <pubDate>Mon, 25 May 2026 10:00:00 +0900</pubDate>
     </item>
 
     <!-- pubDate 없는 기사 → Instant.now() 사용 -->

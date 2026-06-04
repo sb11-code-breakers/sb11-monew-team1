@@ -7,12 +7,14 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.BatchSize;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 @Entity
 @Table(name = "interests")
@@ -40,8 +42,9 @@ public class Interest extends BaseUpdatableEntity {
   }
 
   public void updateKeywords(List<String> newKeywords) {
-    this.keywords.clear();
-    newKeywords.stream()
+    Set<String> toAdd = new HashSet<>(newKeywords);
+    this.keywords.removeIf(k -> !toAdd.remove(k.getKeyword()));
+    toAdd.stream()
         .map(k -> InterestKeyword.create(this, k))
         .forEach(this.keywords::add);
   }

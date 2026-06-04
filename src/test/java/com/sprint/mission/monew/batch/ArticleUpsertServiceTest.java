@@ -28,6 +28,7 @@ class ArticleUpsertServiceTest {
   @InjectMocks ArticleUpsertService articleUpsertService;
   @Mock ArticleRepository articleRepository;
   @Mock ApplicationEventPublisher eventPublisher;
+  @Mock NewsCollectMetrics newsCollectMetrics;
 
   @Nested
   @DisplayName("upsert")
@@ -49,6 +50,7 @@ class ArticleUpsertServiceTest {
       // then
       verify(articleRepository).save(any(Article.class));
       verify(eventPublisher).publishEvent(any(ArticleCreatedEvent.class));
+      verify(newsCollectMetrics).countCreated();
     }
 
     @Test
@@ -67,6 +69,7 @@ class ArticleUpsertServiceTest {
       // then
       verify(articleRepository).save(existing);
       verify(eventPublisher, never()).publishEvent(any());
+      verify(newsCollectMetrics).countDuplicated();
       assertThat(existing.getTitle()).isEqualTo("수정된 제목");
       assertThat(existing.getSummary()).isEqualTo("수정된 요약");
     }

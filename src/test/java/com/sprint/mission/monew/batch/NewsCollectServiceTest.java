@@ -30,6 +30,7 @@ class NewsCollectServiceTest {
   @Mock ArticleUpsertService articleUpsertService;
   @Mock NaverNewsClient naverNewsClient;
   @Mock RssNewsParser rssNewsParser;
+  @Mock NewsCollectMetrics newsCollectMetrics;
 
   @Nested
   @DisplayName("뉴스 수집")
@@ -70,6 +71,43 @@ class NewsCollectServiceTest {
       // then
       verify(articleUpsertService).upsert(
           eq(ArticleSource.HANKYUNG), eq("https://hankyung.com/1"), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("기사 단건 처리 실패 시 출처별 실패 건수를 집계한다")
+    void 기사_단건_처리_실패_시_출처별_실패_건수를_집계한다() {
+      // given — Naver 기사 단건 upsert 중 예외 발생
+      NaverNewsItem item = new NaverNewsItem(
+          "테스트 기사", "https://example.com/1", "https://example.com/1",
+          "요약", "Mon, 29 May 2026 00:00:00 +0900");
+      given(naverNewsClient.fetchNews()).willReturn(List.of(item));
+      given(rssNewsParser.parse(any())).willReturn(List.of());
+      willThrow(new RuntimeException("저장 실패"))
+          .given(articleUpsertService)
+          .upsert(eq(ArticleSource.NAVER), eq("https://example.com/1"), any(), any(), any());
+
+      // when — 단건 실패는 삼켜지고 수집은 계속된다
+      newsCollectService.collect();
+
+      // then — 실패한 단건은 출처별 실패 건수로 집계된다
+      verify(newsCollectMetrics).countFailed(ArticleSource.NAVER);
+    }
+
+    @Test
+    @DisplayName("출처별 수집 건수를 집계한다")
+    void 출처별_수집_건수를_집계한다() {
+      // given
+      NaverNewsItem item = new NaverNewsItem(
+          "제목", "https://example.com/1", "https://example.com/1",
+          "요약", "Mon, 29 May 2026 00:00:00 +0900");
+      given(naverNewsClient.fetchNews()).willReturn(List.of(item));
+      given(rssNewsParser.parse(any())).willReturn(List.of());
+
+      // when
+      newsCollectService.collect();
+
+      // then — Naver 1건 수집이 출처별 건수로 집계된다
+      verify(newsCollectMetrics).countCollected(ArticleSource.NAVER, 1);
     }
 
     @Test
@@ -142,6 +180,22 @@ class NewsCollectServiceTest {
       assertThatNoException().isThrownBy(() -> newsCollectService.collect());
       verify(articleUpsertService).upsert(
           eq(ArticleSource.NAVER), eq("https://example.com/2"), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("pubDate가 null인 Naver 기사는 upsert를 호출하지 않고 건너뛴다")
+    void pubDate가_null인_Naver_기사는_건너뛴다() {
+      // given — pubDate null → parseNaverDate() → Optional.empty() → skip
+      NaverNewsItem item = new NaverNewsItem("제목", "https://example.com/1", "https://example.com/1",
+          "요약", null);
+      given(naverNewsClient.fetchNews()).willReturn(List.of(item));
+      given(rssNewsParser.parse(any())).willReturn(List.of());
+
+      // when
+      newsCollectService.collect();
+
+      // then
+      verify(articleUpsertService, never()).upsert(any(), any(), any(), any(), any());
     }
 
     @Test

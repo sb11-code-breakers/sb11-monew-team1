@@ -113,7 +113,7 @@ class InterestTest {
       // then
       assertThat(interest.getKeywords())
           .extracting(InterestKeyword::getKeyword)
-          .containsExactlyElementsOf(newKeywords);
+          .containsExactlyInAnyOrder("자연어처리", "GPT", "트랜스포머");
     }
   }
 }

@@ -7,6 +7,7 @@ import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
 import com.sprint.mission.monew.domain.article.dto.ArticleViewResponse;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.service.ArticleService;
+import io.micrometer.core.annotation.Timed;
 import jakarta.validation.Valid;
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +32,7 @@ public class ArticleController implements ArticleApi {
   private final ArticleService articleService;
 
   @GetMapping
+  @Timed(value = "monew.api.articles.search", description = "기사 목록 검색 응답 시간")
   @Override
   public ResponseEntity<CursorPageResponse<ArticleResponse>> search(
       @ParameterObject @ModelAttribute @Valid ArticleQueryCondition condition,
@@ -45,6 +47,7 @@ public class ArticleController implements ArticleApi {
   }
 
   @GetMapping("/{articleId}")
+  @Timed(value = "monew.api.articles.get", description = "기사 단건 조회 응답 시간")
   @Override
   public ResponseEntity<ArticleResponse> getArticle(
       @PathVariable UUID articleId,
