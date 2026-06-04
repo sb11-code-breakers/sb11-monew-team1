@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.domain.user.service;
 
+import com.sprint.mission.monew.common.util.MonewUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,17 +40,11 @@ public class EmailService {
           .build();
 
       sesClient.sendEmail(request);
-      log.info("인증 이메일 발송 완료: to={}", maskEmail(to));
+      log.info("인증 이메일 발송 완료: to={}", MonewUtil.maskEmail(to));
       return true;
     } catch (Exception e) {
-      log.error("인증 이메일 발송 실패: to={}", maskEmail(to), e);
+      log.error("인증 이메일 발송 실패: to={}", MonewUtil.maskEmail(to), e);
       return false;
     }
-  }
-
-  public static String maskEmail(String email) {
-    int atIndex = email.indexOf('@');
-    if (atIndex <= 1) return "***";
-    return email.charAt(0) + "***" + email.substring(atIndex);
   }
 }

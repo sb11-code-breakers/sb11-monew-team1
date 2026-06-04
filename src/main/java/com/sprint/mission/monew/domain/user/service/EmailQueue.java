@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.domain.user.service;
 
+import com.sprint.mission.monew.common.util.MonewUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -18,7 +19,7 @@ public class EmailQueue {
 
   public void enqueue(String email, String token) {
     queue.offer(new EmailTask(email, token));
-    log.debug("이메일 큐 등록: to={}", EmailService.maskEmail(email));
+    log.debug("이메일 큐 등록: to={}", MonewUtil.maskEmail(email));
   }
 
   @Scheduled(fixedDelay = 500)
@@ -29,9 +30,9 @@ public class EmailQueue {
       boolean success = emailService.sendVerificationEmail(task.email(), task.token());
       if (!success) {
         log.warn("이메일 발송 실패 (시도 {}회): to={}", task.retryCount() + 1,
-            EmailService.maskEmail(task.email()));
+            MonewUtil.maskEmail(task.email()));
         if (task.hasReachedMaxRetry()) {
-          log.error("이메일 발송 최종 실패: to={}", EmailService.maskEmail(task.email()));
+          log.error("이메일 발송 최종 실패: to={}", MonewUtil.maskEmail(task.email()));
           continue;
         }
         failedTasks.add(task.incrementRetry());
