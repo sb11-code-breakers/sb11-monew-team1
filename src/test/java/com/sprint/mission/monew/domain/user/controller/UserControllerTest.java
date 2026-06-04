@@ -14,10 +14,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sprint.mission.monew.domain.user.dto.PasswordResetDto;
-import com.sprint.mission.monew.domain.user.dto.PasswordResetRequestDto;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetDto;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequestDto;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
@@ -335,7 +335,7 @@ class UserControllerTest {
     @DisplayName("이메일이 빈 값이면 400 반환")
     void 이메일이_빈_값이면_400_반환() throws Exception {
       // given
-      PasswordResetRequestDto request = new PasswordResetRequestDto("");
+      UserPasswordResetRequestDto request = new UserPasswordResetRequestDto("");
 
       // when & then
       mockMvc.perform(post("/api/users/password/reset-request")
@@ -348,7 +348,7 @@ class UserControllerTest {
     @DisplayName("존재하지 않는 이메일이면 404 반환")
     void 존재하지_않는_이메일이면_404_반환() throws Exception {
       // given
-      PasswordResetRequestDto request = new PasswordResetRequestDto("notfound@test.com");
+      UserPasswordResetRequestDto request = new UserPasswordResetRequestDto("notfound@test.com");
       willThrow(UserNotFoundException.withId(UUID.randomUUID()))
           .given(userService).requestPasswordReset(any());
 
@@ -363,7 +363,7 @@ class UserControllerTest {
     @DisplayName("성공 시 204 반환")
     void 성공_시_204_반환() throws Exception {
       // given
-      PasswordResetRequestDto request = new PasswordResetRequestDto("test@test.com");
+      UserPasswordResetRequestDto request = new UserPasswordResetRequestDto("test@test.com");
 
       // when & then
       mockMvc.perform(post("/api/users/password/reset-request")
@@ -381,7 +381,7 @@ class UserControllerTest {
     @DisplayName("인증 코드가 빈 값이면 400 반환")
     void 인증_코드가_빈_값이면_400_반환() throws Exception {
       // given
-      PasswordResetDto request = new PasswordResetDto("", "newPassword123");
+      UserPasswordResetDto request = new UserPasswordResetDto("", "newPassword123");
 
       // when & then
       mockMvc.perform(patch("/api/users/password/reset")
@@ -394,7 +394,7 @@ class UserControllerTest {
     @DisplayName("유효하지 않은 인증 코드면 400 반환")
     void 유효하지_않은_인증_코드면_400_반환() throws Exception {
       // given
-      PasswordResetDto request = new PasswordResetDto("invalid-code", "newPassword123");
+      UserPasswordResetDto request = new UserPasswordResetDto("invalid-code", "newPassword123");
       willThrow(InvalidPasswordResetCodeException.withCode("invalid-code"))
           .given(userService).resetPassword(any());
 
@@ -409,7 +409,7 @@ class UserControllerTest {
     @DisplayName("성공 시 204 반환")
     void 성공_시_204_반환() throws Exception {
       // given
-      PasswordResetDto request = new PasswordResetDto("valid-code", "newPassword123");
+      UserPasswordResetDto request = new UserPasswordResetDto("valid-code", "newPassword123");
 
       // when & then
       mockMvc.perform(patch("/api/users/password/reset")
