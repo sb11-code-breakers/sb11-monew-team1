@@ -7,7 +7,6 @@ import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.User;
-import com.sprint.mission.monew.domain.user.event.EmailVerificationCreatedEvent;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
@@ -22,10 +21,11 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Slf4j
 @Transactional(readOnly = true)
@@ -37,7 +37,7 @@ public class UserService {
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
   private final EmailVerificationRepository emailVerificationRepository;
-  private final ApplicationEventPublisher eventPublisher;
+  private final EmailQueue emailQueue;
   private final UserMetrics userMetrics;
 
   @Transactional
@@ -55,8 +55,20 @@ public class UserService {
 
     EmailVerification verification = EmailVerification.create(saved.getId());
     EmailVerification savedVerification = emailVerificationRepository.save(verification);
-    eventPublisher.publishEvent(
-        new EmailVerificationCreatedEvent(saved.getEmail(), savedVerification.getToken()));
+
+    String email = saved.getEmail();
+    String token = savedVerification.getToken();
+
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          emailQueue.enqueue(email, token);
+        }
+      });
+    } else {
+      emailQueue.enqueue(email, token);
+    }
 
     userMetrics.countRegistered();
     log.info("회원가입 완료: id={}", saved.getId());

@@ -3,10 +3,12 @@ package com.sprint.mission.monew.domain.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
@@ -15,7 +17,6 @@ import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.User;
-import com.sprint.mission.monew.domain.user.event.EmailVerificationCreatedEvent;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
@@ -37,8 +38,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -59,7 +60,7 @@ class UserServiceTest {
   private EmailVerificationRepository emailVerificationRepository;
 
   @Mock
-  private ApplicationEventPublisher eventPublisher;
+  private EmailQueue emailQueue;
 
   @Mock
   private UserMetrics userMetrics;
@@ -89,8 +90,8 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("성공 시 저장된 사용자 반환 및 이메일 인증 이벤트 발행")
-    void 성공_시_저장된_사용자_반환_및_이메일_인증_이벤트_발행() {
+    @DisplayName("성공 시 저장된 사용자 반환 및 이메일 큐 등록")
+    void 성공_시_저장된_사용자_반환_및_이메일_큐_등록() {
       // given
       User user = User.create("test@test.com", "테스터", "encodedPassword");
       UserResponse userResponse = new UserResponse(
@@ -111,12 +112,44 @@ class UserServiceTest {
       then(passwordEncoder).should().encode(request.password());
       then(userRepository).should().save(any(User.class));
       then(emailVerificationRepository).should().save(any(EmailVerification.class));
-      then(eventPublisher).should().publishEvent(any(EmailVerificationCreatedEvent.class));
+      then(emailQueue).should().enqueue(anyString(), anyString());
       then(userMapper).should().toResponse(user);
       then(userMetrics).should().countRegistered();
       assertThat(result).isNotNull();
       assertThat(result.email()).isEqualTo("test@test.com");
       assertThat(result.nickname()).isEqualTo("테스터");
+    }
+
+    @Test
+    @DisplayName("트랜잭션 활성 시 커밋 후 이메일 큐 등록")
+    void 트랜잭션_활성_시_커밋_후_이메일_큐_등록() {
+      // given
+      TransactionSynchronizationManager.initSynchronization();
+      try {
+        User user = User.create("test@test.com", "테스터", "encodedPassword");
+        UserResponse userResponse = new UserResponse(
+            UUID.randomUUID(), "test@test.com", "테스터", Instant.now()
+        );
+
+        given(userRepository.existsByEmail(request.email())).willReturn(false);
+        given(passwordEncoder.encode(request.password())).willReturn("encodedPassword");
+        given(userRepository.save(any(User.class))).willReturn(user);
+        given(emailVerificationRepository.save(any(EmailVerification.class)))
+            .willReturn(EmailVerification.create(UUID.randomUUID()));
+        given(userMapper.toResponse(user)).willReturn(userResponse);
+
+        // when
+        userService.create(request);
+
+        // afterCommit 수동 트리거
+        TransactionSynchronizationManager.getSynchronizations()
+            .forEach(sync -> sync.afterCommit());
+
+        // then
+        then(emailQueue).should(times(1)).enqueue(anyString(), anyString());
+      } finally {
+        TransactionSynchronizationManager.clearSynchronization();
+      }
     }
   }
 
@@ -441,7 +474,7 @@ class UserServiceTest {
     @Test
     @DisplayName("물리 삭제된 사용자 건수를 메트릭으로 집계한다")
     void 물리_삭제된_사용자_건수를_메트릭으로_집계한다() {
-      // given — repository가 3건 삭제를 반환
+      // given
       Instant threshold = Instant.now();
       given(userRepository.deleteAllByDeletedAtBefore(threshold)).willReturn(3);
 
