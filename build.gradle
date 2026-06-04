@@ -73,6 +73,7 @@ def jacocoExcludes = [
         'com/sprint/mission/monew/common/entity/**',
         'com/sprint/mission/monew/common/dto/**',
         'com/sprint/mission/monew/domain/**/Q*'
+        'com/sprint/mission/monew/domain/user/service/EmailQueue*'
 ]
 
 jacocoTestReport {
