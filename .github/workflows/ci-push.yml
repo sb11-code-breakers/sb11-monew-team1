@@ -74,7 +74,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{ steps.report.outputs.file }}
-          override_commit: ${{ steps.pr.outputs.sha }}
           fail_ci_if_error: true
 
       - name: Skip (no PR artifact found)
