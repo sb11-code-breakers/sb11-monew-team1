@@ -76,4 +76,41 @@ class EmailTaskTest {
       assertThat(retried.hasReachedMaxRetry()).isFalse();
     }
   }
+  @Nested
+  @DisplayName("EmailTask 타입")
+  class TaskType {
+
+    @Test
+    @DisplayName("기본 생성 시 VERIFICATION 타입")
+    void 기본_생성_시_VERIFICATION_타입() {
+      // when
+      EmailTask task = new EmailTask("test@test.com", "token123");
+
+      // then
+      assertThat(task.type()).isEqualTo(EmailTaskType.VERIFICATION);
+    }
+
+    @Test
+    @DisplayName("PASSWORD_RESET 타입으로 생성")
+    void PASSWORD_RESET_타입으로_생성() {
+      // when
+      EmailTask task = new EmailTask("test@test.com", "code123", EmailTaskType.PASSWORD_RESET);
+
+      // then
+      assertThat(task.type()).isEqualTo(EmailTaskType.PASSWORD_RESET);
+    }
+
+    @Test
+    @DisplayName("incrementRetry 시 타입 유지")
+    void incrementRetry_시_타입_유지() {
+      // given
+      EmailTask task = new EmailTask("test@test.com", "code123", EmailTaskType.PASSWORD_RESET);
+
+      // when
+      EmailTask retried = task.incrementRetry();
+
+      // then
+      assertThat(retried.type()).isEqualTo(EmailTaskType.PASSWORD_RESET);
+    }
+  }
 }
