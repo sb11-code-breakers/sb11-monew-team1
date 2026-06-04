@@ -14,12 +14,15 @@ export const options = {
   },
 };
 
+const USER_IDS = Array.from({ length: 50 }, (_, i) => {
+  const userIdx = String(i + 1).padStart(12, '0');
+  return `bbbbbbbb-0000-0000-0000-${userIdx}`;
+});
+
 export default function () {
   const vuNumber = exec.vu.idInTest;
-  const iterationNumber = exec.vu.iterationInInstance;
 
-  const userIdx = String(vuNumber).padStart(12, '0');
-  const myUserId = `bbbbbbbb-0000-0000-0000-${userIdx}`;
+  const myUserId = USER_IDS[(vuNumber - 1) % USER_IDS.length];
 
   const params = {
     headers: {
@@ -28,30 +31,15 @@ export default function () {
     },
   };
 
-  // 기사 순환 (100개)
-  const articleIdx = String(((vuNumber + iterationNumber) % 100) + 1).padStart(12, '0');
-  const targetArticleId = `aaaaaaaa-0000-0000-0000-${articleIdx}`;
-
-  // 댓글 순환 (2500개)
-  const commentIdx = String(((vuNumber + iterationNumber) % 2500) + 1).padStart(12, '0');
-  const targetCommentId = `cccccccc-0000-0000-0000-${commentIdx}`;
-
-  // 댓글 목록 조회
-  const queryParams = `?articleId=${targetArticleId}&limit=10&orderBy=createdAt&direction=DESC`;
-  const getCommentsRes = http.get(`http://localhost:8080/api/comments${queryParams}`, params);
-  check(getCommentsRes, {
-    'GET /api/comments status is 200': (r) => r.status === 200,
-  });
-  sleep(1);
-
-  // 댓글 좋아요 등록
-  const likeRes = http.post(
-      `http://localhost:8080/api/comments/${targetCommentId}/comment-likes`,
-      null,
+  // 이슈 #168 목표 API — 유저 활동 이력 조회 (다중 JOIN 성능 측정)
+  const res = http.get(
+      `http://localhost:8080/api/user-activities/${myUserId}`,
       params
   );
-  check(likeRes, {
-    'POST /comment-likes status is 201': (r) => r.status === 201,
+
+  check(res, {
+    'GET /api/user-activities/{userId} status is 200': (r) => r.status === 200,
   });
+
   sleep(1);
 }

@@ -1,4 +1,4 @@
--- 1. 기존 데이터가 있다면 꼬이지 않게 깔끔하게 초기화 (Soft delete 고려하지 않고 강제 초기화)
+-- 1. 기존 데이터가 있다면 데이터 꼬임 및 외래키 충돌 방지를 위해 통째로 초기화
 TRUNCATE TABLE comment_likes CASCADE;
 TRUNCATE TABLE article_views CASCADE;
 TRUNCATE TABLE comments CASCADE;
@@ -8,7 +8,7 @@ TRUNCATE TABLE articles CASCADE;
 TRUNCATE TABLE interests CASCADE;
 TRUNCATE TABLE users CASCADE;
 
--- 2. 유저 50명 (고정 bbbbbbbb UUID)
+-- 2. 유저 50명 생성 (k6 스크립트가 호출할 고정 bbbbbbbb UUID 기반)
 INSERT INTO users (id, email, nickname, password, created_at, updated_at)
 SELECT
     CAST('bbbbbbbb-0000-0000-0000-' || LPAD(i::text, 12, '0') AS UUID),
@@ -19,7 +19,7 @@ SELECT
     NOW()
 FROM generate_series(1, 50) AS i;
 
--- 3. 관심사 10개 (고정 dddddddd UUID)
+-- 3. 관심사 10개 생성 (고정 dddddddd UUID 기반)
 INSERT INTO interests (id, name, created_at, updated_at)
 VALUES
     ('dddddddd-0000-0000-0000-000000000001', 'IT', NOW(), NOW()),
@@ -33,13 +33,13 @@ VALUES
     ('dddddddd-0000-0000-0000-000000000009', '환경', NOW(), NOW()),
     ('dddddddd-0000-0000-0000-000000000010', '국제', NOW(), NOW());
 
--- 4. 키워드 (관심사당 2개)
+-- 4. 키워드 생성 (관심사당 2개씩 배치)
 INSERT INTO interest_keywords (id, interest_id, keyword, created_at)
 SELECT gen_random_uuid(), id, '키워드1', NOW() FROM interests
 UNION ALL
 SELECT gen_random_uuid(), id, '키워드2', NOW() FROM interests;
 
--- 5. 기사 100개 (고정 aaaaaaaa UUID)
+-- 5. 뉴스 기사 100개 생성 (고정 aaaaaaaa UUID 기반)
 INSERT INTO articles (id, source, source_url, title, publish_date, summary, created_at, updated_at)
 SELECT
     CAST('aaaaaaaa-0000-0000-0000-' || LPAD(i::text, 12, '0') AS UUID),
@@ -52,7 +52,7 @@ SELECT
     NOW()
 FROM generate_series(1, 100) AS i;
 
--- 6. 구독 (유저당 다채롭게 5개씩, 총 250개 매핑)
+-- 6. 구독 정보 매핑 (50명 유저가 10개 관심사 중 서로 다채롭게 5개씩 구독 조율, 총 250건)
 INSERT INTO subscriptions (id, user_id, interest_id, created_at)
 SELECT
     gen_random_uuid(),
@@ -73,7 +73,7 @@ FROM (
      ) sub
 WHERE rn <= 5;
 
--- 7. 댓글 (총 500개, 기사당 5개씩 규칙적으로 골고루 분산, 고정 cccccccc UUID)
+-- 7. 댓글 활동 데이터 2,500개 적재 (50명의 유저 활동 이력을 풍부하게 만들기 위함)
 INSERT INTO comments (id, article_id, user_id, content, like_count, created_at, updated_at)
 SELECT
     CAST('cccccccc-0000-0000-0000-' || LPAD(i::text, 12, '0') AS UUID),
@@ -83,9 +83,9 @@ SELECT
     0,
     NOW(),
     NOW()
-FROM generate_series(1, 2500) AS i;  -- 500 → 2500
+FROM generate_series(1, 2500) AS i;
 
--- 8. 댓글 좋아요 (총 1000개 골고루 분산)
+-- 8. 댓글 좋아요 이력 데이터 1,000개 골고루 분산 적재
 INSERT INTO comment_likes (id, user_id, comment_id, created_at)
 SELECT DISTINCT ON (u.id, c.id)
     gen_random_uuid(), u.id, c.id, NOW()
@@ -94,7 +94,7 @@ FROM (SELECT id, ROW_NUMBER() OVER (ORDER BY id) as rn FROM users) u
 WHERE (u.rn + c.rn) % 5 = 0
     LIMIT 1000;
 
--- 9. 기사 조회 (총 1000개 골고루 분산)
+-- 9. 기사 조회 이력 데이터 1,000개 골고루 분산 적재
 INSERT INTO article_views (id, user_id, article_id, created_at)
 SELECT DISTINCT ON (u.id, a.id)
     gen_random_uuid(), u.id, a.id, NOW()
