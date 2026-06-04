@@ -1,6 +1,7 @@
 # k6 부하테스트 결과 — 2단계 중규모
 
 ## 테스트 환경
+
 - 유저: 50명
 - 가상 사용자(VU): 50명
 - 테스트 시간: 1분 30초 (ramp-up 20s → 유지 50s → ramp-down 20s)
@@ -8,41 +9,45 @@
 - 측정 대상 API: `GET /api/user-activities/{userId}`
 
 ## 테스트 데이터
-| 테이블 | 건수 |
-|--------|------|
-| users | 50 |
-| interests | 10 |
-| interest_keywords | 20 |
-| articles | 100 |
-| subscriptions | 250 (유저당 5개) |
-| comments | 2,500 |
-| comment_likes | 1,000 |
-| article_views | 1,000 |
+
+| 테이블               | 건수           |
+|-------------------|--------------|
+| users             | 50           |
+| interests         | 10           |
+| interest_keywords | 20           |
+| articles          | 100          |
+| subscriptions     | 250 (유저당 5개) |
+| comments          | 2,500        |
+| comment_likes     | 1,000        |
+| article_views     | 1,000        |
 
 ## 결과
-| 지표 | 값 |
-|------|-----|
-| 평균 응답시간 (avg) | 20.97ms |
-| 중간값 (med) | 17.44ms |
-| p(90) | 30.49ms |
-| p(95) | 40.39ms |
+
+| 지표            | 값        |
+|---------------|----------|
+| 평균 응답시간 (avg) | 20.97ms  |
+| 중간값 (med)     | 17.44ms  |
+| p(90)         | 30.49ms  |
+| p(95)         | 40.39ms  |
 | 최대 응답시간 (max) | 420.45ms |
-| 실패율 | 0.00% |
-| TPS | 38.25/s |
-| 총 요청 수 | 3,462 |
+| 실패율           | 0.00%    |
+| TPS           | 38.25/s  |
+| 총 요청 수        | 3,462    |
 
 ## 임계값
+
 - p(95) < 2000ms → 40.39ms ✅
 - 실패율 < 10% → 0.00% ✅
 
 ## 1단계 vs 2단계 비교
-| 지표 | 1단계 (VU 5명) | 2단계 (VU 50명) | 변화 |
-|------|--------------|----------------|------|
-| avg | 12.48ms | 20.97ms | 약 1.7배 증가 |
-| p(95) | 18.91ms | 40.39ms | 약 2.1배 증가 |
-| max | 100.09ms | 420.45ms | 약 4.2배 증가 |
-| 실패율 | 0.00% | 0.00% | 동일 |
-| TPS | 4.03/s | 38.25/s | 약 9.5배 증가 |
+
+| 지표    | 1단계 (VU 5명) | 2단계 (VU 50명) | 변화        |
+|-------|-------------|--------------|-----------|
+| avg   | 12.48ms     | 20.97ms      | 약 1.7배 증가 |
+| p(95) | 18.91ms     | 40.39ms      | 약 2.1배 증가 |
+| max   | 100.09ms    | 420.45ms     | 약 4.2배 증가 |
+| 실패율   | 0.00%       | 0.00%        | 동일        |
+| TPS   | 4.03/s      | 38.25/s      | 약 9.5배 증가 |
 
 ## 상세 분석
 
@@ -128,6 +133,7 @@ max 420ms  ████████████████████
 현재 테스트는 **로컬 환경**에서 진행되었습니다.
 
 **로컬 환경 구조:**
+
 ```
 내 컴퓨터 (Windows)
 ├── Docker → PostgreSQL 컨테이너
@@ -136,11 +142,13 @@ max 420ms  ████████████████████
 ```
 
 세 개가 같은 컴퓨터에서 돌아가기 때문에:
+
 - 네트워크 지연 = 거의 0ms (localhost)
 - 2,500개 댓글이 전부 RAM 캐시에 올라가 있는 상태
 - 실제 프로덕션 환경보다 훨씬 유리한 조건
 
 **실제 프로덕션(AWS ECS + RDS) 환경에서는:**
+
 ```
 클라이언트 → ECS (Spring Boot) → RDS (PostgreSQL)
                                     ↑
@@ -156,17 +164,16 @@ max 420ms  ████████████████████
 현재 결과가 선방한 핵심 이유는 데이터 규모가 작기 때문입니다.
 데이터가 증가할수록 JOIN 쿼리 성능은 급격히 저하됩니다:
 
-| 데이터 규모 | 예상 avg | 예상 max |
-|------------|---------|---------|
-| 현재 (2,500건) | 20ms | 420ms |
-| 10배 (25,000건) | 100ms+ | 2~3초 |
-| 100배 (250,000건) | 500ms+ | 10초+ |
+| 데이터 규모          | 예상 avg | 예상 max |
+|-----------------|--------|--------|
+| 현재 (2,500건)     | 20ms   | 420ms  |
+| 10배 (25,000건)   | 100ms+ | 2~3초   |
+| 100배 (250,000건) | 500ms+ | 10초+   |
 
 **MongoDB 전환 시:**
+
 ```
-현재 PostgreSQL: 5개 JOIN → O(n) — 데이터 증가에 비례
-MongoDB 전환 후: 단건 lookup → O(1) — 데이터 증가에 무관
-```
+
 
 JOIN이 없으므로 데이터가 아무리 늘어도
 조회 시간이 일정하게 유지됩니다.
@@ -186,20 +193,21 @@ VU 100명 + sleep 0.5초가 되는 순간 PostgreSQL
 
 ## 원본 출력
 ```
+
      execution: local
         script: k6/load-test.js
 
-  █ THRESHOLDS
-    http_req_duration
-    ✓ 'p(95)<2000' p(95)=40.39ms
-    http_req_failed
-    ✓ 'rate<0.1' rate=0.00%
+█ THRESHOLDS
+http_req_duration
+✓ 'p(95)<2000' p(95)=40.39ms
+http_req_failed
+✓ 'rate<0.1' rate=0.00%
 
-  █ TOTAL RESULTS
-    checks_total.......: 3462    38.25717/s
-    checks_succeeded...: 100.00% 3462 out of 3462
-    checks_failed......: 0.00%   0 out of 3462
-    ✓ GET /api/user-activities/{userId} status is 200
+█ TOTAL RESULTS
+checks_total.......: 3462 38.25717/s
+checks_succeeded...: 100.00% 3462 out of 3462
+checks_failed......: 0.00% 0 out of 3462
+✓ GET /api/user-activities/{userId} status is 200
 
     http_req_duration..: avg=20.97ms min=9.99ms med=17.44ms max=420.45ms p(90)=30.49ms p(95)=40.39ms
     http_req_failed....: 0.00%  0 out of 3462
@@ -208,7 +216,8 @@ VU 100명 + sleep 0.5초가 되는 순간 PostgreSQL
     vus_max............: 50     min=50 max=50
 
 running (1m30.5s), 00/50 VUs, 3462 complete and 0 interrupted iterations
-default ✓ [======================================] 00/50 VUs  1m30s
+default ✓ [======================================] 00/50 VUs 1m30s
+
 ```
 
 ## 주의사항

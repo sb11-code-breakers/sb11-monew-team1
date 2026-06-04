@@ -2,6 +2,8 @@
 
 -- 유저 10명
 -- 유저 10명 (고정 UUID)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+BEGIN;
 INSERT INTO users (id, email, nickname, password, created_at, updated_at)
 VALUES ('aaaaaaaa-0000-0000-0000-000000000001', 'user1@test.com', 'user1',
         '$2a$10$abcdefghijklmnopqrstuuVnFq7YFUQIL7ITbegXiVnb1jOXyKOry', NOW(), NOW()),
@@ -116,3 +118,4 @@ FROM users u
 WHERE u.deleted_at IS NULL
   AND a.deleted_at IS NULL
     LIMIT 100;
+COMMIT;
