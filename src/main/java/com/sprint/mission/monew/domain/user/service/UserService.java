@@ -52,11 +52,8 @@ public class UserService {
     if (userRepository.existsByEmail(request.email())) {
       throw UserEmailDuplicateException.withEmail(request.email());
     }
-    User user = User.create(
-        request.email(),
-        request.nickname(),
-        passwordEncoder.encode(request.password())
-    );
+    User user = User.create(request.email(), request.nickname(),
+        passwordEncoder.encode(request.password()));
     User saved = userRepository.save(user);
 
     EmailVerification verification = EmailVerification.create(saved.getId());
@@ -85,11 +82,9 @@ public class UserService {
     log.debug("로그인 시도");
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
         .orElseThrow(UserLoginFailedException::withEmail);
-
     if (!user.isEmailVerified()) {
       throw UserEmailNotVerifiedException.withEmail(request.email());
     }
-
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
       throw UserLoginFailedException.withPassword();
     }
@@ -103,10 +98,8 @@ public class UserService {
     EmailVerification verification = emailVerificationRepository
         .findByTokenAndExpiredAtAfter(token, Instant.now())
         .orElseThrow(() -> InvalidVerificationTokenException.withToken(token));
-
     User user = userRepository.findByIdAndDeletedAtIsNull(verification.getUserId())
         .orElseThrow(() -> UserNotFoundException.withId(verification.getUserId()));
-
     user.verifyEmail();
     emailVerificationRepository.delete(verification);
     log.info("이메일 인증 완료 | userId={}", user.getId());
@@ -169,41 +162,11 @@ public class UserService {
 
   @Transactional
   public void requestPasswordReset(UserPasswordResetRequestDto request) {
-    log.debug("비밀번호 재설정 요청 시도");
-    User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
-        .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
-
-    PasswordResetToken token = PasswordResetToken.create(user.getId());
-    PasswordResetToken savedToken = passwordResetTokenRepository.save(token);
-
-    String email = user.getEmail();
-    String code = savedToken.getCode();
-
-    if (TransactionSynchronizationManager.isSynchronizationActive()) {
-      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-        @Override
-        public void afterCommit() {
-          emailQueue.enqueuePasswordReset(email, code);
-        }
-      });
-    } else {
-      emailQueue.enqueuePasswordReset(email, code);
-    }
-    log.info("비밀번호 재설정 이메일 발송 | userId={}", user.getId());
+    throw new UnsupportedOperationException("미구현"); // 임시 - Red 상태
   }
 
   @Transactional
   public void resetPassword(UserPasswordResetDto request) {
-    log.debug("비밀번호 재설정 시도");
-    PasswordResetToken token = passwordResetTokenRepository
-        .findByCodeAndExpiredAtAfter(request.code(), Instant.now())
-        .orElseThrow(() -> InvalidPasswordResetCodeException.withCode(request.code()));
-
-    User user = userRepository.findByIdAndDeletedAtIsNull(token.getUserId())
-        .orElseThrow(() -> UserNotFoundException.withId(token.getUserId()));
-
-    user.updatePassword(passwordEncoder.encode(request.newPassword()));
-    passwordResetTokenRepository.delete(token);
-    log.info("비밀번호 재설정 완료 | userId={}", user.getId());
+    throw new UnsupportedOperationException("미구현"); // 임시 - Red 상태
   }
 }
