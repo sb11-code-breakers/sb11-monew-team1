@@ -9,4 +9,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, UUID> {
 
   Optional<PasswordResetToken> findByCodeAndExpiredAtAfter(String code, Instant now);
+
+  void deleteByUserId(UUID userId);
 }

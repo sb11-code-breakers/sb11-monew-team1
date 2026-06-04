@@ -166,6 +166,8 @@ public class UserService {
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
         .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
 
+    passwordResetTokenRepository.deleteByUserId(user.getId()); // 기존 토큰 무효화
+
     PasswordResetToken token = PasswordResetToken.create(user.getId());
     PasswordResetToken savedToken = passwordResetTokenRepository.save(token);
 
