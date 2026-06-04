@@ -3,7 +3,6 @@ package com.sprint.mission.monew.domain.user.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.SendEmailRequest;
@@ -21,7 +20,6 @@ public class EmailService {
   @Value("${monew.base-url}")
   private String verificationBaseUrl;
 
-  @Async
   public void sendVerificationEmail(String to, String token) {
     try {
       String verificationUrl = verificationBaseUrl + "/api/users/verify?token=" + token;
