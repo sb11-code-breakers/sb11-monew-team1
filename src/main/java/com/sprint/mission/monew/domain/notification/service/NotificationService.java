@@ -14,6 +14,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -58,7 +59,7 @@ public class NotificationService {
     log.info("기사 등록 알림 생성 완료 | interestId={}, recipientCount={}", interestId, saved.size());
   }
 
-  @Transactional
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void create(UUID recipientId, String message, ResourceType resourceType, UUID resourceId) {
     Notification notification = Notification.create(recipientId, message, resourceType, resourceId);
     Notification saved = notificationRepository.save(notification);
