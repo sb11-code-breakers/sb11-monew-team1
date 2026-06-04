@@ -1,6 +1,8 @@
 package com.sprint.mission.monew.domain.interest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -186,8 +188,9 @@ class InterestIntegrationTest {
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.keywords[0]").value("GPT"))
-          .andExpect(jsonPath("$.keywords[1]").value("자연어처리"));
+          .andExpect(jsonPath("$.keywords", hasSize(2)))
+          .andExpect(jsonPath("$.keywords", hasItem("GPT")))
+          .andExpect(jsonPath("$.keywords", hasItem("자연어처리")));
     }
   }
 
