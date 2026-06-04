@@ -7,7 +7,6 @@ import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.User;
-import com.sprint.mission.monew.domain.user.event.EmailVerificationCreatedEvent;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
@@ -22,7 +21,6 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,7 +35,7 @@ public class UserService {
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
   private final EmailVerificationRepository emailVerificationRepository;
-  private final ApplicationEventPublisher eventPublisher;
+  private final EmailQueue emailQueue;
   private final UserMetrics userMetrics;
 
   @Transactional
@@ -55,8 +53,7 @@ public class UserService {
 
     EmailVerification verification = EmailVerification.create(saved.getId());
     EmailVerification savedVerification = emailVerificationRepository.save(verification);
-    eventPublisher.publishEvent(
-        new EmailVerificationCreatedEvent(saved.getEmail(), savedVerification.getToken()));
+    emailQueue.enqueue(saved.getEmail(), savedVerification.getToken());
 
     userMetrics.countRegistered();
     log.info("회원가입 완료: id={}", saved.getId());
