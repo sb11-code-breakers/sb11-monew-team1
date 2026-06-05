@@ -136,6 +136,7 @@ public class CommentControllerTest {
 
       // when & then
       mockMvc.perform(post("/api/comments")
+              .header("Monew-Request-User-ID", userId)
               .contentType(MediaType.APPLICATION_JSON)
               .content(invalidRawJson))
           .andExpect(status().isBadRequest());
@@ -156,6 +157,7 @@ public class CommentControllerTest {
 
       // when & then
       mockMvc.perform(post("/api/comments")
+              .header("Monew-Request-User-ID", userId)
               .contentType(MediaType.APPLICATION_JSON)
               .content(invalidRawJson))
           .andExpect(status().isBadRequest());
@@ -177,6 +179,7 @@ public class CommentControllerTest {
 
       // when & then
       mockMvc.perform(post("/api/comments")
+              .header("Monew-Request-User-ID", userId)
               .contentType(MediaType.APPLICATION_JSON)
               .content(invalidRawJson))
           .andExpect(status().isBadRequest());
@@ -192,6 +195,7 @@ public class CommentControllerTest {
 
       // when & then
       mockMvc.perform(post("/api/comments")
+              .header("Monew-Request-User-ID", userId)
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isCreated())

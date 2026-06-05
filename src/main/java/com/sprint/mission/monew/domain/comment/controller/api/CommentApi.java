@@ -34,7 +34,9 @@ public interface CommentApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
-  ResponseEntity<CommentResponse> createComment(@RequestBody @Valid CommentCreateRequest request);
+  ResponseEntity<CommentResponse> createComment(
+      @RequestHeader("Monew-Request-User-ID") @Parameter(description = "요청자 ID") UUID requestUserId,
+      @RequestBody @Valid CommentCreateRequest request);
 
   @Operation(summary = "댓글 정보 수정", description = "댓글의 내용을 수정합니다.")
   @ApiResponses(value = {

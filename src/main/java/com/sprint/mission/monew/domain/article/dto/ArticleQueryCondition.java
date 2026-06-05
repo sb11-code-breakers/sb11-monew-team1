@@ -2,6 +2,7 @@ package com.sprint.mission.monew.domain.article.dto;
 
 import com.sprint.mission.monew.common.dto.SortDirection;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
@@ -18,5 +19,36 @@ public record ArticleQueryCondition(
     @NotNull SortDirection direction,
     String cursor,
     Instant after,
-    @Min(1) int limit
-) {}
+    @NotNull @Min(1) Integer limit
+) {
+
+  @AssertTrue(message = "cursor와 after는 함께 전달되어야 합니다")
+  public boolean isCursorAndAfterConsistent() {
+    return (cursor == null) == (after == null);
+  }
+
+  @AssertTrue(message = "cursor 형식이 orderBy 기준과 맞지 않습니다")
+  public boolean isCursorFormatValidForOrderBy() {
+    if (cursor == null || orderBy == null) {
+      return true;
+    }
+    return switch (orderBy) {
+      case PUBLISH_DATE -> {
+        try {
+          Instant.parse(cursor);
+          yield true;
+        } catch (Exception e) {
+          yield false;
+        }
+      }
+      case COMMENT_COUNT, VIEW_COUNT -> {
+        try {
+          Integer.parseInt(cursor);
+          yield true;
+        } catch (NumberFormatException e) {
+          yield false;
+        }
+      }
+    };
+  }
+}

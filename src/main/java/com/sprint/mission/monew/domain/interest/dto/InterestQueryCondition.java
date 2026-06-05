@@ -26,7 +26,7 @@ public record InterestQueryCondition(
       return true;
     }
     try {
-      Long.valueOf(cursor);
+      Long.parseLong(cursor);
       return true;
     } catch (NumberFormatException e) {
       return false;

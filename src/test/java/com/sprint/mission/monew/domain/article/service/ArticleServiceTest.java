@@ -25,7 +25,6 @@ import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -69,8 +68,9 @@ class ArticleServiceTest {
     @DisplayName("결과가 없으면 빈 CursorPageResponse를 반환한다")
     void 결과가_없으면_빈_응답을_반환한다() {
       // given
-      given(articleRepository.count(any(ArticleQueryCondition.class))).willReturn(0L);
-      given(articleRepository.findAll(any(ArticleQueryCondition.class))).willReturn(List.of());
+      CursorPageResponse<ArticleResponse> expected = CursorPageResponse.of(
+          List.of(), null, null, false, 0, 0L);
+      given(articleRepository.search(any(), eq(requestUserId))).willReturn(expected);
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(defaultCondition, requestUserId);
@@ -87,15 +87,11 @@ class ArticleServiceTest {
     @DisplayName("limit 이하의 결과가 있으면 hasNext가 false이다")
     void limit_이하의_결과는_hasNext가_false이다() {
       // given
-      Article article = makeArticle(ArticleSource.NAVER);
-      ArticleResponse dto = new ArticleResponse(article.getId(), ArticleSource.NAVER, article.getSourceUrl(),
-          article.getTitle(), article.getPublishDate(), article.getSummary(), 0, 0, false);
-
-      given(articleRepository.count(any(ArticleQueryCondition.class))).willReturn(1L);
-      given(articleRepository.findAll(any(ArticleQueryCondition.class))).willReturn(List.of(article));
-      given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
-          .willReturn(Set.of());
-      given(articleMapper.toResponse(eq(article), eq(false))).willReturn(dto);
+      ArticleResponse dto = new ArticleResponse(UUID.randomUUID(), ArticleSource.NAVER,
+          "https://example.com", "제목", Instant.now(), "요약", 0, 0, false);
+      CursorPageResponse<ArticleResponse> expected = CursorPageResponse.of(
+          List.of(dto), null, null, false, 1, 1L);
+      given(articleRepository.search(any(), eq(requestUserId))).willReturn(expected);
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(defaultCondition, requestUserId);
@@ -115,24 +111,15 @@ class ArticleServiceTest {
           new ArticleQueryCondition(null, null, null, null, null, ArticleOrderBy.PUBLISH_DATE,
               SortDirection.DESC, null, null, limit);
 
-      Article article1 = makeArticle(ArticleSource.NAVER);
-      Article article2 = makeArticle(ArticleSource.HANKYUNG);
-      Article article3 = makeArticle(ArticleSource.CHOSUN); // 초과분
+      Instant publishDate = Instant.now();
+      ArticleResponse dto1 = new ArticleResponse(UUID.randomUUID(), ArticleSource.NAVER,
+          "https://1.com", "제목1", publishDate, "요약1", 0, 0, false);
+      ArticleResponse dto2 = new ArticleResponse(UUID.randomUUID(), ArticleSource.HANKYUNG,
+          "https://2.com", "제목2", publishDate, "요약2", 0, 0, false);
 
-      ArticleResponse dto1 = new ArticleResponse(article1.getId(), ArticleSource.NAVER, article1.getSourceUrl(),
-          article1.getTitle(), article1.getPublishDate(), article1.getSummary(), 0, 0, false);
-      ArticleResponse dto2 = new ArticleResponse(article2.getId(), ArticleSource.HANKYUNG, article2.getSourceUrl(),
-          article2.getTitle(), article2.getPublishDate(), article2.getSummary(), 0, 0, false);
-
-      given(articleRepository.count(any(ArticleQueryCondition.class))).willReturn(3L);
-      given(articleRepository.findAll(any(ArticleQueryCondition.class)))
-          .willReturn(List.of(article1, article2, article3));
-      given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
-          .willReturn(Set.of());
-      given(articleMapper.toResponse(eq(article1), eq(false))).willReturn(dto1);
-      given(articleMapper.toResponse(eq(article2), eq(false))).willReturn(dto2);
-      given(articleRepository.buildCursor(eq(article2), eq(ArticleOrderBy.PUBLISH_DATE)))
-          .willReturn(article2.getPublishDate().toString());
+      CursorPageResponse<ArticleResponse> expected = CursorPageResponse.of(
+          List.of(dto1, dto2), publishDate.toString(), publishDate, true, 2, 3L);
+      given(articleRepository.search(any(), eq(requestUserId))).willReturn(expected);
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(condition, requestUserId);
@@ -140,25 +127,18 @@ class ArticleServiceTest {
       // then
       assertThat(result.content()).hasSize(2);
       assertThat(result.hasNext()).isTrue();
-      // nextCursor = article2.publishDate (마지막 페이지 요소 기준)
-      assertThat(result.nextCursor()).isEqualTo(article2.getPublishDate().toString());
-      // 단위 테스트에서 @CreatedDate 감사 미동작 → nextAfter는 null
-      assertThat(result.nextAfter()).isNull();
+      assertThat(result.nextCursor()).isEqualTo(publishDate.toString());
     }
 
     @Test
     @DisplayName("요청자가 조회한 기사는 viewedByMe가 true이다")
     void 요청자가_조회한_기사는_viewedByMe가_true이다() {
       // given
-      Article article = makeArticle(ArticleSource.NAVER);
-      ArticleResponse dto = new ArticleResponse(article.getId(), ArticleSource.NAVER, article.getSourceUrl(),
-          article.getTitle(), article.getPublishDate(), article.getSummary(), 0, 0, true);
-
-      given(articleRepository.count(any(ArticleQueryCondition.class))).willReturn(1L);
-      given(articleRepository.findAll(any(ArticleQueryCondition.class))).willReturn(List.of(article));
-      given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
-          .willReturn(Set.of(article.getId()));
-      given(articleMapper.toResponse(eq(article), eq(true))).willReturn(dto);
+      ArticleResponse dto = new ArticleResponse(UUID.randomUUID(), ArticleSource.NAVER,
+          "https://example.com", "제목", Instant.now(), "요약", 0, 0, true);
+      CursorPageResponse<ArticleResponse> expected = CursorPageResponse.of(
+          List.of(dto), null, null, false, 1, 1L);
+      given(articleRepository.search(any(), eq(requestUserId))).willReturn(expected);
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(defaultCondition, requestUserId);
@@ -172,30 +152,17 @@ class ArticleServiceTest {
     @DisplayName("viewCount 기준 정렬 시 nextCursor가 viewCount 값 문자열이다")
     void viewCount_기준_정렬_시_nextCursor가_viewCount_문자열이다() {
       // given
-      int limit = 1;
       ArticleQueryCondition condition =
           new ArticleQueryCondition(null, null, null, null, null, ArticleOrderBy.VIEW_COUNT,
-              SortDirection.DESC, null, null, limit);
-
-      Article article1 = makeArticle(ArticleSource.NAVER);
-      Article article2 = makeArticle(ArticleSource.HANKYUNG);
-      ArticleResponse dto1 = new ArticleResponse(article1.getId(), ArticleSource.NAVER,
-          article1.getSourceUrl(), article1.getTitle(), article1.getPublishDate(),
-          article1.getSummary(), 0, 0, false);
-
-      given(articleRepository.count(any(ArticleQueryCondition.class))).willReturn(2L);
-      given(articleRepository.findAll(any(ArticleQueryCondition.class)))
-          .willReturn(List.of(article1, article2));
-      given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
-          .willReturn(Set.of());
-      given(articleMapper.toResponse(eq(article1), eq(false))).willReturn(dto1);
-      given(articleRepository.buildCursor(eq(article1), eq(ArticleOrderBy.VIEW_COUNT)))
-          .willReturn("0");
+              SortDirection.DESC, null, null, 1);
+      CursorPageResponse<ArticleResponse> expected = CursorPageResponse.of(
+          List.of(), "0", null, true, 1, 2L);
+      given(articleRepository.search(any(), eq(requestUserId))).willReturn(expected);
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(condition, requestUserId);
 
-      // then — article1.viewCount = 0 (default)
+      // then
       assertThat(result.hasNext()).isTrue();
       assertThat(result.nextCursor()).isEqualTo("0");
     }
@@ -204,31 +171,19 @@ class ArticleServiceTest {
     @DisplayName("commentCount 기준 정렬 시 nextCursor가 commentCount 값 문자열이다")
     void commentCount_기준_정렬_시_nextCursor가_commentCount_문자열이다() {
       // given
-      int limit = 1;
       ArticleQueryCondition condition =
           new ArticleQueryCondition(null, null, null, null, null, ArticleOrderBy.COMMENT_COUNT,
-              SortDirection.DESC, null, null, limit);
-
-      Article article1 = makeArticle(ArticleSource.NAVER);
-      Article article2 = makeArticle(ArticleSource.HANKYUNG); // 초과분
-      ArticleResponse dto1 = new ArticleResponse(article1.getId(), ArticleSource.NAVER, article1.getSourceUrl(),
-          article1.getTitle(), article1.getPublishDate(), article1.getSummary(), 5, 0, false);
-
-      given(articleRepository.count(any(ArticleQueryCondition.class))).willReturn(2L);
-      given(articleRepository.findAll(any(ArticleQueryCondition.class)))
-          .willReturn(List.of(article1, article2));
-      given(articleViewRepository.findArticleIdsByArticleIdsAndUserId(any(), eq(requestUserId)))
-          .willReturn(Set.of());
-      given(articleMapper.toResponse(eq(article1), eq(false))).willReturn(dto1);
-      given(articleRepository.buildCursor(eq(article1), eq(ArticleOrderBy.COMMENT_COUNT)))
-          .willReturn("0");
+              SortDirection.DESC, null, null, 1);
+      CursorPageResponse<ArticleResponse> expected = CursorPageResponse.of(
+          List.of(), "0", null, true, 1, 2L);
+      given(articleRepository.search(any(), eq(requestUserId))).willReturn(expected);
 
       // when
       CursorPageResponse<ArticleResponse> result = articleService.search(condition, requestUserId);
 
       // then
       assertThat(result.hasNext()).isTrue();
-      assertThat(result.nextCursor()).isEqualTo("0"); // article1.commentCount = 0 (default)
+      assertThat(result.nextCursor()).isEqualTo("0");
     }
   }
 

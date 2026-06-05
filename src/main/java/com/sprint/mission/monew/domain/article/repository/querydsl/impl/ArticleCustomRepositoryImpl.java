@@ -1,22 +1,27 @@
 package com.sprint.mission.monew.domain.article.repository.querydsl.impl;
 
-import com.querydsl.core.BooleanBuilder;
+import static com.sprint.mission.monew.domain.article.entity.QArticle.article;
+import static com.sprint.mission.monew.domain.article.entity.QArticleInterest.articleInterest;
+import static com.sprint.mission.monew.domain.article.entity.QArticleView.articleView;
+
+import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.ComparableExpression;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.common.dto.SortDirection;
 import com.sprint.mission.monew.domain.article.dto.ArticleOrderBy;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
-import com.sprint.mission.monew.domain.article.entity.Article;
-import com.sprint.mission.monew.domain.article.entity.QArticle;
-import com.sprint.mission.monew.domain.article.entity.QArticleInterest;
-import com.sprint.mission.monew.domain.article.exception.ArticleInvalidCursorException;
+import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
+import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.repository.querydsl.ArticleCustomRepository;
 import java.time.Instant;
-import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 
@@ -26,163 +31,157 @@ public class ArticleCustomRepositoryImpl implements ArticleCustomRepository {
   private final JPAQueryFactory queryFactory;
 
   @Override
-  public List<Article> findAll(ArticleQueryCondition condition) {
-    QArticle article = QArticle.article;
-
-    JPAQuery<Article> query =
-        queryFactory
-            .selectFrom(article)
-            .where(buildPredicate(article, condition))
-            .orderBy(buildOrderSpecifiers(article, condition))
-            .limit(condition.limit() + 1L);
-
-    applyInterestJoin(query, article, condition);
-
-    return query.fetch();
-  }
-
-  @Override
-  public long count(ArticleQueryCondition condition) {
-    QArticle article = QArticle.article;
-
-    JPAQuery<Long> query =
-        queryFactory.select(article.count()).from(article).where(buildPredicate(article, condition));
-
-    applyInterestJoin(query, article, condition);
-
-    Long result = query.fetchOne();
-    return result != null ? result : 0L;
-  }
-
-  private <T> void applyInterestJoin(
-      JPAQuery<T> query, QArticle article, ArticleQueryCondition condition) {
+  public CursorPageResponse<ArticleResponse> search(ArticleQueryCondition condition,
+      UUID requestUserId) {
+    BooleanExpression viewedByMeExpr = articleView.id.isNotNull();
+    JPAQuery<Tuple> query = queryFactory
+        .select(
+            article.id,
+            article.source,
+            article.sourceUrl,
+            article.title,
+            article.publishDate,
+            article.summary,
+            article.commentCount,
+            article.viewCount,
+            viewedByMeExpr,
+            article.createdAt
+        )
+        .from(article)
+        .leftJoin(articleView).on(
+            articleView.article.id.eq(article.id).and(articleView.userId.eq(requestUserId))
+        )
+        .where(
+            isNullDeletedAt(),
+            likeKeyword(condition.keyword()),
+            eqSourceIn(condition.sourceIn()),
+            goePublishDateFrom(condition.publishDateFrom()),
+            loePublishDateTo(condition.publishDateTo()),
+            cursorCondition(condition)
+        )
+        .orderBy(
+            buildOrderSpecifier(condition.orderBy(), condition.direction()),
+            buildCreatedAtOrderSpecifier(condition.direction())
+        )
+        .limit(condition.limit() + 1L);
     if (condition.interestId() != null) {
-      QArticleInterest articleInterest = QArticleInterest.articleInterest;
-      query
-          .join(articleInterest)
-          .on(
-              articleInterest
-                  .article
-                  .id
-                  .eq(article.id)
-                  .and(articleInterest.interest.id.eq(condition.interestId())));
+      query.join(articleInterest).on(
+          articleInterest.article.id.eq(article.id)
+              .and(articleInterest.interest.id.eq(condition.interestId())));
     }
+
+    List<Tuple> raw = query.fetch();
+    boolean hasNext = raw.size() > condition.limit();
+    List<Tuple> rawContent = hasNext ? raw.subList(0, condition.limit()) : raw;
+
+    List<ArticleResponse> content = rawContent.stream()
+        .map(t -> new ArticleResponse(
+            t.get(article.id),
+            t.get(article.source),
+            t.get(article.sourceUrl),
+            t.get(article.title),
+            t.get(article.publishDate),
+            t.get(article.summary),
+            t.get(article.commentCount),
+            t.get(article.viewCount),
+            Boolean.TRUE.equals(t.get(viewedByMeExpr))))
+        .toList();
+
+    String nextCursor = null;
+    Instant nextAfter = null;
+    if (hasNext && !rawContent.isEmpty()) {
+      Tuple last = rawContent.get(rawContent.size() - 1);
+      nextCursor = extractCursor(last, condition.orderBy());
+      nextAfter = last.get(article.createdAt);
+    }
+
+    return CursorPageResponse.of(
+        content,
+        nextCursor,
+        nextAfter,
+        hasNext,
+        content.size(),
+        null
+    );
   }
 
-  private BooleanBuilder buildPredicate(QArticle article, ArticleQueryCondition condition) {
-    BooleanBuilder builder = new BooleanBuilder();
-
-    builder.and(article.deletedAt.isNull());
-
-    if (StringUtils.hasText(condition.keyword())) {
-      builder.and(
-          article
-              .title
-              .containsIgnoreCase(condition.keyword())
-              .or(article.summary.containsIgnoreCase(condition.keyword())));
-    }
-
-    if (condition.sourceIn() != null && !condition.sourceIn().isEmpty()) {
-      builder.and(article.source.in(condition.sourceIn()));
-    }
-
-    if (condition.publishDateFrom() != null) {
-      builder.and(article.publishDate.goe(condition.publishDateFrom()));
-    }
-
-    if (condition.publishDateTo() != null) {
-      builder.and(article.publishDate.loe(condition.publishDateTo()));
-    }
-
-    if ((condition.cursor() == null) != (condition.after() == null)) {
-      throw new IllegalArgumentException("cursor와 after는 함께 전달되어야 합니다.");
-    }
-    if (condition.cursor() != null) {
-      builder.and(buildCursorCondition(article, condition));
-    }
-
-    return builder;
+  private BooleanExpression isNullDeletedAt() {
+    return article.deletedAt.isNull();
   }
 
-  private BooleanExpression buildCursorCondition(QArticle article, ArticleQueryCondition condition) {
-    boolean isDesc = condition.direction() == SortDirection.DESC;
+  private BooleanExpression likeKeyword(String keyword) {
+    if (!StringUtils.hasText(keyword)) {
+      return null;
+    }
+    return article.title.containsIgnoreCase(keyword)
+        .or(article.summary.containsIgnoreCase(keyword));
+  }
+
+  private BooleanExpression eqSourceIn(List<ArticleSource> sources) {
+    if (sources == null || sources.isEmpty()) {
+      return null;
+    }
+    return article.source.in(sources);
+  }
+
+  private BooleanExpression goePublishDateFrom(Instant from) {
+    return from != null ? article.publishDate.goe(from) : null;
+  }
+
+  private BooleanExpression loePublishDateTo(Instant to) {
+    return to != null ? article.publishDate.loe(to) : null;
+  }
+
+  private BooleanExpression cursorCondition(ArticleQueryCondition condition) {
+    String cursor = condition.cursor();
     Instant after = condition.after();
-
+    boolean isAsc = condition.direction() == SortDirection.ASC;
+    if (cursor == null) {
+      return null;
+    }
     return switch (condition.orderBy()) {
-      case PUBLISH_DATE -> {
-        Instant cursorInstant;
-        try {
-          cursorInstant = Instant.parse(condition.cursor());
-        } catch (DateTimeParseException ex) {
-          throw ArticleInvalidCursorException.withCursor(condition.cursor());
-        }
-        yield isDesc
-            ? article
-                .publishDate
-                .lt(cursorInstant)
-                .or(article.publishDate.eq(cursorInstant).and(article.createdAt.lt(after)))
-            : article
-                .publishDate
-                .gt(cursorInstant)
-                .or(article.publishDate.eq(cursorInstant).and(article.createdAt.gt(after)));
-      }
-      case COMMENT_COUNT -> {
-        int cursorVal;
-        try {
-          cursorVal = Integer.parseInt(condition.cursor());
-        } catch (NumberFormatException ex) {
-          throw ArticleInvalidCursorException.withCursor(condition.cursor());
-        }
-        yield isDesc
-            ? article
-                .commentCount
-                .lt(cursorVal)
-                .or(article.commentCount.eq(cursorVal).and(article.createdAt.lt(after)))
-            : article
-                .commentCount
-                .gt(cursorVal)
-                .or(article.commentCount.eq(cursorVal).and(article.createdAt.gt(after)));
-      }
-      case VIEW_COUNT -> {
-        int cursorVal;
-        try {
-          cursorVal = Integer.parseInt(condition.cursor());
-        } catch (NumberFormatException ex) {
-          throw ArticleInvalidCursorException.withCursor(condition.cursor());
-        }
-        yield isDesc
-            ? article
-                .viewCount
-                .lt(cursorVal)
-                .or(article.viewCount.eq(cursorVal).and(article.createdAt.lt(after)))
-            : article
-                .viewCount
-                .gt(cursorVal)
-                .or(article.viewCount.eq(cursorVal).and(article.createdAt.gt(after)));
-      }
+      case PUBLISH_DATE ->
+          buildCursorExpression(article.publishDate, Instant.parse(cursor), after, isAsc);
+      case COMMENT_COUNT ->
+          buildCursorExpression(article.commentCount, Integer.parseInt(cursor), after, isAsc);
+      case VIEW_COUNT ->
+          buildCursorExpression(article.viewCount, Integer.parseInt(cursor), after, isAsc);
     };
   }
 
-  @Override
-  public String buildCursor(Article article, ArticleOrderBy orderBy) {
+  private BooleanExpression buildCursorExpression(
+      ComparableExpression<Instant> field, Instant cursorValue, Instant after, boolean isAsc) {
+    return isAsc
+        ? field.gt(cursorValue).or(field.eq(cursorValue).and(article.createdAt.gt(after)))
+        : field.lt(cursorValue).or(field.eq(cursorValue).and(article.createdAt.lt(after)));
+  }
+
+  private BooleanExpression buildCursorExpression(
+      NumberExpression<Integer> field, int cursorValue, Instant after, boolean isAsc) {
+    return isAsc
+        ? field.gt(cursorValue).or(field.eq(cursorValue).and(article.createdAt.gt(after)))
+        : field.lt(cursorValue).or(field.eq(cursorValue).and(article.createdAt.lt(after)));
+  }
+
+  private String extractCursor(Tuple last, ArticleOrderBy orderBy) {
     return switch (orderBy) {
-      case PUBLISH_DATE -> article.getPublishDate().toString();
-      case COMMENT_COUNT -> String.valueOf(article.getCommentCount());
-      case VIEW_COUNT -> String.valueOf(article.getViewCount());
+      case PUBLISH_DATE -> last.get(article.publishDate).toString();
+      case COMMENT_COUNT -> String.valueOf(last.get(article.commentCount));
+      case VIEW_COUNT -> String.valueOf(last.get(article.viewCount));
     };
   }
 
-  private OrderSpecifier<?>[] buildOrderSpecifiers(
-      QArticle article, ArticleQueryCondition condition) {
-    Order dir = condition.direction() == SortDirection.DESC ? Order.DESC : Order.ASC;
+  private OrderSpecifier<?> buildOrderSpecifier(ArticleOrderBy orderBy, SortDirection direction) {
+    Order dir = direction == SortDirection.DESC ? Order.DESC : Order.ASC;
+    return switch (orderBy) {
+      case PUBLISH_DATE -> new OrderSpecifier<>(dir, article.publishDate);
+      case COMMENT_COUNT -> new OrderSpecifier<>(dir, article.commentCount);
+      case VIEW_COUNT -> new OrderSpecifier<>(dir, article.viewCount);
+    };
+  }
 
-    OrderSpecifier<?> primary =
-        switch (condition.orderBy()) {
-          case PUBLISH_DATE -> new OrderSpecifier<>(dir, article.publishDate);
-          case COMMENT_COUNT -> new OrderSpecifier<>(dir, article.commentCount);
-          case VIEW_COUNT -> new OrderSpecifier<>(dir, article.viewCount);
-        };
-
-    return new OrderSpecifier<?>[] {primary, new OrderSpecifier<>(dir, article.createdAt)};
+  private OrderSpecifier<?> buildCreatedAtOrderSpecifier(SortDirection direction) {
+    Order dir = direction == SortDirection.DESC ? Order.DESC : Order.ASC;
+    return new OrderSpecifier<>(dir, article.createdAt);
   }
 }

@@ -59,18 +59,13 @@ public class InterestCustomRepositoryImpl implements InterestCustomRepository {
         .map(t -> toResponse(t.get(interest), t.get(subscription.id) != null, keywordMap))
         .toList();
 
-    String nextCursor = hasNext
-        ? extractCursor(content.get(content.size() - 1).get(interest), condition.orderBy())
-        : null;
-    Instant nextAfter = hasNext
-        ? content.get(content.size() - 1).get(interest).getCreatedAt()
-        : null;
-
-    Long total = queryFactory
-        .select(interest.count())
-        .from(interest)
-        .where(likeNameOrKeyword(condition.keyword()))
-        .fetchOne();
+    String nextCursor = null;
+    Instant nextAfter = null;
+    if (hasNext && !content.isEmpty()) {
+      Interest last = content.get(content.size() - 1).get(interest);
+      nextCursor = extractCursor(last, condition.orderBy());
+      nextAfter = last.getCreatedAt();
+    }
 
     return CursorPageResponse.of(
         responses,
@@ -78,7 +73,7 @@ public class InterestCustomRepositoryImpl implements InterestCustomRepository {
         nextAfter,
         hasNext,
         content.size(),
-        total
+        null
     );
   }
 

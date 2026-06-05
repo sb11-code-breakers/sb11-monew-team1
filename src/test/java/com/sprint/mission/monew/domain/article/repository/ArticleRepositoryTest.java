@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.article.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sprint.mission.monew.common.config.JpaConfig;
@@ -8,15 +9,16 @@ import com.sprint.mission.monew.common.config.QuerydslConfig;
 import com.sprint.mission.monew.common.dto.SortDirection;
 import com.sprint.mission.monew.domain.article.dto.ArticleOrderBy;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
+import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleInterest;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
-import com.sprint.mission.monew.domain.article.exception.ArticleInvalidCursorException;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -37,8 +39,11 @@ class ArticleRepositoryTest {
   @Autowired InterestRepository interestRepository;
   @Autowired EntityManager em;
 
+  UUID requestUserId;
+
   @BeforeEach
   void setUp() {
+    requestUserId = UUID.randomUUID();
     articleRepository.deleteAll();
   }
 
@@ -55,53 +60,8 @@ class ArticleRepositoryTest {
   }
 
   @Nested
-  @DisplayName("count")
-  class Count {
-
-    @Test
-    @DisplayName("기사가 없으면 0을 반환한다")
-    void 기사가_없으면_0을_반환한다() {
-      // when
-      long count = articleRepository.count(defaultCondition(10));
-
-      // then
-      assertThat(count).isZero();
-    }
-
-    @Test
-    @DisplayName("저장된 기사 수만큼 반환한다")
-    void 저장된_기사_수만큼_반환한다() {
-      // given
-      saveArticle(ArticleSource.NAVER, "기사1");
-      saveArticle(ArticleSource.HANKYUNG, "기사2");
-
-      // when
-      long count = articleRepository.count(defaultCondition(10));
-
-      // then
-      assertThat(count).isEqualTo(2);
-    }
-
-    @Test
-    @DisplayName("소프트딜리트된 기사는 count에서 제외된다")
-    void 소프트딜리트된_기사는_count에서_제외된다() {
-      // given
-      Article article = saveArticle(ArticleSource.NAVER, "삭제될기사");
-      article.softDelete();
-      articleRepository.save(article);
-      saveArticle(ArticleSource.HANKYUNG, "정상기사");
-
-      // when
-      long count = articleRepository.count(defaultCondition(10));
-
-      // then
-      assertThat(count).isEqualTo(1);
-    }
-  }
-
-  @Nested
-  @DisplayName("findAll")
-  class FindAll {
+  @DisplayName("search")
+  class Search {
 
     @Test
     @DisplayName("cursor가 없으면 저장된 모든 기사를 반환한다")
@@ -111,7 +71,7 @@ class ArticleRepositoryTest {
       saveArticle(ArticleSource.HANKYUNG, "기사2");
 
       // when
-      List<Article> result = articleRepository.findAll(defaultCondition(10));
+      List<ArticleResponse> result = articleRepository.search(defaultCondition(10), requestUserId).content();
 
       // then
       assertThat(result).hasSize(2);
@@ -127,26 +87,27 @@ class ArticleRepositoryTest {
       saveArticle(ArticleSource.HANKYUNG, "정상기사");
 
       // when
-      List<Article> result = articleRepository.findAll(defaultCondition(10));
+      List<ArticleResponse> result = articleRepository.search(defaultCondition(10), requestUserId).content();
 
       // then
       assertThat(result).hasSize(1);
-      assertThat(result.get(0).getTitle()).isEqualTo("정상기사");
+      assertThat(result.get(0).title()).isEqualTo("정상기사");
     }
 
     @Test
-    @DisplayName("limit+1개를 조회해 hasNext 판별에 사용할 수 있다")
-    void limit_1개를_조회해_hasNext_판별에_사용할_수_있다() {
+    @DisplayName("limit을 초과하면 hasNext가 true이다")
+    void limit_초과하면_hasNext가_true이다() {
       // given
       saveArticle(ArticleSource.NAVER, "기사1");
       saveArticle(ArticleSource.HANKYUNG, "기사2");
       saveArticle(ArticleSource.CHOSUN, "기사3");
 
-      // when — limit=2이면 내부적으로 limit+1=3개 조회
-      List<Article> result = articleRepository.findAll(defaultCondition(2));
+      // when
+      var response = articleRepository.search(defaultCondition(2), requestUserId);
 
       // then
-      assertThat(result).hasSize(3); // 서비스에서 limit 초과 여부 판단
+      assertThat(response.hasNext()).isTrue();
+      assertThat(response.content()).hasSize(2);
     }
 
     @Test
@@ -162,11 +123,11 @@ class ArticleRepositoryTest {
           null, null, 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then
       assertThat(result).hasSize(1);
-      assertThat(result.get(0).getTitle()).isEqualTo("인공지능 뉴스");
+      assertThat(result.get(0).title()).isEqualTo("인공지능 뉴스");
     }
 
     @Test
@@ -183,11 +144,11 @@ class ArticleRepositoryTest {
           null, null, 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then
       assertThat(result).hasSize(2);
-      assertThat(result).extracting(Article::getSource)
+      assertThat(result).extracting(ArticleResponse::source)
           .containsExactlyInAnyOrder(ArticleSource.NAVER, ArticleSource.HANKYUNG);
     }
 
@@ -206,11 +167,11 @@ class ArticleRepositoryTest {
           null, null, 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then
       assertThat(result).hasSize(1);
-      assertThat(result.get(0).getTitle()).isEqualTo("기사2");
+      assertThat(result.get(0).title()).isEqualTo("기사2");
     }
 
     @Test
@@ -228,11 +189,11 @@ class ArticleRepositoryTest {
           null, null, 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then
       assertThat(result).hasSize(1);
-      assertThat(result.get(0).getTitle()).isEqualTo("기사1");
+      assertThat(result.get(0).title()).isEqualTo("기사1");
     }
 
     @Test
@@ -246,14 +207,13 @@ class ArticleRepositoryTest {
       articleRepository.save(Article.create(ArticleSource.NAVER, "url2", "기사2", t2, null));
       articleRepository.save(Article.create(ArticleSource.NAVER, "url3", "기사3", t3, null));
 
-      // after=EPOCH → createdAt.lt(EPOCH)=false → 동일 publishDate 타이브레이크 제외
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
           t3.toString(), Instant.EPOCH, 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then — T1, T2만 반환 (T3는 cursor와 동일하고 타이브레이크 불충족)
       assertThat(result).hasSize(2);
@@ -270,14 +230,13 @@ class ArticleRepositoryTest {
       articleRepository.save(Article.create(ArticleSource.NAVER, "url2", "기사2", t2, null));
       articleRepository.save(Article.create(ArticleSource.NAVER, "url3", "기사3", t3, null));
 
-      // after=미래 → createdAt.gt(미래)=false → T1 타이브레이크 제외
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.PUBLISH_DATE, SortDirection.ASC,
           t1.toString(), Instant.now().plusSeconds(86400), 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then — T2, T3만 반환 (T1은 cursor와 동일하고 타이브레이크 불충족)
       assertThat(result).hasSize(2);
@@ -296,7 +255,7 @@ class ArticleRepositoryTest {
           null, null, 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then
       assertThat(result).hasSize(2);
@@ -315,7 +274,7 @@ class ArticleRepositoryTest {
           null, null, 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then
       assertThat(result).hasSize(2);
@@ -327,14 +286,13 @@ class ArticleRepositoryTest {
       // given — commentCount=0인 기사 저장
       saveArticle(ArticleSource.NAVER, "기사1");
 
-      // cursor="0", after=EPOCH → commentCount.lt(0)=false, 타이브레이크도 false
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.COMMENT_COUNT, SortDirection.DESC,
           "0", Instant.EPOCH, 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then — commentCount=0은 cursor=0 이하가 아니므로 반환 안 됨
       assertThat(result).isEmpty();
@@ -346,14 +304,13 @@ class ArticleRepositoryTest {
       // given — viewCount=0인 기사 저장
       saveArticle(ArticleSource.NAVER, "기사1");
 
-      // cursor="0", after=EPOCH → viewCount.lt(0)=false, 타이브레이크도 false
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.VIEW_COUNT, SortDirection.DESC,
           "0", Instant.EPOCH, 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then — viewCount=0은 cursor=0 이하가 아니므로 반환 안 됨
       assertThat(result).isEmpty();
@@ -365,14 +322,13 @@ class ArticleRepositoryTest {
       // given
       saveArticle(ArticleSource.NAVER, "기사1");
 
-      // commentCount=0 > 10이면 포함 → 없음
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.COMMENT_COUNT, SortDirection.ASC,
           "10", Instant.now().plusSeconds(86400), 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then
       assertThat(result).isEmpty();
@@ -384,59 +340,58 @@ class ArticleRepositoryTest {
       // given
       saveArticle(ArticleSource.NAVER, "기사1");
 
-      // viewCount=0 > 10이면 포함 → 없음
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.VIEW_COUNT, SortDirection.ASC,
           "10", Instant.now().plusSeconds(86400), 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then
       assertThat(result).isEmpty();
     }
 
     @Test
-    @DisplayName("PUBLISH_DATE cursor 값이 파싱 불가능하면 ArticleInvalidCursorException을 던진다")
-    void PUBLISH_DATE_cursor_파싱_불가_시_예외_발생() {
+    @DisplayName("COMMENT_COUNT 정렬로 hasNext가 true이면 nextCursor는 정수 문자열이다")
+    void COMMENT_COUNT_hasNext_true이면_nextCursor가_정수다() {
       // given
-      ArticleQueryCondition condition = new ArticleQueryCondition(
-          null, null, null, null, null,
-          ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
-          "not-a-date", Instant.now(), 10);
+      saveArticle(ArticleSource.NAVER, "기사1");
+      saveArticle(ArticleSource.HANKYUNG, "기사2");
 
-      // when & then
-      assertThatThrownBy(() -> articleRepository.findAll(condition))
-          .isInstanceOf(ArticleInvalidCursorException.class);
-    }
-
-    @Test
-    @DisplayName("COMMENT_COUNT cursor 값이 파싱 불가능하면 ArticleInvalidCursorException을 던진다")
-    void COMMENT_COUNT_cursor_파싱_불가_시_예외_발생() {
-      // given
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.COMMENT_COUNT, SortDirection.DESC,
-          "not-a-number", Instant.now(), 10);
+          null, null, 1);
 
-      // when & then
-      assertThatThrownBy(() -> articleRepository.findAll(condition))
-          .isInstanceOf(ArticleInvalidCursorException.class);
+      // when
+      var response = articleRepository.search(condition, requestUserId);
+
+      // then
+      assertThat(response.hasNext()).isTrue();
+      assertThat(response.nextCursor()).isNotNull();
+      assertThatCode(() -> Integer.parseInt(response.nextCursor())).doesNotThrowAnyException();
     }
 
     @Test
-    @DisplayName("VIEW_COUNT cursor 값이 파싱 불가능하면 ArticleInvalidCursorException을 던진다")
-    void VIEW_COUNT_cursor_파싱_불가_시_예외_발생() {
+    @DisplayName("VIEW_COUNT 정렬로 hasNext가 true이면 nextCursor는 정수 문자열이다")
+    void VIEW_COUNT_hasNext_true이면_nextCursor가_정수다() {
       // given
+      saveArticle(ArticleSource.NAVER, "기사1");
+      saveArticle(ArticleSource.HANKYUNG, "기사2");
+
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.VIEW_COUNT, SortDirection.DESC,
-          "not-a-number", Instant.now(), 10);
+          null, null, 1);
 
-      // when & then
-      assertThatThrownBy(() -> articleRepository.findAll(condition))
-          .isInstanceOf(ArticleInvalidCursorException.class);
+      // when
+      var response = articleRepository.search(condition, requestUserId);
+
+      // then
+      assertThat(response.hasNext()).isTrue();
+      assertThat(response.nextCursor()).isNotNull();
+      assertThatCode(() -> Integer.parseInt(response.nextCursor())).doesNotThrowAnyException();
     }
 
     @Test
@@ -458,11 +413,11 @@ class ArticleRepositoryTest {
           null, null, 10);
 
       // when
-      List<Article> result = articleRepository.findAll(condition);
+      List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
 
       // then
       assertThat(result).hasSize(1);
-      assertThat(result.get(0).getTitle()).isEqualTo("AI 기사");
+      assertThat(result.get(0).title()).isEqualTo("AI 기사");
     }
   }
 

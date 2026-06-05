@@ -33,6 +33,7 @@ public class CommentController implements CommentApi {
   @Override
   @PostMapping
   public ResponseEntity<CommentResponse> createComment(
+      @RequestHeader("Monew-Request-User-ID") UUID requestUserId,
       @RequestBody @Valid CommentCreateRequest request) {
     CommentResponse response = commentService.create(request);
     return ResponseEntity.status(HttpStatus.CREATED).body(response);

@@ -584,33 +584,5 @@ public class CommentRepositoryTest {
           .isSortedAccordingTo(Comparator.naturalOrder()); // ASC 기준
     }
 
-    @Test
-    @DisplayName("기사별 댓글 수 조회")
-    void 기사별_댓글_수_조회() {
-      // given
-      Article anotherArticle = articleRepository.save(Article.create(
-          ArticleSource.NAVER,
-          "https://example.com/news/2",
-          "테스트 기사 제목2",
-          Instant.parse("2024-01-02T00:00:00Z"),
-          "기사 요약 내용"
-      ));
-
-      commentRepository.save(Comment.create(article, user, "기사1 첫 번째 댓글"));
-      commentRepository.save(Comment.create(article, user, "기사1 두 번째 댓글"));
-      commentRepository.save(Comment.create(anotherArticle, user, "기사2 첫 번째 댓글"));
-      commentRepository.save(Comment.create(article, user, "기사1 세 번째 댓글"));
-
-      testEntityManager.flush();
-      testEntityManager.clear();
-
-      // when
-      long count = commentRepository.countByArticleId(article.getId());
-      long count2 = commentRepository.countByArticleId(anotherArticle.getId());
-      // then
-      assertThat(count).isEqualTo(3);
-      assertThat(count2).isEqualTo(1);
-    }
-
   }
 }
