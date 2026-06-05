@@ -233,6 +233,80 @@ class UserServiceTest {
       assertThat(result).isNotNull();
       assertThat(result.email()).isEqualTo("test@test.com");
     }
+
+    @Test
+    @DisplayName("계정이 잠긴 경우 예외 발생")
+    void 계정이_잠긴_경우_예외_발생() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      user.verifyEmail();
+      user.lock();
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+
+      // when & then
+      assertThatThrownBy(() -> userService.login(request))
+          .isInstanceOf(UserAccountLockedException.class);
+    }
+
+    @Test
+    @DisplayName("비밀번호 틀리면 실패 횟수 증가")
+    void 비밀번호_틀리면_실패_횟수_증가() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      user.verifyEmail();
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+      given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
+
+      // when & then
+      assertThatThrownBy(() -> userService.login(request))
+          .isInstanceOf(UserLoginFailedException.class);
+      assertThat(user.getLoginFailCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("비밀번호 5회 실패 시 계정 잠금")
+    void 비밀번호_5회_실패_시_계정_잠금() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      user.verifyEmail();
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+      given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
+
+      // when - 5회 실패
+      for (int i = 0; i < 5; i++) {
+        assertThatThrownBy(() -> userService.login(request))
+            .isInstanceOf(UserLoginFailedException.class);
+      }
+
+      // then
+      assertThat(user.isLocked()).isTrue();
+    }
+
+    @Test
+    @DisplayName("성공 시 실패 횟수 초기화")
+    void 성공_시_실패_횟수_초기화() {
+      // given
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      user.verifyEmail();
+      user.incrementLoginFailCount();
+      user.incrementLoginFailCount();
+      UserResponse userResponse = new UserResponse(
+          UUID.randomUUID(), "test@test.com", "테스터", Instant.now()
+      );
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+      given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(true);
+      given(userMapper.toResponse(user)).willReturn(userResponse);
+
+      // when
+      userService.login(request);
+
+      // then
+      assertThat(user.getLoginFailCount()).isEqualTo(0);
+    }
   }
 
   @Nested

@@ -184,6 +184,18 @@ class UserControllerTest {
           .andExpect(jsonPath("$.email").value("test@test.com"))
           .andExpect(jsonPath("$.nickname").value("테스터"));
     }
+
+    @Test
+    @DisplayName("계정이 잠긴 경우 423 반환")
+    void 계정이_잠긴_경우_423_반환() throws Exception {
+      UserLoginRequest request = new UserLoginRequest("test@test.com", "password123");
+      given(userService.login(any()))
+          .willThrow(UserAccountLockedException.withEmail("test@test.com"));
+      mockMvc.perform(post("/api/users/login")
+              .contentType(APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isLocked());
+    }
   }
 
   @Nested
