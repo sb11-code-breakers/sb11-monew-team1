@@ -72,4 +72,8 @@ public class EmailService {
       return false;
     }
   }
+
+  public boolean sendUnlockEmail(String to, String token) {
+    return false; // 임시 - Red 상태
+  }
 }
