@@ -3,9 +3,11 @@ package com.sprint.mission.monew.domain.user.controller.api;
 import com.sprint.mission.monew.common.dto.ErrorResponse;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
-import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
+import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -117,4 +119,28 @@ public interface UserApi {
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
   ResponseEntity<Void> hardDelete(@PathVariable UUID userId);
+
+  @Operation(summary = "비밀번호 재설정 요청", description = "이메일로 비밀번호 재설정 코드를 발송합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "재설정 코드 발송 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "404", description = "사용자 없음",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<Void> resetPassword(
+      @Valid @RequestBody UserPasswordResetRequest request);
+
+  @Operation(summary = "비밀번호 재설정", description = "인증 코드로 비밀번호를 재설정합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "비밀번호 재설정 성공"),
+      @ApiResponse(responseCode = "400", description = "유효하지 않거나 만료된 인증 코드",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<Void> resetPassword(
+      @Valid @RequestBody UserPasswordResetCodeRequest request);
 }

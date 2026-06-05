@@ -17,9 +17,14 @@ public class EmailQueue {
   private final LinkedBlockingQueue<EmailTask> queue = new LinkedBlockingQueue<>();
   private final EmailService emailService;
 
-  public void enqueue(String email, String token) {
-    queue.offer(new EmailTask(email, token));
+  public void enqueueVerification(String email, String token) {
+    queue.offer(new EmailTask(email, token, EmailTaskType.VERIFICATION));
     log.debug("이메일 큐 등록: to={}", MonewUtil.maskEmail(email));
+  }
+
+  public void enqueuePasswordReset(String email, String code) {
+    queue.offer(new EmailTask(email, code, EmailTaskType.PASSWORD_RESET));
+    log.debug("비밀번호 재설정 이메일 큐 등록: to={}", MonewUtil.maskEmail(email));
   }
 
   @Scheduled(fixedDelay = 500)
@@ -27,7 +32,7 @@ public class EmailQueue {
     List<EmailTask> failedTasks = new ArrayList<>();
     EmailTask task;
     while ((task = queue.poll()) != null) {
-      boolean success = emailService.sendVerificationEmail(task.email(), task.token());
+      boolean success = sendEmail(task);
       if (!success) {
         log.warn("이메일 발송 실패 (시도 {}회): to={}", task.retryCount() + 1,
             MonewUtil.maskEmail(task.email()));
@@ -39,5 +44,12 @@ public class EmailQueue {
       }
     }
     failedTasks.forEach(queue::offer);
+  }
+
+  private boolean sendEmail(EmailTask task) {
+    if (task.type() == EmailTaskType.PASSWORD_RESET) {
+      return emailService.sendPasswordResetEmail(task.email(), task.token());
+    }
+    return emailService.sendVerificationEmail(task.email(), task.token());
   }
 }

@@ -225,3 +225,21 @@ CREATE TABLE IF NOT EXISTS email_verifications
     );
 
 CREATE INDEX IF NOT EXISTS idx_email_verifications_user_id ON email_verifications (user_id);
+
+-- =====================
+-- 12. password_reset_tokens
+-- =====================
+CREATE TABLE IF NOT EXISTS password_reset_tokens
+(
+    id         UUID                     NOT NULL,
+    user_id    UUID                     NOT NULL,
+    code       VARCHAR(255)             NOT NULL,
+    expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE (code),
+    UNIQUE (user_id),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens (user_id);

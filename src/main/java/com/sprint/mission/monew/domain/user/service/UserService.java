@@ -2,11 +2,15 @@ package com.sprint.mission.monew.domain.user.service;
 
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
+import com.sprint.mission.monew.domain.user.entity.PasswordResetToken;
 import com.sprint.mission.monew.domain.user.entity.User;
+import com.sprint.mission.monew.domain.user.exception.InvalidPasswordResetCodeException;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
@@ -16,6 +20,7 @@ import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
+import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
 import java.util.UUID;
@@ -37,6 +42,7 @@ public class UserService {
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
   private final EmailVerificationRepository emailVerificationRepository;
+  private final PasswordResetTokenRepository passwordResetTokenRepository;
   private final EmailQueue emailQueue;
   private final UserMetrics userMetrics;
 
@@ -46,11 +52,8 @@ public class UserService {
     if (userRepository.existsByEmail(request.email())) {
       throw UserEmailDuplicateException.withEmail(request.email());
     }
-    User user = User.create(
-        request.email(),
-        request.nickname(),
-        passwordEncoder.encode(request.password())
-    );
+    User user = User.create(request.email(), request.nickname(),
+        passwordEncoder.encode(request.password()));
     User saved = userRepository.save(user);
 
     EmailVerification verification = EmailVerification.create(saved.getId());
@@ -63,11 +66,11 @@ public class UserService {
       TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
         @Override
         public void afterCommit() {
-          emailQueue.enqueue(email, token);
+          emailQueue.enqueueVerification(email, token);
         }
       });
     } else {
-      emailQueue.enqueue(email, token);
+      emailQueue.enqueueVerification(email, token);
     }
 
     userMetrics.countRegistered();
@@ -79,11 +82,9 @@ public class UserService {
     log.debug("로그인 시도");
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
         .orElseThrow(UserLoginFailedException::withEmail);
-
     if (!user.isEmailVerified()) {
       throw UserEmailNotVerifiedException.withEmail(request.email());
     }
-
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
       throw UserLoginFailedException.withPassword();
     }
@@ -97,10 +98,8 @@ public class UserService {
     EmailVerification verification = emailVerificationRepository
         .findByTokenAndExpiredAtAfter(token, Instant.now())
         .orElseThrow(() -> InvalidVerificationTokenException.withToken(token));
-
     User user = userRepository.findByIdAndDeletedAtIsNull(verification.getUserId())
         .orElseThrow(() -> UserNotFoundException.withId(verification.getUserId()));
-
     user.verifyEmail();
     emailVerificationRepository.delete(verification);
     log.info("이메일 인증 완료 | userId={}", user.getId());
@@ -159,5 +158,47 @@ public class UserService {
     }
     user.updatePassword(passwordEncoder.encode(request.newPassword()));
     log.info("비밀번호 변경 완료 | userId={}", requestUserId);
+  }
+
+  @Transactional
+  public void requestPasswordReset(UserPasswordResetRequest request) {
+    log.debug("비밀번호 재설정 요청 시도");
+    User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
+        .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
+
+    passwordResetTokenRepository.deleteByUserId(user.getId()); // 기존 토큰 무효화
+
+    PasswordResetToken token = PasswordResetToken.create(user.getId());
+    PasswordResetToken savedToken = passwordResetTokenRepository.save(token);
+
+    String email = user.getEmail();
+    String code = savedToken.getCode();
+
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          emailQueue.enqueuePasswordReset(email, code);
+        }
+      });
+    } else {
+      emailQueue.enqueuePasswordReset(email, code);
+    }
+    log.info("비밀번호 재설정 이메일 발송 | userId={}", user.getId());
+  }
+
+  @Transactional
+  public void resetPassword(UserPasswordResetCodeRequest request) {
+    log.debug("비밀번호 재설정 시도");
+    PasswordResetToken token = passwordResetTokenRepository
+        .findByCodeAndExpiredAtAfter(request.code(), Instant.now())
+        .orElseThrow(() -> InvalidPasswordResetCodeException.withCode(request.code()));
+
+    User user = userRepository.findByIdAndDeletedAtIsNull(token.getUserId())
+        .orElseThrow(() -> UserNotFoundException.withId(token.getUserId()));
+
+    user.updatePassword(passwordEncoder.encode(request.newPassword()));
+    passwordResetTokenRepository.delete(token);
+    log.info("비밀번호 재설정 완료 | userId={}", user.getId());
   }
 }

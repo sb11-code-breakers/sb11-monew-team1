@@ -3,9 +3,11 @@ package com.sprint.mission.monew.domain.user.controller;
 import com.sprint.mission.monew.domain.user.controller.api.UserApi;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
-import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
+import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -36,15 +38,13 @@ public class UserController implements UserApi {
   @PostMapping
   @Override
   public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
-    UserResponse response = userService.create(request);
-    return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(request));
   }
 
   @PostMapping("/login")
   @Override
   public ResponseEntity<UserResponse> login(@Valid @RequestBody UserLoginRequest request) {
-    UserResponse response = userService.login(request);
-    return ResponseEntity.ok(response);
+    return ResponseEntity.ok(userService.login(request));
   }
 
   @GetMapping("/verify")
@@ -60,8 +60,7 @@ public class UserController implements UserApi {
       @PathVariable UUID userId,
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId,
       @Valid @RequestBody UserUpdateRequest request) {
-    UserResponse response = userService.update(userId, requestUserId, request);
-    return ResponseEntity.ok(response);
+    return ResponseEntity.ok(userService.update(userId, requestUserId, request));
   }
 
   @PatchMapping("/password")
@@ -86,6 +85,22 @@ public class UserController implements UserApi {
   @Override
   public ResponseEntity<Void> hardDelete(@PathVariable UUID userId) {
     userService.hardDelete(userId);
+    return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/password/reset")
+  @Override
+  public ResponseEntity<Void> resetPassword(
+      @Valid @RequestBody UserPasswordResetRequest request) {
+    userService.requestPasswordReset(request);
+    return ResponseEntity.noContent().build();
+  }
+
+  @PatchMapping("/password/reset")
+  @Override
+  public ResponseEntity<Void> resetPassword(
+      @Valid @RequestBody UserPasswordResetCodeRequest request) {
+    userService.resetPassword(request);
     return ResponseEntity.noContent().build();
   }
 }

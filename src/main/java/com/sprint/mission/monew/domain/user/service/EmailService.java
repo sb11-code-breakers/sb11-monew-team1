@@ -47,4 +47,29 @@ public class EmailService {
       return false;
     }
   }
+
+  public boolean sendPasswordResetEmail(String to, String code) {
+    try {
+      SendEmailRequest request = SendEmailRequest.builder()
+          .destination(d -> d.toAddresses(to))
+          .message(m -> m
+              .subject(c -> c.data("[MoNew] 비밀번호 재설정 코드"))
+              .body(b -> b.html(c -> c.data(
+                  "<h2>MoNew 비밀번호 재설정</h2>"
+                      + "<p>아래 코드를 입력하여 비밀번호를 재설정해주세요.</p>"
+                      + "<h3>" + code + "</h3>"
+                      + "<p>코드는 1시간 후 만료됩니다.</p>"
+              )))
+          )
+          .source(sender)
+          .build();
+
+      sesClient.sendEmail(request);
+      log.info("비밀번호 재설정 이메일 발송 완료: to={}", MonewUtil.maskEmail(to));
+      return true;
+    } catch (Exception e) {
+      log.error("비밀번호 재설정 이메일 발송 실패: to={}", MonewUtil.maskEmail(to), e);
+      return false;
+    }
+  }
 }

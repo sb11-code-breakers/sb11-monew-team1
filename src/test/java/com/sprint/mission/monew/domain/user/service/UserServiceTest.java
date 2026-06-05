@@ -12,11 +12,15 @@ import static org.mockito.Mockito.times;
 
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
+import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
+import com.sprint.mission.monew.domain.user.entity.PasswordResetToken;
 import com.sprint.mission.monew.domain.user.entity.User;
+import com.sprint.mission.monew.domain.user.exception.InvalidPasswordResetCodeException;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
@@ -26,6 +30,7 @@ import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
+import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
 import java.util.Optional;
@@ -58,6 +63,9 @@ class UserServiceTest {
 
   @Mock
   private EmailVerificationRepository emailVerificationRepository;
+
+  @Mock
+  private PasswordResetTokenRepository passwordResetTokenRepository;
 
   @Mock
   private EmailQueue emailQueue;
@@ -112,7 +120,7 @@ class UserServiceTest {
       then(passwordEncoder).should().encode(request.password());
       then(userRepository).should().save(any(User.class));
       then(emailVerificationRepository).should().save(any(EmailVerification.class));
-      then(emailQueue).should().enqueue(anyString(), anyString());
+      then(emailQueue).should().enqueueVerification(anyString(), anyString());
       then(userMapper).should().toResponse(user);
       then(userMetrics).should().countRegistered();
       assertThat(result).isNotNull();
@@ -146,7 +154,7 @@ class UserServiceTest {
             .forEach(sync -> sync.afterCommit());
 
         // then
-        then(emailQueue).should(times(1)).enqueue(anyString(), anyString());
+        then(emailQueue).should(times(1)).enqueueVerification(anyString(), anyString());
       } finally {
         TransactionSynchronizationManager.clearSynchronization();
       }
@@ -485,4 +493,139 @@ class UserServiceTest {
       then(userMetrics).should().countDeleted(3);
     }
   }
-}
+
+  @Nested
+  @DisplayName("비밀번호 재설정 요청")
+  class RequestPasswordReset {
+
+    @Test
+    @DisplayName("존재하지 않는 이메일이면 예외 발생")
+    void 존재하지_않는_이메일이면_예외_발생() {
+      // given
+      UserPasswordResetRequest request = new UserPasswordResetRequest("notfound@test.com");
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userService.requestPasswordReset(request))
+          .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("성공 시 비밀번호 재설정 이메일 큐 등록")
+    void 성공_시_비밀번호_재설정_이메일_큐_등록() {
+      // given
+      UserPasswordResetRequest request = new UserPasswordResetRequest("test@test.com");
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      PasswordResetToken token = PasswordResetToken.create(UUID.randomUUID());
+
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+      given(passwordResetTokenRepository.save(any(PasswordResetToken.class)))
+          .willReturn(token);
+
+      // when
+      userService.requestPasswordReset(request);
+
+      // then
+      then(passwordResetTokenRepository).should().save(any(PasswordResetToken.class));
+      then(emailQueue).should().enqueuePasswordReset(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("재설정 요청 시 기존 토큰 무효화")
+    void 재설정_요청_시_기존_토큰_무효화() {
+      // given
+      UserPasswordResetRequest request = new UserPasswordResetRequest("test@test.com");
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      PasswordResetToken token = PasswordResetToken.create(UUID.randomUUID());
+
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+      given(passwordResetTokenRepository.save(any(PasswordResetToken.class)))
+          .willReturn(token);
+
+      // when
+      userService.requestPasswordReset(request);
+
+      // then
+      then(passwordResetTokenRepository).should().deleteByUserId(user.getId());
+      then(passwordResetTokenRepository).should().save(any(PasswordResetToken.class));
+    }
+
+    @Test
+    @DisplayName("트랜잭션 활성 시 커밋 후 비밀번호 재설정 이메일 큐 등록")
+    void 트랜잭션_활성_시_커밋_후_비밀번호_재설정_이메일_큐_등록() {
+      // given
+      TransactionSynchronizationManager.initSynchronization();
+      try {
+        UserPasswordResetRequest request = new UserPasswordResetRequest("test@test.com");
+        User user = User.create("test@test.com", "테스터", "encodedPassword");
+        PasswordResetToken token = PasswordResetToken.create(UUID.randomUUID());
+
+        given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+            .willReturn(Optional.of(user));
+        given(passwordResetTokenRepository.save(any(PasswordResetToken.class)))
+            .willReturn(token);
+
+        // when
+        userService.requestPasswordReset(request);
+
+        // then - 커밋 전에는 호출되지 않아야 함
+        then(emailQueue).should(never()).enqueuePasswordReset(anyString(), anyString());
+
+        // afterCommit 수동 트리거
+        TransactionSynchronizationManager.getSynchronizations()
+            .forEach(sync -> sync.afterCommit());
+
+        // then - 커밋 후 1회 호출
+        then(emailQueue).should(times(1)).enqueuePasswordReset(anyString(), anyString());
+      } finally {
+        TransactionSynchronizationManager.clearSynchronization();
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("비밀번호 재설정")
+  class ResetPassword {
+
+    @Test
+    @DisplayName("유효하지 않은 코드이면 예외 발생")
+    void 유효하지_않은_코드이면_예외_발생() {
+      // given
+      UserPasswordResetCodeRequest request = new UserPasswordResetCodeRequest("invalid-code", "newPassword123");
+      given(passwordResetTokenRepository.findByCodeAndExpiredAtAfter(
+          eq("invalid-code"), any(Instant.class)))
+          .willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userService.resetPassword(request))
+          .isInstanceOf(InvalidPasswordResetCodeException.class);
+    }
+
+    @Test
+    @DisplayName("성공 시 비밀번호 변경 및 토큰 삭제")
+    void 성공_시_비밀번호_변경_및_토큰_삭제() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UserPasswordResetCodeRequest request = new UserPasswordResetCodeRequest("valid-code", "newPassword123");
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      PasswordResetToken token = PasswordResetToken.create(userId);
+
+      given(passwordResetTokenRepository.findByCodeAndExpiredAtAfter(
+          eq("valid-code"), any(Instant.class)))
+          .willReturn(Optional.of(token));
+      given(userRepository.findByIdAndDeletedAtIsNull(token.getUserId()))
+          .willReturn(Optional.of(user));
+      given(passwordEncoder.encode(request.newPassword())).willReturn("newEncodedPassword");
+
+      // when
+      userService.resetPassword(request);
+
+      // then
+      assertThat(user.getPassword()).isEqualTo("newEncodedPassword");
+      then(passwordResetTokenRepository).should().delete(token);
+    }
+  }
+ }
