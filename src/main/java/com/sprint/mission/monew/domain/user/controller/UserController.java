@@ -15,6 +15,7 @@ import jakarta.validation.constraints.NotBlank;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +39,9 @@ public class UserController implements UserApi {
 
   private final UserService userService;
 
+  @Value("${monew.base-url}")
+  private String baseUrl;
+
   @PostMapping
   @Override
   public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
@@ -55,7 +59,7 @@ public class UserController implements UserApi {
   public ResponseEntity<String> verifyEmail(@NotBlank @RequestParam String token) {
     userService.verifyEmail(token);
     String html = "<html><head><meta charset='UTF-8'>"
-        + "<meta http-equiv='refresh' content='5;url=https://monew.dev/login'>"
+        + "<meta http-equiv='refresh' content='5;url=" + baseUrl + "/#/login'>"
         + "<title>이메일 인증 완료</title></head>"
         + "<body style='display:flex;justify-content:center;align-items:center;"
         + "height:100vh;font-family:Arial'>"

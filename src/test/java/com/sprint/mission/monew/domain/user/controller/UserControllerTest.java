@@ -311,9 +311,9 @@ class UserControllerTest {
       mockMvc.perform(get("/api/users/verify")
               .param("token", "valid-token"))
           .andExpect(status().isOk())
-          .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML))
+          .andExpect(content().contentType("text/html;charset=UTF-8"))
           .andExpect(content().string(containsString("이메일 인증 완료")))
-          .andExpect(content().string(containsString("monew.dev/login")));
+          .andExpect(content().string(containsString("/#/login")));
     }
 
   }
