@@ -8,7 +8,7 @@ import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
-import com.sprint.mission.monew.domain.user.entity.AccountUnlockToken;
+import com.sprint.mission.monew.domain.user.entity.UserUnlockToken;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.PasswordResetToken;
 import com.sprint.mission.monew.domain.user.entity.User;
@@ -23,7 +23,7 @@ import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordExcepti
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
-import com.sprint.mission.monew.domain.user.repository.AccountUnlockTokenRepository;
+import com.sprint.mission.monew.domain.user.repository.UserUnlockTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
@@ -48,7 +48,7 @@ public class UserService {
   private final PasswordEncoder passwordEncoder;
   private final EmailVerificationRepository emailVerificationRepository;
   private final PasswordResetTokenRepository passwordResetTokenRepository;
-  private final AccountUnlockTokenRepository accountUnlockTokenRepository;
+  private final UserUnlockTokenRepository userUnlockTokenRepository;
   private final EmailQueue emailQueue;
   private final UserMetrics userMetrics;
 
@@ -226,10 +226,10 @@ public class UserService {
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
         .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
 
-    accountUnlockTokenRepository.deleteByUserId(user.getId());
+    userUnlockTokenRepository.deleteByUserId(user.getId());
 
-    AccountUnlockToken token = AccountUnlockToken.create(user.getId());
-    AccountUnlockToken savedToken = accountUnlockTokenRepository.save(token);
+    UserUnlockToken token = UserUnlockToken.create(user.getId());
+    UserUnlockToken savedToken = userUnlockTokenRepository.save(token);
 
     String email = user.getEmail();
     String tokenValue = savedToken.getToken();
@@ -250,7 +250,7 @@ public class UserService {
   @Transactional
   public void unlock(String token) {
     log.debug("계정 잠금 해제 시도");
-    AccountUnlockToken unlockToken = accountUnlockTokenRepository
+    UserUnlockToken unlockToken = userUnlockTokenRepository
         .findByTokenAndExpiredAtAfter(token, Instant.now())
         .orElseThrow(() -> UserInvalidUnlockTokenException.withToken(token));
 
@@ -258,7 +258,7 @@ public class UserService {
         .orElseThrow(() -> UserNotFoundException.withId(unlockToken.getUserId()));
 
     user.unlock();
-    accountUnlockTokenRepository.delete(unlockToken);
+    userUnlockTokenRepository.delete(unlockToken);
     log.info("계정 잠금 해제 완료 | userId={}", user.getId());
   }
 }

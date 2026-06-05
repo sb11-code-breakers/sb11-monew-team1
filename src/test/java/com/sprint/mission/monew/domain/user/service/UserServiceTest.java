@@ -20,7 +20,7 @@ import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.PasswordResetToken;
-import com.sprint.mission.monew.domain.user.entity.AccountUnlockToken;
+import com.sprint.mission.monew.domain.user.entity.UserUnlockToken;
 import com.sprint.mission.monew.domain.user.exception.InvalidPasswordResetCodeException;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
@@ -34,7 +34,7 @@ import com.sprint.mission.monew.domain.user.exception.UserInvalidUnlockTokenExce
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
-import com.sprint.mission.monew.domain.user.repository.AccountUnlockTokenRepository;
+import com.sprint.mission.monew.domain.user.repository.UserUnlockTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
 import java.util.Optional;
@@ -78,7 +78,7 @@ class UserServiceTest {
   private UserMetrics userMetrics;
 
   @Mock
-  private AccountUnlockTokenRepository accountUnlockTokenRepository;
+  private UserUnlockTokenRepository userUnlockTokenRepository;
 
   @Nested
   @DisplayName("회원가입")
@@ -732,19 +732,19 @@ class UserServiceTest {
       // given
       UserUnlockRequest request = new UserUnlockRequest("test@test.com");
       User user = User.create("test@test.com", "테스터", "encodedPassword");
-      AccountUnlockToken token = AccountUnlockToken.create(UUID.randomUUID());
+      UserUnlockToken token = UserUnlockToken.create(UUID.randomUUID());
 
       given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
           .willReturn(Optional.of(user));
-      given(accountUnlockTokenRepository.save(any(AccountUnlockToken.class)))
+      given(userUnlockTokenRepository.save(any(UserUnlockToken.class)))
           .willReturn(token);
 
       // when
       userService.requestUnlock(request);
 
       // then
-      then(accountUnlockTokenRepository).should().deleteByUserId(user.getId());
-      then(accountUnlockTokenRepository).should().save(any(AccountUnlockToken.class));
+      then(userUnlockTokenRepository).should().deleteByUserId(user.getId());
+      then(userUnlockTokenRepository).should().save(any(UserUnlockToken.class));
       then(emailQueue).should().enqueueUnlock(anyString(), anyString());
     }
     @Test
@@ -755,11 +755,11 @@ class UserServiceTest {
       try {
         UserUnlockRequest request = new UserUnlockRequest("test@test.com");
         User user = User.create("test@test.com", "테스터", "encodedPassword");
-        AccountUnlockToken token = AccountUnlockToken.create(UUID.randomUUID());
+        UserUnlockToken token = UserUnlockToken.create(UUID.randomUUID());
 
         given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
             .willReturn(Optional.of(user));
-        given(accountUnlockTokenRepository.save(any(AccountUnlockToken.class)))
+        given(userUnlockTokenRepository.save(any(UserUnlockToken.class)))
             .willReturn(token);
 
         // when
@@ -788,7 +788,7 @@ class UserServiceTest {
     @DisplayName("유효하지 않은 토큰이면 예외 발생")
     void 유효하지_않은_토큰이면_예외_발생() {
       // given
-      given(accountUnlockTokenRepository.findByTokenAndExpiredAtAfter(
+      given(userUnlockTokenRepository.findByTokenAndExpiredAtAfter(
           eq("invalid-token"), any(Instant.class)))
           .willReturn(Optional.empty());
 
@@ -804,9 +804,9 @@ class UserServiceTest {
       UUID userId = UUID.randomUUID();
       User user = User.create("test@test.com", "테스터", "encodedPassword");
       user.lock();
-      AccountUnlockToken token = AccountUnlockToken.create(userId);
+      UserUnlockToken token = UserUnlockToken.create(userId);
 
-      given(accountUnlockTokenRepository.findByTokenAndExpiredAtAfter(
+      given(userUnlockTokenRepository.findByTokenAndExpiredAtAfter(
           eq(token.getToken()), any(Instant.class)))
           .willReturn(Optional.of(token));
       given(userRepository.findByIdAndDeletedAtIsNull(userId))
@@ -817,7 +817,7 @@ class UserServiceTest {
 
       // then
       assertThat(user.isLocked()).isFalse();
-      then(accountUnlockTokenRepository).should().delete(token);
+      then(userUnlockTokenRepository).should().delete(token);
     }
   }
  }
