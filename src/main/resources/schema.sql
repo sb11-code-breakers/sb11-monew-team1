@@ -245,3 +245,21 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens
     );
 
 CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens (user_id);
+
+-- =====================
+-- 13. account_unlock_tokens
+-- =====================
+CREATE TABLE IF NOT EXISTS account_unlock_tokens
+(
+    id         UUID                     NOT NULL,
+    user_id    UUID                     NOT NULL,
+    token      VARCHAR(255)             NOT NULL,
+    expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                             PRIMARY KEY (id),
+    UNIQUE (token),
+    UNIQUE (user_id),
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    );
+
+CREATE INDEX IF NOT EXISTS idx_account_unlock_tokens_user_id ON account_unlock_tokens (user_id);
