@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.BDDMockito.willThrow;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -198,6 +199,7 @@ class UserControllerTest {
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isLocked());
     }
+    }
     @Nested
     @DisplayName("POST /api/users/unlock-request — 계정 잠금 해제 요청")
     class UnlockRequest {
@@ -253,25 +255,29 @@ class UserControllerTest {
       @DisplayName("유효하지 않은 토큰이면 400 반환")
       void 유효하지_않은_토큰이면_400_반환() throws Exception {
         // given
-        willThrow(InvalidUnlockTokenException.withToken("invalid-token"))
-            .given(userService).unlock("invalid-token");
+        String invalidToken = UUID.randomUUID().toString();
+        willThrow(InvalidUnlockTokenException.withToken(invalidToken))
+            .given(userService).unlock(anyString());
 
         // when & then
         mockMvc.perform(get("/api/users/unlock")
-                .param("token", "invalid-token"))
+                .param("token", invalidToken))
             .andExpect(status().isBadRequest());
       }
 
       @Test
       @DisplayName("성공 시 200 반환")
       void 성공_시_200_반환() throws Exception {
+        // given
+        String validToken = UUID.randomUUID().toString();
+
         // when & then
         mockMvc.perform(get("/api/users/unlock")
-                .param("token", "valid-token"))
+                .param("token", validToken))
             .andExpect(status().isOk());
+        then(userService).should().unlock(anyString());
       }
     }
-  }
 
   @Nested
   @DisplayName("GET /api/users/verify — 이메일 인증")

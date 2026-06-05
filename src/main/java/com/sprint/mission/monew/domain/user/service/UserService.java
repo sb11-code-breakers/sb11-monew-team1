@@ -172,11 +172,7 @@ public class UserService {
     User user = userRepository.findByIdAndDeletedAtIsNull(requestUserId)
         .orElseThrow(() -> UserNotFoundException.withId(requestUserId));
     if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-      user.incrementLoginFailCount();
-      if (user.hasExceededLoginFailLimit()) {  // ← 변경
-        user.lock();
-      }
-      throw UserLoginFailedException.withPassword();
+      throw UserInvalidPasswordException.withoutDetail();
     }
     user.updatePassword(passwordEncoder.encode(request.newPassword()));
     log.info("비밀번호 변경 완료 | userId={}", requestUserId);

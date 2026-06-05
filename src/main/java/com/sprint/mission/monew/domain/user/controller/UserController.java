@@ -115,8 +115,8 @@ public class UserController implements UserApi {
 
   @GetMapping("/unlock")
   @Override
-  public ResponseEntity<Void> unlock(@NotBlank @RequestParam String token) {
-    userService.unlock(token);
+  public ResponseEntity<Void> unlock(@RequestParam UUID token) {
+    userService.unlock(token.toString());
     return ResponseEntity.ok().build();
   }
 }

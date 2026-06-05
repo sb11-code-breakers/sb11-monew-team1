@@ -743,6 +743,7 @@ class UserServiceTest {
       userService.requestUnlock(request);
 
       // then
+      then(accountUnlockTokenRepository).should().deleteByUserId(user.getId()); // ← 추가
       then(accountUnlockTokenRepository).should().save(any(AccountUnlockToken.class));
       then(emailQueue).should().enqueueUnlock(anyString(), anyString());
     }
