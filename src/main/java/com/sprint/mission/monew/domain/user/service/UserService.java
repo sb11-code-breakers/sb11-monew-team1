@@ -99,7 +99,7 @@ public class UserService {
 
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
       user.incrementLoginFailCount();
-      if (user.getLoginFailCount() >= 5) {
+      if (user.hasExceededLoginFailLimit()) {
         user.lock();
       }
       throw UserLoginFailedException.withPassword();
