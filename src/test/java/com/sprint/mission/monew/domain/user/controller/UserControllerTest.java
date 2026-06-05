@@ -201,7 +201,7 @@ class UserControllerTest {
     }
     }
     @Nested
-    @DisplayName("POST /api/users/unlock-request — 계정 잠금 해제 요청")
+    @DisplayName("POST /api/users/unlock — 계정 잠금 해제 요청")
     class UnlockRequest {
 
       @Test
@@ -211,7 +211,7 @@ class UserControllerTest {
         UserUnlockRequest request = new UserUnlockRequest("");
 
         // when & then
-        mockMvc.perform(post("/api/users/unlock-request")
+        mockMvc.perform(post("/api/users/unlock")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isBadRequest());
@@ -226,7 +226,7 @@ class UserControllerTest {
             .given(userService).requestUnlock(any());
 
         // when & then
-        mockMvc.perform(post("/api/users/unlock-request")
+        mockMvc.perform(post("/api/users/unlock")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isNotFound());
@@ -239,7 +239,7 @@ class UserControllerTest {
         UserUnlockRequest request = new UserUnlockRequest("test@test.com");
 
         // when & then
-        mockMvc.perform(post("/api/users/unlock-request")
+        mockMvc.perform(post("/api/users/unlock")
                 .contentType(APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isNoContent());

@@ -105,7 +105,7 @@ public class UserController implements UserApi {
     return ResponseEntity.noContent().build();
   }
 
-  @PostMapping("/unlock-request")
+  @PostMapping("/unlock")
   @Override
   public ResponseEntity<Void> requestUnlock(
       @Valid @RequestBody UserUnlockRequest request) {
