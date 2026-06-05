@@ -747,6 +747,37 @@ class UserServiceTest {
       then(accountUnlockTokenRepository).should().save(any(AccountUnlockToken.class));
       then(emailQueue).should().enqueueUnlock(anyString(), anyString());
     }
+    @Test
+    @DisplayName("트랜잭션 활성 시 커밋 후 잠금 해제 이메일 큐 등록")
+    void 트랜잭션_활성_시_커밋_후_잠금_해제_이메일_큐_등록() {
+      // given
+      TransactionSynchronizationManager.initSynchronization();
+      try {
+        UserUnlockRequest request = new UserUnlockRequest("test@test.com");
+        User user = User.create("test@test.com", "테스터", "encodedPassword");
+        AccountUnlockToken token = AccountUnlockToken.create(UUID.randomUUID());
+
+        given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+            .willReturn(Optional.of(user));
+        given(accountUnlockTokenRepository.save(any(AccountUnlockToken.class)))
+            .willReturn(token);
+
+        // when
+        userService.requestUnlock(request);
+
+        // then - 커밋 전 미호출
+        then(emailQueue).should(never()).enqueueUnlock(anyString(), anyString());
+
+        // afterCommit 수동 트리거
+        TransactionSynchronizationManager.getSynchronizations()
+            .forEach(sync -> sync.afterCommit());
+
+        // then - 커밋 후 1회 호출
+        then(emailQueue).should(times(1)).enqueueUnlock(anyString(), anyString());
+      } finally {
+        TransactionSynchronizationManager.clearSynchronization();
+      }
+    }
   }
 
   @Nested
@@ -787,38 +818,6 @@ class UserServiceTest {
       // then
       assertThat(user.isLocked()).isFalse();
       then(accountUnlockTokenRepository).should().delete(token);
-    }
-
-    @Test
-    @DisplayName("트랜잭션 활성 시 커밋 후 잠금 해제 이메일 큐 등록")
-    void 트랜잭션_활성_시_커밋_후_잠금_해제_이메일_큐_등록() {
-      // given
-      TransactionSynchronizationManager.initSynchronization();
-      try {
-        UserUnlockRequest request = new UserUnlockRequest("test@test.com");
-        User user = User.create("test@test.com", "테스터", "encodedPassword");
-        AccountUnlockToken token = AccountUnlockToken.create(UUID.randomUUID());
-
-        given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
-            .willReturn(Optional.of(user));
-        given(accountUnlockTokenRepository.save(any(AccountUnlockToken.class)))
-            .willReturn(token);
-
-        // when
-        userService.requestUnlock(request);
-
-        // then - 커밋 전 미호출
-        then(emailQueue).should(never()).enqueueUnlock(anyString(), anyString());
-
-        // afterCommit 수동 트리거
-        TransactionSynchronizationManager.getSynchronizations()
-            .forEach(sync -> sync.afterCommit());
-
-        // then - 커밋 후 1회 호출
-        then(emailQueue).should(times(1)).enqueueUnlock(anyString(), anyString());
-      } finally {
-        TransactionSynchronizationManager.clearSynchronization();
-      }
     }
   }
  }
