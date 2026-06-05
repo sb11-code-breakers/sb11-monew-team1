@@ -31,7 +31,7 @@ import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordExcepti
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.exception.UserAccountLockedException;
-import com.sprint.mission.monew.domain.user.exception.InvalidUnlockTokenException;
+import com.sprint.mission.monew.domain.user.exception.UserInvalidUnlockTokenException;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import java.time.Instant;
 import java.util.UUID;
@@ -256,7 +256,7 @@ class UserControllerTest {
       void 유효하지_않은_토큰이면_400_반환() throws Exception {
         // given
         String invalidToken = UUID.randomUUID().toString();
-        willThrow(InvalidUnlockTokenException.withToken(invalidToken))
+        willThrow(UserInvalidUnlockTokenException.withToken(invalidToken))
             .given(userService).unlock(anyString());
 
         // when & then

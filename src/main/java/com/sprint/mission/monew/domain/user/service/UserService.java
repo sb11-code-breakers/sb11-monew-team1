@@ -13,7 +13,7 @@ import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.PasswordResetToken;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.InvalidPasswordResetCodeException;
-import com.sprint.mission.monew.domain.user.exception.InvalidUnlockTokenException;
+import com.sprint.mission.monew.domain.user.exception.UserInvalidUnlockTokenException;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserAccountLockedException;
@@ -252,7 +252,7 @@ public class UserService {
     log.debug("계정 잠금 해제 시도");
     AccountUnlockToken unlockToken = accountUnlockTokenRepository
         .findByTokenAndExpiredAtAfter(token, Instant.now())
-        .orElseThrow(() -> InvalidUnlockTokenException.withToken(token));
+        .orElseThrow(() -> UserInvalidUnlockTokenException.withToken(token));
 
     User user = userRepository.findByIdAndDeletedAtIsNull(unlockToken.getUserId())
         .orElseThrow(() -> UserNotFoundException.withId(unlockToken.getUserId()));

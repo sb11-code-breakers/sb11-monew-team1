@@ -30,7 +30,7 @@ import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordExcepti
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.exception.UserAccountLockedException;
-import com.sprint.mission.monew.domain.user.exception.InvalidUnlockTokenException;
+import com.sprint.mission.monew.domain.user.exception.UserInvalidUnlockTokenException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
@@ -794,7 +794,7 @@ class UserServiceTest {
 
       // when & then
       assertThatThrownBy(() -> userService.unlock("invalid-token"))
-          .isInstanceOf(InvalidUnlockTokenException.class);
+          .isInstanceOf(UserInvalidUnlockTokenException.class);
     }
 
     @Test
