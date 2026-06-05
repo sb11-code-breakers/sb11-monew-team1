@@ -67,4 +67,86 @@ class UserTest {
       assertThat(user.isEmailVerified()).isTrue();
     }
   }
+  @Nested
+  @DisplayName("로그인 실패 횟수")
+  class LoginFailCount {
+
+    @Test
+    @DisplayName("생성 시 로그인 실패 횟수는 0")
+    void 생성_시_로그인_실패_횟수는_0() {
+      assertThat(user.getLoginFailCount()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("incrementLoginFailCount 호출 시 실패 횟수 1 증가")
+    void incrementLoginFailCount_호출_시_실패_횟수_1_증가() {
+      // when
+      user.incrementLoginFailCount();
+
+      // then
+      assertThat(user.getLoginFailCount()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("실패 횟수 초기화")
+    void 실패_횟수_초기화() {
+      // given
+      user.incrementLoginFailCount();
+      user.incrementLoginFailCount();
+
+      // when
+      user.resetLoginFailCount();
+
+      // then
+      assertThat(user.getLoginFailCount()).isEqualTo(0);
+    }
+  }
+
+  @Nested
+  @DisplayName("계정 잠금")
+  class AccountLock {
+
+    @Test
+    @DisplayName("생성 시 잠금 상태 아님")
+    void 생성_시_잠금_상태_아님() {
+      assertThat(user.isLocked()).isFalse();
+    }
+
+    @Test
+    @DisplayName("lock 호출 시 잠금 상태")
+    void lock_호출_시_잠금_상태() {
+      // when
+      user.lock();
+
+      // then
+      assertThat(user.isLocked()).isTrue();
+    }
+
+    @Test
+    @DisplayName("unlock 호출 시 잠금 해제")
+    void unlock_호출_시_잠금_해제() {
+      // given
+      user.lock();
+
+      // when
+      user.unlock();
+
+      // then
+      assertThat(user.isLocked()).isFalse();
+    }
+
+    @Test
+    @DisplayName("unlock 시 실패 횟수 초기화")
+    void unlock_시_실패_횟수_초기화() {
+      // given
+      user.incrementLoginFailCount();
+      user.lock();
+
+      // when
+      user.unlock();
+
+      // then
+      assertThat(user.getLoginFailCount()).isEqualTo(0);
+    }
+  }
 }
