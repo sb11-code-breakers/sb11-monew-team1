@@ -6,21 +6,24 @@ import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
-import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
+import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
+import com.sprint.mission.monew.domain.user.entity.AccountUnlockToken;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.PasswordResetToken;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.InvalidPasswordResetCodeException;
+import com.sprint.mission.monew.domain.user.exception.InvalidUnlockTokenException;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
+import com.sprint.mission.monew.domain.user.exception.UserAccountLockedException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailDuplicateException;
 import com.sprint.mission.monew.domain.user.exception.UserEmailNotVerifiedException;
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
-import com.sprint.mission.monew.domain.user.exception.UserAccountLockedException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
+import com.sprint.mission.monew.domain.user.repository.AccountUnlockTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
@@ -45,6 +48,7 @@ public class UserService {
   private final PasswordEncoder passwordEncoder;
   private final EmailVerificationRepository emailVerificationRepository;
   private final PasswordResetTokenRepository passwordResetTokenRepository;
+  private final AccountUnlockTokenRepository accountUnlockTokenRepository;
   private final EmailQueue emailQueue;
   private final UserMetrics userMetrics;
 
@@ -180,7 +184,7 @@ public class UserService {
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
         .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
 
-    passwordResetTokenRepository.deleteByUserId(user.getId()); // 기존 토큰 무효화
+    passwordResetTokenRepository.deleteByUserId(user.getId());
 
     PasswordResetToken token = PasswordResetToken.create(user.getId());
     PasswordResetToken savedToken = passwordResetTokenRepository.save(token);
@@ -218,11 +222,43 @@ public class UserService {
 
   @Transactional
   public void requestUnlock(UserUnlockRequest request) {
-    throw new UnsupportedOperationException("미구현");
+    log.debug("계정 잠금 해제 요청 시도");
+    User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
+        .orElseThrow(() -> UserNotFoundException.withEmail(request.email()));
+
+    accountUnlockTokenRepository.deleteByUserId(user.getId());
+
+    AccountUnlockToken token = AccountUnlockToken.create(user.getId());
+    AccountUnlockToken savedToken = accountUnlockTokenRepository.save(token);
+
+    String email = user.getEmail();
+    String tokenValue = savedToken.getToken();
+
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          emailQueue.enqueueUnlock(email, tokenValue);
+        }
+      });
+    } else {
+      emailQueue.enqueueUnlock(email, tokenValue);
+    }
+    log.info("계정 잠금 해제 이메일 발송 | userId={}", user.getId());
   }
 
   @Transactional
   public void unlock(String token) {
-    throw new UnsupportedOperationException("미구현");
+    log.debug("계정 잠금 해제 시도");
+    AccountUnlockToken unlockToken = accountUnlockTokenRepository
+        .findByTokenAndExpiredAtAfter(token, Instant.now())
+        .orElseThrow(() -> InvalidUnlockTokenException.withToken(token));
+
+    User user = userRepository.findByIdAndDeletedAtIsNull(unlockToken.getUserId())
+        .orElseThrow(() -> UserNotFoundException.withId(unlockToken.getUserId()));
+
+    user.unlock();
+    accountUnlockTokenRepository.delete(unlockToken);
+    log.info("계정 잠금 해제 완료 | userId={}", user.getId());
   }
 }

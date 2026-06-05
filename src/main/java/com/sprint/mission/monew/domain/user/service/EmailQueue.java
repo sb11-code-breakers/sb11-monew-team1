@@ -27,6 +27,11 @@ public class EmailQueue {
     log.debug("비밀번호 재설정 이메일 큐 등록: to={}", MonewUtil.maskEmail(email));
   }
 
+  public void enqueueUnlock(String email, String token) {
+    queue.offer(new EmailTask(email, token, EmailTaskType.UNLOCK));
+    log.debug("계정 잠금 해제 이메일 큐 등록: to={}", MonewUtil.maskEmail(email));
+  }
+
   @Scheduled(fixedDelay = 500)
   public void processQueue() {
     List<EmailTask> failedTasks = new ArrayList<>();
@@ -49,6 +54,9 @@ public class EmailQueue {
   private boolean sendEmail(EmailTask task) {
     if (task.type() == EmailTaskType.PASSWORD_RESET) {
       return emailService.sendPasswordResetEmail(task.email(), task.token());
+    }
+    if (task.type() == EmailTaskType.UNLOCK) {
+      return emailService.sendUnlockEmail(task.email(), task.token());
     }
     return emailService.sendVerificationEmail(task.email(), task.token());
   }
