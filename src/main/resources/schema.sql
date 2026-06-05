@@ -8,10 +8,12 @@ CREATE TABLE IF NOT EXISTS users
     nickname       VARCHAR(255)             NOT NULL,
     password       VARCHAR(255)             NOT NULL,
     email_verified BOOLEAN                  NOT NULL DEFAULT FALSE,
+    login_fail_count INT                    NOT NULL DEFAULT 0,
+    locked_at      TIMESTAMP WITH TIME ZONE,
     created_at     TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at     TIMESTAMP WITH TIME ZONE,
     deleted_at     TIMESTAMP WITH TIME ZONE,
-                                 PRIMARY KEY (id),
+    PRIMARY KEY (id),
     UNIQUE (email)
     );
 
