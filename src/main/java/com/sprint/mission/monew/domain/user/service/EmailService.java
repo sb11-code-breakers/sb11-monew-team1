@@ -74,6 +74,29 @@ public class EmailService {
   }
 
   public boolean sendUnlockEmail(String to, String token) {
-    return false; // 임시 - Red 상태
+    try {
+      String unlockUrl = verificationBaseUrl + "/api/users/unlock?token=" + token;
+
+      SendEmailRequest request = SendEmailRequest.builder()
+          .destination(d -> d.toAddresses(to))
+          .message(m -> m
+              .subject(c -> c.data("[MoNew] 계정 잠금 해제"))
+              .body(b -> b.html(c -> c.data(
+                  "<h2>MoNew 계정 잠금 해제</h2>"
+                      + "<p>아래 버튼을 클릭하여 계정 잠금을 해제해주세요.</p>"
+                      + "<a href='" + unlockUrl + "'>계정 잠금 해제</a>"
+                      + "<p>링크는 24시간 후 만료됩니다.</p>"
+              )))
+          )
+          .source(sender)
+          .build();
+
+      sesClient.sendEmail(request);
+      log.info("잠금 해제 이메일 발송 완료: to={}", MonewUtil.maskEmail(to));
+      return true;
+    } catch (Exception e) {
+      log.error("잠금 해제 이메일 발송 실패: to={}", MonewUtil.maskEmail(to), e);
+      return false;
+    }
   }
 }
