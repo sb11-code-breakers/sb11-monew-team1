@@ -257,7 +257,7 @@ class UserControllerTest {
         // given
         String invalidToken = UUID.randomUUID().toString();
         willThrow(UserInvalidUnlockTokenException.withToken(invalidToken))
-            .given(userService).unlock(anyString());
+            .given(userService).unlock(eq(invalidToken));
 
         // when & then
         mockMvc.perform(get("/api/users/unlock")
@@ -275,7 +275,7 @@ class UserControllerTest {
         mockMvc.perform(get("/api/users/unlock")
                 .param("token", validToken))
             .andExpect(status().isOk());
-        then(userService).should().unlock(anyString());
+        then(userService).should().unlock(eq(validToken));
       }
     }
 

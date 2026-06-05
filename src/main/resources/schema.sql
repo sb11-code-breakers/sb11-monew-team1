@@ -261,5 +261,3 @@ CREATE TABLE IF NOT EXISTS user_unlock_tokens
     UNIQUE (user_id),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
     );
-
-CREATE INDEX IF NOT EXISTS idx_user_unlock_tokens_user_id ON user_unlock_tokens (user_id);
