@@ -16,9 +16,11 @@ import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
+import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
+import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.PasswordResetToken;
-import com.sprint.mission.monew.domain.user.entity.User;
+import com.sprint.mission.monew.domain.user.entity.AccountUnlockToken;
 import com.sprint.mission.monew.domain.user.exception.InvalidPasswordResetCodeException;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
@@ -28,9 +30,11 @@ import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordExcepti
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.exception.UserAccountLockedException;
+import com.sprint.mission.monew.domain.user.exception.InvalidUnlockTokenException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
+import com.sprint.mission.monew.domain.user.repository.AccountUnlockTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.time.Instant;
 import java.util.Optional;
@@ -72,6 +76,9 @@ class UserServiceTest {
 
   @Mock
   private UserMetrics userMetrics;
+
+  @Mock
+  private AccountUnlockTokenRepository accountUnlockTokenRepository;
 
   @Nested
   @DisplayName("회원가입")
@@ -700,6 +707,85 @@ class UserServiceTest {
       // then
       assertThat(user.getPassword()).isEqualTo("newEncodedPassword");
       then(passwordResetTokenRepository).should().delete(token);
+    }
+  }
+  @Nested
+  @DisplayName("계정 잠금 해제 요청")
+  class RequestUnlock {
+
+    @Test
+    @DisplayName("존재하지 않는 이메일이면 예외 발생")
+    void 존재하지_않는_이메일이면_예외_발생() {
+      // given
+      UserUnlockRequest request = new UserUnlockRequest("notfound@test.com");
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userService.requestUnlock(request))
+          .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("성공 시 잠금 해제 이메일 발송")
+    void 성공_시_잠금_해제_이메일_발송() {
+      // given
+      UserUnlockRequest request = new UserUnlockRequest("test@test.com");
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      AccountUnlockToken token = AccountUnlockToken.create(UUID.randomUUID());
+
+      given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
+          .willReturn(Optional.of(user));
+      given(accountUnlockTokenRepository.save(any(AccountUnlockToken.class)))
+          .willReturn(token);
+
+      // when
+      userService.requestUnlock(request);
+
+      // then
+      then(accountUnlockTokenRepository).should().save(any(AccountUnlockToken.class));
+      then(emailQueue).should().enqueueUnlock(anyString(), anyString());
+    }
+  }
+
+  @Nested
+  @DisplayName("계정 잠금 해제")
+  class Unlock {
+
+    @Test
+    @DisplayName("유효하지 않은 토큰이면 예외 발생")
+    void 유효하지_않은_토큰이면_예외_발생() {
+      // given
+      given(accountUnlockTokenRepository.findByTokenAndExpiredAtAfter(
+          eq("invalid-token"), any(Instant.class)))
+          .willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userService.unlock("invalid-token"))
+          .isInstanceOf(InvalidUnlockTokenException.class);
+    }
+
+    @Test
+    @DisplayName("성공 시 계정 잠금 해제")
+    void 성공_시_계정_잠금_해제() {
+      // given
+      UUID userId = UUID.randomUUID();
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+      user.lock();
+      AccountUnlockToken token = AccountUnlockToken.create(userId);
+
+      given(accountUnlockTokenRepository.findByTokenAndExpiredAtAfter(
+          eq(token.getToken()), any(Instant.class)))
+          .willReturn(Optional.of(token));
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willReturn(Optional.of(user));
+
+      // when
+      userService.unlock(token.getToken());
+
+      // then
+      assertThat(user.isLocked()).isFalse();
+      then(accountUnlockTokenRepository).should().delete(token);
     }
   }
  }
