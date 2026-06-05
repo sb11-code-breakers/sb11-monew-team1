@@ -63,7 +63,7 @@ public interface UserApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
-  ResponseEntity<Void> verifyEmail(@NotBlank @RequestParam String token);
+  ResponseEntity<String> verifyEmail(@NotBlank @RequestParam String token);
 
   @Operation(summary = "닉네임 수정", description = "사용자의 닉네임을 수정합니다.")
   @ApiResponses({
