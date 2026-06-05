@@ -4,6 +4,7 @@ import com.sprint.mission.monew.common.entity.BaseSoftDeletableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,8 @@ import lombok.NoArgsConstructor;
 @Table(name = "users")
 @Entity
 public class User extends BaseSoftDeletableEntity {
+
+  private static final int MAX_LOGIN_FAIL_COUNT = 5;
 
   @Column(nullable = false, unique = true)
   private String email;
@@ -26,12 +29,19 @@ public class User extends BaseSoftDeletableEntity {
   @Column(nullable = false)
   private boolean emailVerified = false;
 
+  @Column(nullable = false)
+  private int loginFailCount = 0;
+
+  @Column
+  private Instant lockedAt;
+
   public static User create(String email, String nickname, String password) {
     User user = new User();
     user.email = email;
     user.nickname = nickname;
     user.password = password;
     user.emailVerified = false;
+    user.loginFailCount = 0;
     return user;
   }
 
@@ -45,5 +55,26 @@ public class User extends BaseSoftDeletableEntity {
 
   public void verifyEmail() {
     this.emailVerified = true;
+  }
+
+  public void incrementLoginFailCount() {
+    this.loginFailCount++;
+  }
+
+  public void resetLoginFailCount() {
+    this.loginFailCount = 0;
+  }
+
+  public void lock() {
+    this.lockedAt = Instant.now();
+  }
+
+  public void unlock() {
+    this.lockedAt = null;
+    this.loginFailCount = 0;
+  }
+
+  public boolean isLocked() {
+    return this.lockedAt != null;
   }
 }
