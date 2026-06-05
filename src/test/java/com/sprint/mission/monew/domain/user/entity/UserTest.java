@@ -149,4 +149,27 @@ class UserTest {
       assertThat(user.getLoginFailCount()).isEqualTo(0);
     }
   }
+  @Test
+  @DisplayName("로그인 실패 횟수가 5회 이상이면 한도 초과")
+  void 로그인_실패_횟수가_5회_이상이면_한도_초과() {
+    // given
+    for (int i = 0; i < 5; i++) {
+      user.incrementLoginFailCount();
+    }
+
+    // then
+    assertThat(user.hasExceededLoginFailLimit()).isTrue();
+  }
+
+  @Test
+  @DisplayName("로그인 실패 횟수가 4회이면 한도 미초과")
+  void 로그인_실패_횟수가_4회이면_한도_미초과() {
+    // given
+    for (int i = 0; i < 4; i++) {
+      user.incrementLoginFailCount();
+    }
+
+    // then
+    assertThat(user.hasExceededLoginFailLimit()).isFalse();
+  }
 }
