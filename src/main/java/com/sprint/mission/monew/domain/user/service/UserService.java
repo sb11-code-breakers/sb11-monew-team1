@@ -7,6 +7,7 @@ import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
+import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
 import com.sprint.mission.monew.domain.user.entity.EmailVerification;
 import com.sprint.mission.monew.domain.user.entity.PasswordResetToken;
 import com.sprint.mission.monew.domain.user.entity.User;
@@ -213,5 +214,15 @@ public class UserService {
     user.updatePassword(passwordEncoder.encode(request.newPassword()));
     passwordResetTokenRepository.delete(token);
     log.info("비밀번호 재설정 완료 | userId={}", user.getId());
+  }
+
+  @Transactional
+  public void requestUnlock(UserUnlockRequest request) {
+    throw new UnsupportedOperationException("미구현");
+  }
+
+  @Transactional
+  public void unlock(String token) {
+    throw new UnsupportedOperationException("미구현");
   }
 }

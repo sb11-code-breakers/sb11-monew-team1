@@ -7,6 +7,7 @@ import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
+import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import jakarta.validation.Valid;
@@ -102,5 +103,20 @@ public class UserController implements UserApi {
       @Valid @RequestBody UserPasswordResetCodeRequest request) {
     userService.resetPassword(request);
     return ResponseEntity.noContent().build();
+  }
+
+  @PostMapping("/unlock-request")
+  @Override
+  public ResponseEntity<Void> requestUnlock(
+      @Valid @RequestBody UserUnlockRequest request) {
+    userService.requestUnlock(request);
+    return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/unlock")
+  @Override
+  public ResponseEntity<Void> unlock(@NotBlank @RequestParam String token) {
+    userService.unlock(token);
+    return ResponseEntity.ok().build();
   }
 }

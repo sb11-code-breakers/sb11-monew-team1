@@ -7,6 +7,7 @@ import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
+import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -46,6 +47,8 @@ public interface UserApi {
       @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "401", description = "이메일 또는 비밀번호 불일치 / 이메일 미인증",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "423", description = "계정 잠금",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
@@ -143,4 +146,26 @@ public interface UserApi {
   })
   ResponseEntity<Void> resetPassword(
       @Valid @RequestBody UserPasswordResetCodeRequest request);
+
+  @Operation(summary = "계정 잠금 해제 요청", description = "이메일로 계정 잠금 해제 토큰을 발송합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "204", description = "잠금 해제 이메일 발송 성공"),
+      @ApiResponse(responseCode = "400", description = "잘못된 요청 (입력값 검증 실패)",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "404", description = "사용자 없음",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<Void> requestUnlock(@Valid @RequestBody UserUnlockRequest request);
+
+  @Operation(summary = "계정 잠금 해제", description = "토큰으로 계정 잠금을 해제합니다.")
+  @ApiResponses({
+      @ApiResponse(responseCode = "200", description = "잠금 해제 성공"),
+      @ApiResponse(responseCode = "400", description = "유효하지 않거나 만료된 토큰",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+      @ApiResponse(responseCode = "500", description = "서버 내부 오류",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+  })
+  ResponseEntity<Void> unlock(@NotBlank @RequestParam String token);
 }

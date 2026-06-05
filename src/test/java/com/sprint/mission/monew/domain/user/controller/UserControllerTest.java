@@ -20,6 +20,7 @@ import com.sprint.mission.monew.domain.user.dto.UserPasswordResetRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
+import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
 import com.sprint.mission.monew.domain.user.exception.InvalidPasswordResetCodeException;
 import com.sprint.mission.monew.domain.user.exception.InvalidVerificationTokenException;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
@@ -29,6 +30,7 @@ import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordExcepti
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.exception.UserAccountLockedException;
+import com.sprint.mission.monew.domain.user.exception.InvalidUnlockTokenException;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import java.time.Instant;
 import java.util.UUID;
@@ -204,7 +206,7 @@ class UserControllerTest {
       @DisplayName("이메일이 빈 값이면 400 반환")
       void 이메일이_빈_값이면_400_반환() throws Exception {
         // given
-        UserUnlockRequestDto request = new UserUnlockRequestDto("");
+        UserUnlockRequest request = new UserUnlockRequest("");
 
         // when & then
         mockMvc.perform(post("/api/users/unlock-request")
@@ -217,7 +219,7 @@ class UserControllerTest {
       @DisplayName("존재하지 않는 이메일이면 404 반환")
       void 존재하지_않는_이메일이면_404_반환() throws Exception {
         // given
-        UserUnlockRequestDto request = new UserUnlockRequestDto("notfound@test.com");
+        UserUnlockRequest request = new UserUnlockRequest("notfound@test.com");
         willThrow(UserNotFoundException.withEmail("notfound@test.com"))
             .given(userService).requestUnlock(any());
 
@@ -232,7 +234,7 @@ class UserControllerTest {
       @DisplayName("성공 시 204 반환")
       void 성공_시_204_반환() throws Exception {
         // given
-        UserUnlockRequestDto request = new UserUnlockRequestDto("test@test.com");
+        UserUnlockRequest request = new UserUnlockRequest("test@test.com");
 
         // when & then
         mockMvc.perform(post("/api/users/unlock-request")
