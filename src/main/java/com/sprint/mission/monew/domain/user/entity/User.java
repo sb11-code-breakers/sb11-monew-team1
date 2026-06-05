@@ -77,4 +77,8 @@ public class User extends BaseSoftDeletableEntity {
   public boolean isLocked() {
     return this.lockedAt != null;
   }
+
+  public boolean hasExceededLoginFailLimit() {
+    return this.loginFailCount >= MAX_LOGIN_FAIL_COUNT;
+  }
 }
