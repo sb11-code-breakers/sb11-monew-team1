@@ -196,6 +196,79 @@ class UserControllerTest {
               .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isLocked());
     }
+    @Nested
+    @DisplayName("POST /api/users/unlock-request — 계정 잠금 해제 요청")
+    class UnlockRequest {
+
+      @Test
+      @DisplayName("이메일이 빈 값이면 400 반환")
+      void 이메일이_빈_값이면_400_반환() throws Exception {
+        // given
+        UserUnlockRequestDto request = new UserUnlockRequestDto("");
+
+        // when & then
+        mockMvc.perform(post("/api/users/unlock-request")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isBadRequest());
+      }
+
+      @Test
+      @DisplayName("존재하지 않는 이메일이면 404 반환")
+      void 존재하지_않는_이메일이면_404_반환() throws Exception {
+        // given
+        UserUnlockRequestDto request = new UserUnlockRequestDto("notfound@test.com");
+        willThrow(UserNotFoundException.withEmail("notfound@test.com"))
+            .given(userService).requestUnlock(any());
+
+        // when & then
+        mockMvc.perform(post("/api/users/unlock-request")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNotFound());
+      }
+
+      @Test
+      @DisplayName("성공 시 204 반환")
+      void 성공_시_204_반환() throws Exception {
+        // given
+        UserUnlockRequestDto request = new UserUnlockRequestDto("test@test.com");
+
+        // when & then
+        mockMvc.perform(post("/api/users/unlock-request")
+                .contentType(APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isNoContent());
+        then(userService).should().requestUnlock(any());
+      }
+    }
+
+    @Nested
+    @DisplayName("GET /api/users/unlock — 계정 잠금 해제")
+    class Unlock {
+
+      @Test
+      @DisplayName("유효하지 않은 토큰이면 400 반환")
+      void 유효하지_않은_토큰이면_400_반환() throws Exception {
+        // given
+        willThrow(InvalidUnlockTokenException.withToken("invalid-token"))
+            .given(userService).unlock("invalid-token");
+
+        // when & then
+        mockMvc.perform(get("/api/users/unlock")
+                .param("token", "invalid-token"))
+            .andExpect(status().isBadRequest());
+      }
+
+      @Test
+      @DisplayName("성공 시 200 반환")
+      void 성공_시_200_반환() throws Exception {
+        // when & then
+        mockMvc.perform(get("/api/users/unlock")
+                .param("token", "valid-token"))
+            .andExpect(status().isOk());
+      }
+    }
   }
 
   @Nested
