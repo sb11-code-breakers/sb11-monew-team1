@@ -18,6 +18,7 @@ import com.sprint.mission.monew.domain.user.exception.UserEmailNotVerifiedExcept
 import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordException;
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
+import com.sprint.mission.monew.domain.user.exception.UserAccountLockedException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
@@ -82,12 +83,24 @@ public class UserService {
     log.debug("로그인 시도");
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
         .orElseThrow(UserLoginFailedException::withEmail);
+
+    if (user.isLocked()) {
+      throw UserAccountLockedException.withEmail(request.email());
+    }
+
     if (!user.isEmailVerified()) {
       throw UserEmailNotVerifiedException.withEmail(request.email());
     }
+
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+      user.incrementLoginFailCount();
+      if (user.getLoginFailCount() >= 5) {
+        user.lock();
+      }
       throw UserLoginFailedException.withPassword();
     }
+
+    user.resetLoginFailCount();
     log.info("로그인 완료 | userId={}", user.getId());
     return userMapper.toResponse(user);
   }
