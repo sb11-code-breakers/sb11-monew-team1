@@ -52,7 +52,9 @@ public class CommentCustomRepositoryImpl implements CommentCustomRepository {
             cursorCondition(condition)
         )
         .orderBy(
-            buildOrderSpecifiers(condition.orderBy(), condition.direction())
+            buildOrderSpecifier(condition.orderBy(), condition.direction()),
+            buildCreatedAtOrderSpecifier(condition.direction()),
+            buildIdOrderSpecifier(condition.direction())
         )
         .limit(condition.limit() + 1L)
         .fetch();
@@ -62,33 +64,41 @@ public class CommentCustomRepositoryImpl implements CommentCustomRepository {
 
     String nextCursor = null;
     Instant nextAfter = null;
+    UUID nextIdAfter = null;
     if (hasNext && !content.isEmpty()) {
       CommentResponse last = content.get(content.size() - 1);
       nextCursor = extractCursor(last, condition.orderBy());
       nextAfter = last.createdAt();
+      nextIdAfter = last.id();
     }
 
     return CursorPageResponse.of(
         content,
         nextCursor,
         nextAfter,
+        nextIdAfter,
         hasNext,
         content.size(),
         null
     );
   }
 
-  private OrderSpecifier<?>[] buildOrderSpecifiers(CommentOrderBy orderBy, SortDirection direction) {
+  private OrderSpecifier<?> buildOrderSpecifier(CommentOrderBy orderBy, SortDirection direction) {
     Order dir = direction == SortDirection.ASC ? Order.ASC : Order.DESC;
     return switch (orderBy) {
-      case CREATED_AT -> new OrderSpecifier<?>[] {
-          new OrderSpecifier<>(dir, comment.createdAt)
-      };
-      case LIKE_COUNT -> new OrderSpecifier<?>[] {
-          new OrderSpecifier<>(dir, comment.likeCount),
-          new OrderSpecifier<>(dir, comment.createdAt)
-      };
+      case CREATED_AT -> new OrderSpecifier<>(dir, comment.createdAt);
+      case LIKE_COUNT -> new OrderSpecifier<>(dir, comment.likeCount);
     };
+  }
+
+  private OrderSpecifier<?> buildCreatedAtOrderSpecifier(SortDirection direction) {
+    Order dir = direction == SortDirection.ASC ? Order.ASC : Order.DESC;
+    return new OrderSpecifier<>(dir, comment.createdAt);
+  }
+
+  private OrderSpecifier<?> buildIdOrderSpecifier(SortDirection direction) {
+    Order dir = direction == SortDirection.ASC ? Order.ASC : Order.DESC;
+    return new OrderSpecifier<>(dir, comment.id);
   }
 
   private BooleanExpression eqArticleId(UUID articleId) {
@@ -102,26 +112,35 @@ public class CommentCustomRepositoryImpl implements CommentCustomRepository {
   private BooleanExpression cursorCondition(CommentQueryCondition condition) {
     String cursor = condition.cursor();
     Instant after = condition.after();
+    UUID idAfter = condition.idAfter();
     boolean isAsc = condition.direction() == SortDirection.ASC;
     if (cursor == null) {
       return null;
     }
     return switch (condition.orderBy()) {
-      case CREATED_AT -> buildCursorExpression(comment.createdAt, Instant.parse(cursor), isAsc);
-      case LIKE_COUNT -> buildCursorExpression(comment.likeCount, Long.parseLong(cursor), after, isAsc);
+      case CREATED_AT -> buildCursorExpression(comment.createdAt, Instant.parse(cursor), idAfter, isAsc);
+      case LIKE_COUNT -> buildCursorExpression(comment.likeCount, Long.parseLong(cursor), after, idAfter, isAsc);
     };
   }
 
   private BooleanExpression buildCursorExpression(
-      ComparableExpression<Instant> field, Instant cursorValue, boolean isAsc) {
-    return isAsc ? field.gt(cursorValue) : field.lt(cursorValue);
+      ComparableExpression<Instant> field, Instant cursorValue, UUID idAfter, boolean isAsc) {
+    return isAsc
+        ? field.gt(cursorValue)
+            .or(field.eq(cursorValue).and(comment.id.gt(idAfter)))
+        : field.lt(cursorValue)
+            .or(field.eq(cursorValue).and(comment.id.lt(idAfter)));
   }
 
   private BooleanExpression buildCursorExpression(
-      NumberExpression<Long> field, long cursorValue, Instant after, boolean isAsc) {
+      NumberExpression<Long> field, long cursorValue, Instant after, UUID idAfter, boolean isAsc) {
     return isAsc
-        ? field.gt(cursorValue).or(field.eq(cursorValue).and(comment.createdAt.gt(after)))
-        : field.lt(cursorValue).or(field.eq(cursorValue).and(comment.createdAt.lt(after)));
+        ? field.gt(cursorValue)
+            .or(field.eq(cursorValue).and(comment.createdAt.gt(after)))
+            .or(field.eq(cursorValue).and(comment.createdAt.eq(after)).and(comment.id.gt(idAfter)))
+        : field.lt(cursorValue)
+            .or(field.eq(cursorValue).and(comment.createdAt.lt(after)))
+            .or(field.eq(cursorValue).and(comment.createdAt.eq(after)).and(comment.id.lt(idAfter)));
   }
 
   private String extractCursor(CommentResponse last, CommentOrderBy orderBy) {

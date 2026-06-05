@@ -19,12 +19,14 @@ public record ArticleQueryCondition(
     @NotNull SortDirection direction,
     String cursor,
     Instant after,
+    UUID idAfter,
     @NotNull @Min(1) Integer limit
 ) {
 
-  @AssertTrue(message = "cursor와 after는 함께 전달되어야 합니다")
-  public boolean isCursorAndAfterConsistent() {
-    return (cursor == null) == (after == null);
+  @AssertTrue(message = "cursor, after, idAfter는 함께 전달되어야 합니다")
+  public boolean isCursorAndAfterAndIdAfterConsistent() {
+    return (cursor == null && after == null && idAfter == null)
+        || (cursor != null && after != null && idAfter != null);
   }
 
   @AssertTrue(message = "cursor 형식이 orderBy 기준과 맞지 않습니다")

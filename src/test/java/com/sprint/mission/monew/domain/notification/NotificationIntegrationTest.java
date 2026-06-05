@@ -127,6 +127,16 @@ public class NotificationIntegrationTest {
     }
 
     @Test
+    @DisplayName("after만 있고 cursor가 없으면 400을 반환한다")
+    void after만_있고_cursor가_없으면_400을_반환한다() throws Exception {
+      mockMvc.perform(get("/api/notifications")
+              .header("Monew-Request-User-ID", user.getId())
+              .param("limit", "10")
+              .param("after", "1970-01-01T00:00:00Z"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("cursor가 있으면 cursor 이후 알림만 반환한다")
     void cursor가_있으면_cursor_이후_알림만_반환한다() throws Exception {
       // given
@@ -138,7 +148,8 @@ public class NotificationIntegrationTest {
               .header("Monew-Request-User-ID", user.getId())
               .param("limit", "10")
               .param("cursor", "1970-01-01T00:00:00Z")
-              .param("after", "1970-01-01T00:00:00Z"))
+              .param("after", "1970-01-01T00:00:00Z")
+              .param("idAfter", UUID.randomUUID().toString()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(1));
     }

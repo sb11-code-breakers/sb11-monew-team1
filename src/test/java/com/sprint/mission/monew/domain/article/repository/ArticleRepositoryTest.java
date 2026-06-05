@@ -56,7 +56,7 @@ class ArticleRepositoryTest {
     return new ArticleQueryCondition(
         null, null, null, null, null,
         ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
-        null, null, limit);
+        null, null, null, limit);
   }
 
   @Nested
@@ -120,7 +120,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           "인공지능", null, null, null, null,
           ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
-          null, null, 10);
+          null, null, null, 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -141,7 +141,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, List.of(ArticleSource.NAVER, ArticleSource.HANKYUNG), null, null,
           ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
-          null, null, 10);
+          null, null, null, 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -164,7 +164,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, t2, null,
           ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
-          null, null, 10);
+          null, null, null, 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -186,7 +186,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, t1,
           ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
-          null, null, 10);
+          null, null, null, 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -205,12 +205,12 @@ class ArticleRepositoryTest {
       Instant t3 = Instant.parse("2024-01-03T00:00:00Z");
       articleRepository.save(Article.create(ArticleSource.NAVER, "url1", "기사1", t1, null));
       articleRepository.save(Article.create(ArticleSource.NAVER, "url2", "기사2", t2, null));
-      articleRepository.save(Article.create(ArticleSource.NAVER, "url3", "기사3", t3, null));
+      Article article3 = articleRepository.save(Article.create(ArticleSource.NAVER, "url3", "기사3", t3, null));
 
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
-          t3.toString(), Instant.EPOCH, 10);
+          t3.toString(), article3.getCreatedAt(), article3.getId(), 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -226,14 +226,14 @@ class ArticleRepositoryTest {
       Instant t1 = Instant.parse("2024-01-01T00:00:00Z");
       Instant t2 = Instant.parse("2024-01-02T00:00:00Z");
       Instant t3 = Instant.parse("2024-01-03T00:00:00Z");
-      articleRepository.save(Article.create(ArticleSource.NAVER, "url1", "기사1", t1, null));
+      Article article1 = articleRepository.save(Article.create(ArticleSource.NAVER, "url1", "기사1", t1, null));
       articleRepository.save(Article.create(ArticleSource.NAVER, "url2", "기사2", t2, null));
       articleRepository.save(Article.create(ArticleSource.NAVER, "url3", "기사3", t3, null));
 
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.PUBLISH_DATE, SortDirection.ASC,
-          t1.toString(), Instant.now().plusSeconds(86400), 10);
+          t1.toString(), article1.getCreatedAt(), article1.getId(), 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -252,7 +252,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.COMMENT_COUNT, SortDirection.DESC,
-          null, null, 10);
+          null, null, null, 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -271,7 +271,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.VIEW_COUNT, SortDirection.ASC,
-          null, null, 10);
+          null, null, null, 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -284,12 +284,12 @@ class ArticleRepositoryTest {
     @DisplayName("COMMENT_COUNT DESC cursor가 있으면 cursor 미만 기사만 반환한다")
     void COMMENT_COUNT_DESC_cursor가_있으면_cursor_미만_기사만_반환한다() {
       // given — commentCount=0인 기사 저장
-      saveArticle(ArticleSource.NAVER, "기사1");
+      Article article = saveArticle(ArticleSource.NAVER, "기사1");
 
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.COMMENT_COUNT, SortDirection.DESC,
-          "0", Instant.EPOCH, 10);
+          "0", article.getCreatedAt(), article.getId(), 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -302,12 +302,12 @@ class ArticleRepositoryTest {
     @DisplayName("VIEW_COUNT DESC cursor가 있으면 cursor 미만 기사만 반환한다")
     void VIEW_COUNT_DESC_cursor가_있으면_cursor_미만_기사만_반환한다() {
       // given — viewCount=0인 기사 저장
-      saveArticle(ArticleSource.NAVER, "기사1");
+      Article article = saveArticle(ArticleSource.NAVER, "기사1");
 
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.VIEW_COUNT, SortDirection.DESC,
-          "0", Instant.EPOCH, 10);
+          "0", article.getCreatedAt(), article.getId(), 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -320,12 +320,12 @@ class ArticleRepositoryTest {
     @DisplayName("COMMENT_COUNT ASC cursor가 있으면 cursor 초과 기사만 반환한다")
     void COMMENT_COUNT_ASC_cursor가_있으면_cursor_초과_기사만_반환한다() {
       // given
-      saveArticle(ArticleSource.NAVER, "기사1");
+      Article article = saveArticle(ArticleSource.NAVER, "기사1");
 
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.COMMENT_COUNT, SortDirection.ASC,
-          "10", Instant.now().plusSeconds(86400), 10);
+          "10", article.getCreatedAt(), article.getId(), 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -338,12 +338,12 @@ class ArticleRepositoryTest {
     @DisplayName("VIEW_COUNT ASC cursor가 있으면 cursor 초과 기사만 반환한다")
     void VIEW_COUNT_ASC_cursor가_있으면_cursor_초과_기사만_반환한다() {
       // given
-      saveArticle(ArticleSource.NAVER, "기사1");
+      Article article = saveArticle(ArticleSource.NAVER, "기사1");
 
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.VIEW_COUNT, SortDirection.ASC,
-          "10", Instant.now().plusSeconds(86400), 10);
+          "10", article.getCreatedAt(), article.getId(), 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -362,7 +362,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.COMMENT_COUNT, SortDirection.DESC,
-          null, null, 1);
+          null, null, null, 1);
 
       // when
       var response = articleRepository.search(condition, requestUserId);
@@ -383,7 +383,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.VIEW_COUNT, SortDirection.DESC,
-          null, null, 1);
+          null, null, null, 1);
 
       // when
       var response = articleRepository.search(condition, requestUserId);
@@ -410,7 +410,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, interest.getId(), null, null, null,
           ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
-          null, null, 10);
+          null, null, null, 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();

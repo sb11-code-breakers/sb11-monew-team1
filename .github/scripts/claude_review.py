@@ -74,8 +74,8 @@ def call_claude(conventions: str, diff: str) -> dict:
 - 위반 사항 없으면 file_comments는 빈 배열"""
 
     response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2048,
+        model="claude-haiku-4-5-20251001",
+        max_tokens=4096,
         system=[
             {
                 "type": "text",
@@ -90,6 +90,12 @@ def call_claude(conventions: str, diff: str) -> dict:
             }
         ],
     )
+
+    if response.stop_reason == "max_tokens":
+        raise RuntimeError(
+            "Claude response was truncated (max_tokens reached). "
+            "Increase max_tokens or reduce the diff size."
+        )
 
     text = response.content[0].text.strip()
     text = re.sub(r"^```(?:json)?\s*", "", text)

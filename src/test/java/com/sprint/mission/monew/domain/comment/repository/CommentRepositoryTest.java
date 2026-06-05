@@ -312,7 +312,7 @@ public class CommentRepositoryTest {
           CommentOrderBy.CREATED_AT,
           SortDirection.DESC,
           null,
-          null,
+          null, null,
           5
       );
 
@@ -362,7 +362,7 @@ public class CommentRepositoryTest {
           CommentOrderBy.LIKE_COUNT,
           SortDirection.DESC,
           null,
-          null,
+          null, null,
           5
       );
 
@@ -395,6 +395,7 @@ public class CommentRepositoryTest {
           article.getId(),
           CommentOrderBy.CREATED_AT,
           SortDirection.DESC,
+          null,
           null,
           null,
           5
@@ -432,6 +433,7 @@ public class CommentRepositoryTest {
           SortDirection.DESC,
           secondComment.getCreatedAt().toString(), // 두번째 시간 이전의 댓글(firstComment)만 조회됨
           null,
+          secondComment.getId(),
           5
       );
 
@@ -481,6 +483,7 @@ public class CommentRepositoryTest {
           SortDirection.DESC,
           "2",
           secondComment.getCreatedAt(),
+          secondComment.getId(),
           5
       );
 
@@ -494,6 +497,42 @@ public class CommentRepositoryTest {
       assertThat(comments).hasSize(2);
       assertThat(comments.get(0).id()).isEqualTo(firstComment.getId());
       assertThat(comments.get(1).id()).isEqualTo(thirdComment.getId());
+    }
+
+    @Test
+    @DisplayName("등록순 오름차순 커서 조회")
+    void 등록순_오름차순_커서_조회() throws InterruptedException {
+      // given
+      Comment firstComment = commentRepository.save(Comment.create(article, user, "첫 번째 댓글"));
+      Thread.sleep(50);
+      Comment secondComment = commentRepository.save(Comment.create(article, user, "두 번째 댓글"));
+      Thread.sleep(50);
+      Comment thirdComment = commentRepository.save(Comment.create(article, user, "세 번째 댓글"));
+
+      testEntityManager.flush();
+      testEntityManager.clear();
+
+      firstComment = commentRepository.findById(firstComment.getId()).orElseThrow();
+      secondComment = commentRepository.findById(secondComment.getId()).orElseThrow();
+
+      // secondComment를 cursor로 → thirdComment만 반환되어야 함
+      CommentQueryCondition condition = new CommentQueryCondition(
+          article.getId(),
+          CommentOrderBy.CREATED_AT,
+          SortDirection.ASC,
+          secondComment.getCreatedAt().toString(),
+          null,
+          secondComment.getId(),
+          5
+      );
+
+      // when
+      CursorPageResponse<CommentResponse> response = commentRepository.getComments(condition, user.getId());
+      List<CommentResponse> comments = response.content();
+
+      // then
+      assertThat(comments).hasSize(1);
+      assertThat(comments.get(0).id()).isEqualTo(thirdComment.getId());
     }
 
     @Test
@@ -536,7 +575,7 @@ public class CommentRepositoryTest {
           CommentOrderBy.LIKE_COUNT,
           SortDirection.ASC,
           null,
-          null,
+          null, null,
           2
       );
 
@@ -562,6 +601,7 @@ public class CommentRepositoryTest {
           SortDirection.ASC,
           String.valueOf(lastOfTwoGroup.likeCount()),
           lastOfTwoGroup.createdAt(),
+          lastOfTwoGroup.id(),
           5
       );
 

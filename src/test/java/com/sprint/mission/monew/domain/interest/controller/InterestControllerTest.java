@@ -156,7 +156,8 @@ class InterestControllerTest {
                   .param("direction", "ASC")
                   .param("limit", "10")
                   .param("cursor", "invalid")
-                  .param("after", java.time.Instant.now().toString()))
+                  .param("after", java.time.Instant.now().toString())
+                  .param("idAfter", UUID.randomUUID().toString()))
           .andExpect(status().isBadRequest());
       verifyNoInteractions(interestService);
     }
@@ -166,7 +167,7 @@ class InterestControllerTest {
     void 정상_요청이면_200과_CursorPageResponse를_반환한다() throws Exception {
       // given
       CursorPageResponse<InterestResponse> response =
-          CursorPageResponse.of(List.of(), null, null, false, 0, 0L);
+          CursorPageResponse.of(List.of(), null, null, null, false, 0, 0L);
       given(interestService.findAll(any(), any(UUID.class))).willReturn(response);
 
       // when & then
@@ -187,7 +188,7 @@ class InterestControllerTest {
     void orderBy가_subscriberCount이고_cursor가_유효한_숫자면_200을_반환한다() throws Exception {
       // given
       CursorPageResponse<InterestResponse> response =
-          CursorPageResponse.of(List.of(), null, null, false, 0, 0L);
+          CursorPageResponse.of(List.of(), null, null, null, false, 0, 0L);
       given(interestService.findAll(any(), any(UUID.class))).willReturn(response);
 
       // when & then
@@ -199,7 +200,8 @@ class InterestControllerTest {
                   .param("direction", "ASC")
                   .param("limit", "10")
                   .param("cursor", "5")
-                  .param("after", java.time.Instant.now().toString()))
+                  .param("after", java.time.Instant.now().toString())
+                  .param("idAfter", UUID.randomUUID().toString()))
           .andExpect(status().isOk());
     }
   }

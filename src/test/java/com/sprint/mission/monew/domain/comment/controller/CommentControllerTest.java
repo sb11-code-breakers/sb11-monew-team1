@@ -473,6 +473,7 @@ public class CommentControllerTest {
               commentResponseList,
               "1",
               fixedTime,
+              null,
               false,
               2,
               2L
@@ -485,6 +486,7 @@ public class CommentControllerTest {
               .param("direction", "DESC")
               .param("cursor", "1")
               .param("after", "2024-01-01T00:00:00Z")
+              .param("idAfter", UUID.randomUUID().toString())
               .param("limit", "5")
               .header("Monew-Request-User-ID", userId.toString()))
           .andExpect(status().isOk())

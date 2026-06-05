@@ -149,7 +149,7 @@ class NotificationControllerTest {
     void 정상_요청이면_200과_CursorPageResponse를_반환한다() throws Exception {
       // given
       CursorPageResponse<NotificationResponse> response =
-          new CursorPageResponse<>(List.of(), null, null, false, 0, 0L);
+          new CursorPageResponse<>(List.of(), null, null, null, false, 0, 0L);
       given(notificationService.findUnconfirmed(any(), any())).willReturn(response);
 
       // when & then

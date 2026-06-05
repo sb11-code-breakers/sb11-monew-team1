@@ -112,9 +112,9 @@ NotificationServiceTest {
     @DisplayName("repository에 조회를 위임하고 결과를 반환한다")
     void repository에_조회를_위임하고_결과를_반환한다() {
       // given
-      NotificationQueryCondition condition = new NotificationQueryCondition(null, null, 10);
+      NotificationQueryCondition condition = new NotificationQueryCondition(null, null, null, 10);
       CursorPageResponse<NotificationResponse> expected =
-          new CursorPageResponse<>(List.of(), null, null, false, 0, 0L);
+          new CursorPageResponse<>(List.of(), null, null, null, false, 0, 0L);
       given(notificationRepository.findUnconfirmed(userId, condition)).willReturn(expected);
 
       // when

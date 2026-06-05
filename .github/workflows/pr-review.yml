@@ -64,9 +64,19 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          PR_ACTION: ${{ github.event.action }}
         run: |
           git fetch origin "$HEAD_SHA"
-          git diff "$BASE_SHA...$HEAD_SHA" > pr_diff.txt
+
+          if [[ "$PR_ACTION" == "synchronize" && -n "$BEFORE_SHA" ]]; then
+            git fetch origin "$BEFORE_SHA"
+            git diff "$BEFORE_SHA...$HEAD_SHA" > pr_diff.txt
+            echo "synchronize diff: $BEFORE_SHA → $HEAD_SHA"
+          else
+            git diff "$BASE_SHA...$HEAD_SHA" > pr_diff.txt
+            echo "full PR diff: $BASE_SHA → $HEAD_SHA"
+          fi
 
           SIZE=$(wc -c < pr_diff.txt)
           if [[ "$SIZE" -gt 153600 ]]; then

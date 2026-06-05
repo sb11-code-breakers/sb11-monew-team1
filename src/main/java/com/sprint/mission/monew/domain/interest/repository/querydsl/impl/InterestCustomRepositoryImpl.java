@@ -46,7 +46,8 @@ public class InterestCustomRepositoryImpl implements InterestCustomRepository {
         )
         .orderBy(
             buildOrderSpecifier(condition.orderBy(), condition.direction()),
-            buildCreatedAtOrderSpecifier(condition.direction())
+            buildCreatedAtOrderSpecifier(condition.direction()),
+            buildIdOrderSpecifier(condition.direction())
         )
         .limit(condition.limit() + 1L)
         .fetch();
@@ -61,16 +62,19 @@ public class InterestCustomRepositoryImpl implements InterestCustomRepository {
 
     String nextCursor = null;
     Instant nextAfter = null;
+    UUID nextIdAfter = null;
     if (hasNext && !content.isEmpty()) {
       Interest last = content.get(content.size() - 1).get(interest);
       nextCursor = extractCursor(last, condition.orderBy());
       nextAfter = last.getCreatedAt();
+      nextIdAfter = last.getId();
     }
 
     return CursorPageResponse.of(
         responses,
         nextCursor,
         nextAfter,
+        nextIdAfter,
         hasNext,
         content.size(),
         null
@@ -99,29 +103,39 @@ public class InterestCustomRepositoryImpl implements InterestCustomRepository {
   private BooleanExpression cursorCondition(InterestQueryCondition condition) {
     String cursor = condition.cursor();
     Instant after = condition.after();
+    UUID idAfter = condition.idAfter();
     boolean isAsc = condition.direction() == SortDirection.ASC;
     if (cursor == null) {
       return null;
     }
     return switch (condition.orderBy()) {
-      case NAME -> buildCursorExpression(interest.name, cursor, after, isAsc);
+      case NAME -> buildCursorExpression(interest.name, cursor, after, idAfter, isAsc);
       case SUBSCRIBER_COUNT ->
-          buildCursorExpression(interest.subscriberCount, Long.parseLong(cursor), after, isAsc);
+          buildCursorExpression(interest.subscriberCount, Long.parseLong(cursor), after, idAfter, isAsc);
     };
   }
 
   private BooleanExpression buildCursorExpression(
-      ComparableExpression<String> field, String cursorValue, Instant after, boolean isAsc) {
+      ComparableExpression<String> field, String cursorValue, Instant after, UUID idAfter,
+      boolean isAsc) {
     return isAsc
-        ? field.gt(cursorValue).or(field.eq(cursorValue).and(interest.createdAt.gt(after)))
-        : field.lt(cursorValue).or(field.eq(cursorValue).and(interest.createdAt.lt(after)));
+        ? field.gt(cursorValue)
+            .or(field.eq(cursorValue).and(interest.createdAt.gt(after)))
+            .or(field.eq(cursorValue).and(interest.createdAt.eq(after)).and(interest.id.gt(idAfter)))
+        : field.lt(cursorValue)
+            .or(field.eq(cursorValue).and(interest.createdAt.lt(after)))
+            .or(field.eq(cursorValue).and(interest.createdAt.eq(after)).and(interest.id.lt(idAfter)));
   }
 
   private BooleanExpression buildCursorExpression(
-      NumberExpression<Long> field, Long cursorValue, Instant after, boolean isAsc) {
+      NumberExpression<Long> field, Long cursorValue, Instant after, UUID idAfter, boolean isAsc) {
     return isAsc
-        ? field.gt(cursorValue).or(field.eq(cursorValue).and(interest.createdAt.gt(after)))
-        : field.lt(cursorValue).or(field.eq(cursorValue).and(interest.createdAt.lt(after)));
+        ? field.gt(cursorValue)
+            .or(field.eq(cursorValue).and(interest.createdAt.gt(after)))
+            .or(field.eq(cursorValue).and(interest.createdAt.eq(after)).and(interest.id.gt(idAfter)))
+        : field.lt(cursorValue)
+            .or(field.eq(cursorValue).and(interest.createdAt.lt(after)))
+            .or(field.eq(cursorValue).and(interest.createdAt.eq(after)).and(interest.id.lt(idAfter)));
   }
 
   private OrderSpecifier<?> buildOrderSpecifier(InterestOrderBy orderBy, SortDirection direction) {
@@ -135,6 +149,11 @@ public class InterestCustomRepositoryImpl implements InterestCustomRepository {
   private OrderSpecifier<?> buildCreatedAtOrderSpecifier(SortDirection direction) {
     Order dir = direction == SortDirection.ASC ? Order.ASC : Order.DESC;
     return new OrderSpecifier<>(dir, interest.createdAt);
+  }
+
+  private OrderSpecifier<?> buildIdOrderSpecifier(SortDirection direction) {
+    Order dir = direction == SortDirection.ASC ? Order.ASC : Order.DESC;
+    return new OrderSpecifier<>(dir, interest.id);
   }
 
   private String extractCursor(Interest i, InterestOrderBy orderBy) {

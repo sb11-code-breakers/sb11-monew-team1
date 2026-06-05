@@ -54,7 +54,7 @@ class NotificationRepositoryTest {
           Notification.create(userId, "알림1", ResourceType.INTEREST, UUID.randomUUID()));
       notificationRepository.save(
           Notification.create(userId, "알림2", ResourceType.INTEREST, UUID.randomUUID()));
-      NotificationQueryCondition condition = new NotificationQueryCondition(null, null, 10);
+      NotificationQueryCondition condition = new NotificationQueryCondition(null, null, null, 10);
 
       // when
       CursorPageResponse<NotificationResponse> result =
@@ -75,7 +75,7 @@ class NotificationRepositoryTest {
           Notification.create(userId, "확인됨", ResourceType.INTEREST, UUID.randomUUID()));
       confirmed.confirm();
       notificationRepository.save(confirmed);
-      NotificationQueryCondition condition = new NotificationQueryCondition(null, null, 10);
+      NotificationQueryCondition condition = new NotificationQueryCondition(null, null, null, 10);
 
       // when
       CursorPageResponse<NotificationResponse> result =
@@ -95,7 +95,7 @@ class NotificationRepositoryTest {
       notificationRepository.save(
           Notification.create(UUID.randomUUID(), "타인 알림", ResourceType.INTEREST,
               UUID.randomUUID()));
-      NotificationQueryCondition condition = new NotificationQueryCondition(null, null, 10);
+      NotificationQueryCondition condition = new NotificationQueryCondition(null, null, null, 10);
 
       // when
       CursorPageResponse<NotificationResponse> result =
@@ -114,7 +114,7 @@ class NotificationRepositoryTest {
         notificationRepository.save(
             Notification.create(userId, "알림" + i, ResourceType.INTEREST, UUID.randomUUID()));
       }
-      NotificationQueryCondition condition = new NotificationQueryCondition(null, null, 2);
+      NotificationQueryCondition condition = new NotificationQueryCondition(null, null, null, 2);
 
       // when
       CursorPageResponse<NotificationResponse> result =

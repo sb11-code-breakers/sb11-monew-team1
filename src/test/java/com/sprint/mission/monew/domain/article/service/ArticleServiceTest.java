@@ -52,7 +52,7 @@ class ArticleServiceTest {
     requestUserId = UUID.randomUUID();
     defaultCondition =
         new ArticleQueryCondition(null, null, null, null, null, ArticleOrderBy.PUBLISH_DATE,
-            SortDirection.DESC, null, null, 10);
+            SortDirection.DESC, null, null, null, 10);
   }
 
   private Article makeArticle(ArticleSource source) {
@@ -69,7 +69,7 @@ class ArticleServiceTest {
     void 결과가_없으면_빈_응답을_반환한다() {
       // given
       CursorPageResponse<ArticleResponse> expected = CursorPageResponse.of(
-          List.of(), null, null, false, 0, 0L);
+          List.of(), null, null, null, false, 0, 0L);
       given(articleRepository.search(any(), eq(requestUserId))).willReturn(expected);
 
       // when
@@ -90,7 +90,7 @@ class ArticleServiceTest {
       ArticleResponse dto = new ArticleResponse(UUID.randomUUID(), ArticleSource.NAVER,
           "https://example.com", "제목", Instant.now(), "요약", 0, 0, false);
       CursorPageResponse<ArticleResponse> expected = CursorPageResponse.of(
-          List.of(dto), null, null, false, 1, 1L);
+          List.of(dto), null, null, null, false, 1, 1L);
       given(articleRepository.search(any(), eq(requestUserId))).willReturn(expected);
 
       // when
@@ -109,7 +109,7 @@ class ArticleServiceTest {
       int limit = 2;
       ArticleQueryCondition condition =
           new ArticleQueryCondition(null, null, null, null, null, ArticleOrderBy.PUBLISH_DATE,
-              SortDirection.DESC, null, null, limit);
+              SortDirection.DESC, null, null, null, limit);
 
       Instant publishDate = Instant.now();
       ArticleResponse dto1 = new ArticleResponse(UUID.randomUUID(), ArticleSource.NAVER,
@@ -118,7 +118,7 @@ class ArticleServiceTest {
           "https://2.com", "제목2", publishDate, "요약2", 0, 0, false);
 
       CursorPageResponse<ArticleResponse> expected = CursorPageResponse.of(
-          List.of(dto1, dto2), publishDate.toString(), publishDate, true, 2, 3L);
+          List.of(dto1, dto2), publishDate.toString(), publishDate, dto2.id(), true, 2, 3L);
       given(articleRepository.search(any(), eq(requestUserId))).willReturn(expected);
 
       // when
@@ -137,7 +137,7 @@ class ArticleServiceTest {
       ArticleResponse dto = new ArticleResponse(UUID.randomUUID(), ArticleSource.NAVER,
           "https://example.com", "제목", Instant.now(), "요약", 0, 0, true);
       CursorPageResponse<ArticleResponse> expected = CursorPageResponse.of(
-          List.of(dto), null, null, false, 1, 1L);
+          List.of(dto), null, null, null, false, 1, 1L);
       given(articleRepository.search(any(), eq(requestUserId))).willReturn(expected);
 
       // when
@@ -154,9 +154,9 @@ class ArticleServiceTest {
       // given
       ArticleQueryCondition condition =
           new ArticleQueryCondition(null, null, null, null, null, ArticleOrderBy.VIEW_COUNT,
-              SortDirection.DESC, null, null, 1);
+              SortDirection.DESC, null, null, null, 1);
       CursorPageResponse<ArticleResponse> expected = CursorPageResponse.of(
-          List.of(), "0", null, true, 1, 2L);
+          List.of(), "0", null, null, true, 1, 2L);
       given(articleRepository.search(any(), eq(requestUserId))).willReturn(expected);
 
       // when
@@ -173,9 +173,9 @@ class ArticleServiceTest {
       // given
       ArticleQueryCondition condition =
           new ArticleQueryCondition(null, null, null, null, null, ArticleOrderBy.COMMENT_COUNT,
-              SortDirection.DESC, null, null, 1);
+              SortDirection.DESC, null, null, null, 1);
       CursorPageResponse<ArticleResponse> expected = CursorPageResponse.of(
-          List.of(), "0", null, true, 1, 2L);
+          List.of(), "0", null, null, true, 1, 2L);
       given(articleRepository.search(any(), eq(requestUserId))).willReturn(expected);
 
       // when

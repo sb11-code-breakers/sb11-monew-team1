@@ -386,6 +386,19 @@ public class CommentIntegrationTest {
     }
 
     @Test
+    @DisplayName("after만 있고 cursor가 없으면 400을 반환한다")
+    void after만_있고_cursor가_없으면_400을_반환한다() throws Exception {
+      mockMvc.perform(get("/api/comments")
+              .param("articleId", article.getId().toString())
+              .param("orderBy", "CREATED_AT")
+              .param("direction", "DESC")
+              .param("after", Instant.now().toString())
+              .param("limit", "5")
+              .header("Monew-Request-User-ID", user.getId()))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("댓글 목록 조회 실패 - LIKE_COUNT가 숫자가 아님")
     void 댓글_목록조회_실패_LIKE_COUNT가_숫자아님() throws Exception {
       // given
@@ -438,6 +451,7 @@ public class CommentIntegrationTest {
               .param("direction", "DESC")
               .param("cursor", comment.getCreatedAt().toString())
               .param("after", comment.getCreatedAt().toString())
+              .param("idAfter", comment.getId().toString())
               .param("limit", "5")
               .header("Monew-Request-User-ID", user.getId()))
           .andExpect(status().isOk())
@@ -463,6 +477,7 @@ public class CommentIntegrationTest {
               .param("direction", "DESC")
               .param("cursor", "1")
               .param("after", secondComment.getCreatedAt().toString())
+              .param("idAfter", secondComment.getId().toString())
               .param("limit", "5")
               .header("Monew-Request-User-ID", user.getId()))
           .andExpect(status().isOk())

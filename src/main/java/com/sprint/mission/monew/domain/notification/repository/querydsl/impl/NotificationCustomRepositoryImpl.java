@@ -41,20 +41,23 @@ public class NotificationCustomRepositoryImpl implements NotificationCustomRepos
             cursorCondition(condition)
         )
         .orderBy(
-            buildOrderSpecifier()
+            buildCreatedAtOrderSpecifier(),
+            buildIdOrderSpecifier()
         )
         .limit(condition.limit() + 1L)
         .fetch();
 
-    boolean hasNext = raw.size() > condition.limit();;
+    boolean hasNext = raw.size() > condition.limit();
     List<NotificationResponse> content = hasNext ? raw.subList(0, condition.limit()) : raw;
 
     String nextCursor = null;
     Instant nextAfter = null;
+    UUID nextIdAfter = null;
     if (hasNext && !content.isEmpty()) {
       NotificationResponse last = content.get(content.size() - 1);
       nextCursor = last.createdAt().toString();
       nextAfter = last.createdAt();
+      nextIdAfter = last.id();
     }
 
     Long totalElements = queryFactory
@@ -70,6 +73,7 @@ public class NotificationCustomRepositoryImpl implements NotificationCustomRepos
         content,
         nextCursor,
         nextAfter,
+        nextIdAfter,
         hasNext,
         content.size(),
         totalElements
@@ -86,13 +90,19 @@ public class NotificationCustomRepositoryImpl implements NotificationCustomRepos
 
   private BooleanExpression cursorCondition(NotificationQueryCondition condition) {
     Instant cursor = condition.cursor();
+    UUID idAfter = condition.idAfter();
     if (cursor == null) {
       return null;
     }
-    return notification.createdAt.gt(cursor);
+    return notification.createdAt.gt(cursor)
+        .or(notification.createdAt.eq(cursor).and(notification.id.gt(idAfter)));
   }
 
-  private OrderSpecifier<?> buildOrderSpecifier() {
+  private OrderSpecifier<?> buildCreatedAtOrderSpecifier() {
     return new OrderSpecifier<>(Order.ASC, notification.createdAt);
+  }
+
+  private OrderSpecifier<?> buildIdOrderSpecifier() {
+    return new OrderSpecifier<>(Order.ASC, notification.id);
   }
 }

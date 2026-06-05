@@ -52,9 +52,9 @@ class InterestServiceTest {
       // given
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition = new InterestQueryCondition(
-          "", InterestOrderBy.NAME, SortDirection.DESC, null, null, 10);
+          "", InterestOrderBy.NAME, SortDirection.DESC, null, null, null, 10);
       CursorPageResponse<InterestResponse> expected =
-          CursorPageResponse.of(List.of(), null, null, false, 0, 0L);
+          CursorPageResponse.of(List.of(), null, null, null, false, 0, 0L);
 
       given(interestRepository.findInterests(condition, userId)).willReturn(expected);
 

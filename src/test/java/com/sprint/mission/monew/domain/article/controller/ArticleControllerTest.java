@@ -113,7 +113,7 @@ class ArticleControllerTest {
     void 정상_요청이면_200과_CursorPageResponse를_반환한다() throws Exception {
       // given
       CursorPageResponse<ArticleResponse> response =
-          CursorPageResponse.of(List.of(), null, null, false, 0, 0L);
+          CursorPageResponse.of(List.of(), null, null, null, false, 0, 0L);
       given(articleService.search(any(), any(UUID.class))).willReturn(response);
 
       // when & then

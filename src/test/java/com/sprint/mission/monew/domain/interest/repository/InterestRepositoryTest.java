@@ -81,7 +81,7 @@ class InterestRepositoryTest {
               Interest.create("Baseball", List.of("야구"))));
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
-          new InterestQueryCondition("", InterestOrderBy.NAME, SortDirection.DESC, null, null, 10);
+          new InterestQueryCondition("", InterestOrderBy.NAME, SortDirection.DESC, null, null, null, 10);
 
       // when
       CursorPageResponse<InterestResponse> result =
@@ -107,7 +107,7 @@ class InterestRepositoryTest {
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
-              "Base", InterestOrderBy.NAME, SortDirection.DESC, null, null, 10);
+              "Base", InterestOrderBy.NAME, SortDirection.DESC, null, null, null, 10);
 
       // when
       CursorPageResponse<InterestResponse> result =
@@ -130,7 +130,7 @@ class InterestRepositoryTest {
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
-              "court", InterestOrderBy.NAME, SortDirection.DESC, null, null, 10);
+              "court", InterestOrderBy.NAME, SortDirection.DESC, null, null, null, 10);
 
       // when
       CursorPageResponse<InterestResponse> result =
@@ -152,7 +152,7 @@ class InterestRepositoryTest {
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
-              "baseball", InterestOrderBy.NAME, SortDirection.DESC, null, null, 10);
+              "baseball", InterestOrderBy.NAME, SortDirection.DESC, null, null, null, 10);
 
       // when
       CursorPageResponse<InterestResponse> result =
@@ -174,7 +174,7 @@ class InterestRepositoryTest {
               Interest.create("Baseball", List.of("야구"))));
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
-          new InterestQueryCondition("", InterestOrderBy.NAME, SortDirection.ASC, null, null, 10);
+          new InterestQueryCondition("", InterestOrderBy.NAME, SortDirection.ASC, null, null, null, 10);
 
       // when
       CursorPageResponse<InterestResponse> result =
@@ -200,7 +200,7 @@ class InterestRepositoryTest {
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
-              "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.DESC, null, null, 10);
+              "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.DESC, null, null, null, 10);
 
       // when
       CursorPageResponse<InterestResponse> result =
@@ -226,7 +226,7 @@ class InterestRepositoryTest {
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
-              "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.ASC, null, null, 10);
+              "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.ASC, null, null, null, 10);
 
       // when
       CursorPageResponse<InterestResponse> result =
@@ -249,7 +249,7 @@ class InterestRepositoryTest {
               Interest.create("AI", List.of("인공지능"))));
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
-          new InterestQueryCondition("", InterestOrderBy.NAME, SortDirection.DESC, null, null, 2);
+          new InterestQueryCondition("", InterestOrderBy.NAME, SortDirection.DESC, null, null, null, 2);
 
       // when
       CursorPageResponse<InterestResponse> result =
@@ -276,7 +276,7 @@ class InterestRepositoryTest {
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
-              "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.DESC, null, null, 2);
+              "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.DESC, null, null, null, 2);
 
       // when
       CursorPageResponse<InterestResponse> result =
@@ -303,7 +303,7 @@ class InterestRepositoryTest {
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
-              "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.ASC, null, null, 2);
+              "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.ASC, null, null, null, 2);
 
       // when
       CursorPageResponse<InterestResponse> result =
@@ -329,7 +329,7 @@ class InterestRepositoryTest {
       CursorPageResponse<InterestResponse> firstPage =
           interestRepository.findInterests(
               new InterestQueryCondition(
-                  "", InterestOrderBy.NAME, SortDirection.DESC, null, null, 2),
+                  "", InterestOrderBy.NAME, SortDirection.DESC, null, null, null, 2),
               userId);
 
       // when
@@ -341,6 +341,7 @@ class InterestRepositoryTest {
                   SortDirection.DESC,
                   firstPage.nextCursor(),
                   firstPage.nextAfter(),
+                  firstPage.nextIdAfter(),
                   2),
               userId);
 
@@ -363,7 +364,7 @@ class InterestRepositoryTest {
       CursorPageResponse<InterestResponse> firstPage =
           interestRepository.findInterests(
               new InterestQueryCondition(
-                  "", InterestOrderBy.NAME, SortDirection.ASC, null, null, 2),
+                  "", InterestOrderBy.NAME, SortDirection.ASC, null, null, null, 2),
               userId);
 
       // when
@@ -375,6 +376,7 @@ class InterestRepositoryTest {
                   SortDirection.ASC,
                   firstPage.nextCursor(),
                   firstPage.nextAfter(),
+                  firstPage.nextIdAfter(),
                   2),
               userId);
 
@@ -399,7 +401,7 @@ class InterestRepositoryTest {
       CursorPageResponse<InterestResponse> firstPage =
           interestRepository.findInterests(
               new InterestQueryCondition(
-                  "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.DESC, null, null, 2),
+                  "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.DESC, null, null, null, 2),
               userId);
 
       // when
@@ -411,6 +413,7 @@ class InterestRepositoryTest {
                   SortDirection.DESC,
                   firstPage.nextCursor(),
                   firstPage.nextAfter(),
+                  firstPage.nextIdAfter(),
                   2),
               userId);
 
@@ -435,7 +438,7 @@ class InterestRepositoryTest {
       CursorPageResponse<InterestResponse> firstPage =
           interestRepository.findInterests(
               new InterestQueryCondition(
-                  "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.ASC, null, null, 2),
+                  "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.ASC, null, null, null, 2),
               userId);
 
       // when
@@ -447,6 +450,7 @@ class InterestRepositoryTest {
                   SortDirection.ASC,
                   firstPage.nextCursor(),
                   firstPage.nextAfter(),
+                  firstPage.nextIdAfter(),
                   2),
               userId);
 
@@ -468,7 +472,7 @@ class InterestRepositoryTest {
       em.clear();
 
       InterestQueryCondition condition =
-          new InterestQueryCondition("", InterestOrderBy.NAME, SortDirection.DESC, null, null, 10);
+          new InterestQueryCondition("", InterestOrderBy.NAME, SortDirection.DESC, null, null, null, 10);
 
       // when
       CursorPageResponse<InterestResponse> result =

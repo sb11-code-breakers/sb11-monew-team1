@@ -131,6 +131,20 @@ class ArticleIntegrationTest {
     }
 
     @Test
+    @DisplayName("after만 있고 cursor가 없으면 400을 반환한다")
+    void after만_있고_cursor가_없으면_400을_반환한다() throws Exception {
+      mockMvc
+          .perform(
+              get(URL)
+                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .param("orderBy", "publishDate")
+                  .param("direction", "DESC")
+                  .param("after", "2024-01-01T00:00:00Z")
+                  .param("limit", "10"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("PUBLISH_DATE cursor 형식이 잘못되면 400을 반환한다")
     void PUBLISH_DATE_cursor_형식이_잘못되면_400을_반환한다() throws Exception {
       mockMvc
@@ -156,6 +170,7 @@ class ArticleIntegrationTest {
                   .param("direction", "DESC")
                   .param("cursor", "5")
                   .param("after", "2024-01-01T00:00:00Z")
+                  .param("idAfter", UUID.randomUUID().toString())
                   .param("limit", "10"))
           .andExpect(status().isOk());
     }

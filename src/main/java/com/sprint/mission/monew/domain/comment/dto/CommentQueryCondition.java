@@ -14,12 +14,14 @@ public record CommentQueryCondition(
     @Schema(description = "정렬 방향") @NotNull SortDirection direction,
     @Schema(description = "커서 값") String cursor,
     @Schema(description = "보조 커서 값") Instant after,
+    @Schema(description = "UUID tiebreaker") UUID idAfter,
     @Schema(description = "커서 페이지 크기", example = "50") @NotNull @Min(1) Integer limit
 ) {
 
-  @AssertTrue(message = "cursor와 after는 함께 전달되어야 합니다")
-  public boolean isCursorAndAfterConsistent() {
-    return (cursor == null) == (after == null);
+  @AssertTrue(message = "cursor, after, idAfter는 함께 전달되어야 합니다")
+  public boolean isCursorAndAfterAndIdAfterConsistent() {
+    return (cursor == null && after == null && idAfter == null)
+        || (cursor != null && after != null && idAfter != null);
   }
 
   @AssertTrue(message = "likeCount 기준 커서는 숫자여야 합니다")
