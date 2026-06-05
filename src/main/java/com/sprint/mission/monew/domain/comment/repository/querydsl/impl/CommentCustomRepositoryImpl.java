@@ -1,16 +1,20 @@
 package com.sprint.mission.monew.domain.comment.repository.querydsl.impl;
 
+import static com.sprint.mission.monew.domain.comment.entity.QComment.comment;
+import static com.sprint.mission.monew.domain.comment.entity.QCommentLike.commentLike;
+
+import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.ComparableExpression;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.common.dto.SortDirection;
 import com.sprint.mission.monew.domain.comment.dto.CommentOrderBy;
 import com.sprint.mission.monew.domain.comment.dto.CommentQueryCondition;
 import com.sprint.mission.monew.domain.comment.dto.CommentResponse;
-import com.sprint.mission.monew.domain.comment.entity.QComment;
-import com.sprint.mission.monew.domain.comment.entity.QCommentLike;
 import com.sprint.mission.monew.domain.comment.repository.querydsl.CommentCustomRepository;
 import java.time.Instant;
 import java.util.List;
@@ -23,13 +27,10 @@ import org.springframework.stereotype.Repository;
 public class CommentCustomRepositoryImpl implements CommentCustomRepository {
 
   private final JPAQueryFactory queryFactory;
-  private final QComment comment = QComment.comment;
-  private final QCommentLike commentLike = QCommentLike.commentLike;
 
   @Override
   public CursorPageResponse<CommentResponse> getComments(CommentQueryCondition condition, UUID userId) {
-
-    List<CommentResponse> comments = queryFactory.select(Projections.constructor(
+    List<CommentResponse> raw = queryFactory.select(Projections.constructor(
             CommentResponse.class,
             comment.id,
             comment.article.id,
@@ -42,106 +43,91 @@ public class CommentCustomRepositoryImpl implements CommentCustomRepository {
         ))
         .from(comment)
         .leftJoin(comment.user)
-        .leftJoin(commentLike)
-        .on(
-            commentLike.user.id.eq(userId)
-                .and(commentLike.comment.id.eq(comment.id))
+        .leftJoin(commentLike).on(
+            commentLike.user.id.eq(userId).and(commentLike.comment.id.eq(comment.id))
         )
-        .where(comment.article.id.eq(condition.articleId()),
-            comment.deletedAt.isNull(),
-            condition.orderBy() == CommentOrderBy.CREATED_AT ?
-                createdAtCursorCondition(condition) : likeCountCursorCondition(condition))
+        .where(
+            eqArticleId(condition.articleId()),
+            isNullDeletedAt(),
+            cursorCondition(condition)
+        )
         .orderBy(
-            // 1순위 등록순일지 좋아요순일지 결정
-            condition.orderBy() == CommentOrderBy.CREATED_AT ?
-                createdAtOrder(condition) : likeCountOrder(condition),
-
-            // 2순위 등록순 추가
-            createdAtOrder(condition)
+            buildOrderSpecifiers(condition.orderBy(), condition.direction())
         )
-        .limit(condition.limit() + 1)
+        .limit(condition.limit() + 1L)
         .fetch();
 
-    boolean hasNext = comments.size() > condition.limit();
-    List<CommentResponse> pageComments = hasNext ? comments.subList(0, condition.limit()) : comments;
+    boolean hasNext = raw.size() > condition.limit();
+    List<CommentResponse> content = hasNext ? raw.subList(0, condition.limit()) : raw;
 
     String nextCursor = null;
     Instant nextAfter = null;
-
-    if (!pageComments.isEmpty()) {
-      CommentResponse lastComment = pageComments.get(pageComments.size() - 1);
-
-      nextCursor = createNextCursor(lastComment, condition);
-      nextAfter = lastComment.createdAt();
+    if (hasNext && !content.isEmpty()) {
+      CommentResponse last = content.get(content.size() - 1);
+      nextCursor = extractCursor(last, condition.orderBy());
+      nextAfter = last.createdAt();
     }
 
     return CursorPageResponse.of(
-        pageComments,
+        content,
         nextCursor,
         nextAfter,
         hasNext,
-        pageComments.size(),
-        countByArticleId(condition.articleId())
+        content.size(),
+        null
     );
   }
 
-  // 오름차순/내림차순 정렬(등록순)
-  private OrderSpecifier<?> createdAtOrder(CommentQueryCondition condition) {
-    return condition.direction() == SortDirection.ASC ?
-        comment.createdAt.asc() : comment.createdAt.desc();
-  }
-
-  // 오름차순/내림차순 정렬(좋아요순)
-  private OrderSpecifier<?> likeCountOrder(CommentQueryCondition condition) {
-    return condition.direction() == SortDirection.ASC ?
-        comment.likeCount.asc() : comment.likeCount.desc();
-  }
-
-  // 등록순 커서
-  private BooleanExpression createdAtCursorCondition(CommentQueryCondition condition) {
-    if (condition.cursor() == null) {
-      return null;
-    }
-
-    Instant cursor = Instant.parse(condition.cursor());
-
-    // lt = less than(createdAt < cursor)
-    return condition.direction() == SortDirection.ASC ?
-        comment.createdAt.gt(cursor) : comment.createdAt.lt(cursor);
-  }
-
-  // 좋아요순 커서
-  private BooleanExpression likeCountCursorCondition(CommentQueryCondition condition) {
-    if (condition.cursor() == null || condition.after() == null) {
-      return null;
-    }
-
-    long likeCursor = Long.parseLong(condition.cursor());
-    Instant createdAtCursor = condition.after();
-
-    return condition.direction() == SortDirection.ASC ?
-        comment.likeCount.gt(likeCursor)
-            .or(comment.likeCount.eq(likeCursor)
-                .and(comment.createdAt.gt(createdAtCursor)))
-        : comment.likeCount.lt(likeCursor)
-            .or(comment.likeCount.eq(likeCursor)
-                .and(comment.createdAt.lt(createdAtCursor)));
-  }
-
-  private String createNextCursor(CommentResponse lastComment, CommentQueryCondition condition) {
-    return switch (condition.orderBy()) {
-      case CREATED_AT -> lastComment.createdAt().toString();
-      case LIKE_COUNT -> String.valueOf(lastComment.likeCount());
+  private OrderSpecifier<?>[] buildOrderSpecifiers(CommentOrderBy orderBy, SortDirection direction) {
+    Order dir = direction == SortDirection.ASC ? Order.ASC : Order.DESC;
+    return switch (orderBy) {
+      case CREATED_AT -> new OrderSpecifier<?>[] {
+          new OrderSpecifier<>(dir, comment.createdAt)
+      };
+      case LIKE_COUNT -> new OrderSpecifier<?>[] {
+          new OrderSpecifier<>(dir, comment.likeCount),
+          new OrderSpecifier<>(dir, comment.createdAt)
+      };
     };
   }
 
-  @Override
-  public long countByArticleId(UUID articleId) {
-    Long count = queryFactory.select(comment.count()).from(comment)
-        .where(comment.article.id.eq(articleId),
-            comment.deletedAt.isNull()) // 논리 삭제는 조회 안되도록
-        .fetchOne();
+  private BooleanExpression eqArticleId(UUID articleId) {
+    return comment.article.id.eq(articleId);
+  }
 
-    return count != null ? count : 0L;
+  private BooleanExpression isNullDeletedAt() {
+    return comment.deletedAt.isNull();
+  }
+
+  private BooleanExpression cursorCondition(CommentQueryCondition condition) {
+    String cursor = condition.cursor();
+    Instant after = condition.after();
+    boolean isAsc = condition.direction() == SortDirection.ASC;
+    if (cursor == null) {
+      return null;
+    }
+    return switch (condition.orderBy()) {
+      case CREATED_AT -> buildCursorExpression(comment.createdAt, Instant.parse(cursor), isAsc);
+      case LIKE_COUNT -> buildCursorExpression(comment.likeCount, Long.parseLong(cursor), after, isAsc);
+    };
+  }
+
+  private BooleanExpression buildCursorExpression(
+      ComparableExpression<Instant> field, Instant cursorValue, boolean isAsc) {
+    return isAsc ? field.gt(cursorValue) : field.lt(cursorValue);
+  }
+
+  private BooleanExpression buildCursorExpression(
+      NumberExpression<Long> field, long cursorValue, Instant after, boolean isAsc) {
+    return isAsc
+        ? field.gt(cursorValue).or(field.eq(cursorValue).and(comment.createdAt.gt(after)))
+        : field.lt(cursorValue).or(field.eq(cursorValue).and(comment.createdAt.lt(after)));
+  }
+
+  private String extractCursor(CommentResponse last, CommentOrderBy orderBy) {
+    return switch (orderBy) {
+      case CREATED_AT -> last.createdAt().toString();
+      case LIKE_COUNT -> String.valueOf(last.likeCount());
+    };
   }
 }

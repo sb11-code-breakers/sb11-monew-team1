@@ -60,7 +60,8 @@ public class NotificationIntegrationTest {
 
       // when & then
       mockMvc.perform(get("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", user.getId())
+              .param("limit", "10"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(1))
           .andExpect(jsonPath("$.totalElements").value(1))
@@ -87,7 +88,8 @@ public class NotificationIntegrationTest {
 
       // when & then
       mockMvc.perform(get("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", user.getId())
+              .param("limit", "10"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(1))
           .andExpect(jsonPath("$.totalElements").value(1))
@@ -112,6 +114,33 @@ public class NotificationIntegrationTest {
           .andExpect(jsonPath("$.hasNext").value(true))
           .andExpect(jsonPath("$.nextCursor").exists())
           .andExpect(jsonPath("$.nextAfter").exists());
+    }
+
+    @Test
+    @DisplayName("cursor만 있고 after가 없으면 400을 반환한다")
+    void cursor만_있고_after가_없으면_400을_반환한다() throws Exception {
+      mockMvc.perform(get("/api/notifications")
+              .header("Monew-Request-User-ID", user.getId())
+              .param("limit", "10")
+              .param("cursor", "1970-01-01T00:00:00Z"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("cursor가 있으면 cursor 이후 알림만 반환한다")
+    void cursor가_있으면_cursor_이후_알림만_반환한다() throws Exception {
+      // given
+      notificationRepository.save(
+          Notification.create(user.getId(), "알림", ResourceType.INTEREST, UUID.randomUUID()));
+
+      // when & then — cursor=Instant.EPOCH → createdAt > Instant.EPOCH인 알림 1건 반환
+      mockMvc.perform(get("/api/notifications")
+              .header("Monew-Request-User-ID", user.getId())
+              .param("limit", "10")
+              .param("cursor", "1970-01-01T00:00:00Z")
+              .param("after", "1970-01-01T00:00:00Z"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.content.length()").value(1));
     }
 
     @Test
@@ -257,7 +286,8 @@ public class NotificationIntegrationTest {
 
       // then — 목록 조회 시 0건
       mockMvc.perform(get("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", user.getId())
+              .param("limit", "10"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(0))
           .andExpect(jsonPath("$.totalElements").value(0))

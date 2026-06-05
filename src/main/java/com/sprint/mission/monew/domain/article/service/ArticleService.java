@@ -11,9 +11,6 @@ import com.sprint.mission.monew.domain.article.mapper.ArticleMapper;
 import com.sprint.mission.monew.domain.article.mapper.ArticleViewMapper;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
-import java.time.Instant;
-import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,32 +29,7 @@ public class ArticleService {
   private final ArticleViewMapper articleViewMapper;
 
   public CursorPageResponse<ArticleResponse> search(ArticleQueryCondition condition, UUID requestUserId) {
-    long totalElements = articleRepository.count(condition);
-    List<Article> articles = articleRepository.findAll(condition);
-
-    boolean hasNext = articles.size() > condition.limit();
-    List<Article> page = hasNext ? articles.subList(0, condition.limit()) : articles;
-
-    List<UUID> articleIds = page.stream().map(Article::getId).toList();
-    Set<UUID> viewedIds =
-        articleIds.isEmpty()
-            ? Set.of()
-            : articleViewRepository.findArticleIdsByArticleIdsAndUserId(articleIds, requestUserId);
-
-    List<ArticleResponse> content =
-        page.stream()
-            .map(a -> articleMapper.toResponse(a, viewedIds.contains(a.getId())))
-            .toList();
-
-    String nextCursor = null;
-    Instant nextAfter = null;
-    if (hasNext && !page.isEmpty()) {
-      Article last = page.get(page.size() - 1);
-      nextCursor = articleRepository.buildCursor(last, condition.orderBy());
-      nextAfter = last.getCreatedAt();
-    }
-
-    return CursorPageResponse.of(content, nextCursor, nextAfter, hasNext, content.size(), totalElements);
+    return articleRepository.search(condition, requestUserId);
   }
 
   public ArticleResponse getArticle(UUID articleId, UUID requestUserId) {

@@ -8,7 +8,4 @@ import java.util.UUID;
 public interface CommentCustomRepository {
 
   CursorPageResponse<CommentResponse> getComments(CommentQueryCondition condition, UUID userId);
-
-  long countByArticleId(UUID articleId);
-
 }

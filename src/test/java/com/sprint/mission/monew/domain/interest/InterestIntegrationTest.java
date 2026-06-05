@@ -70,8 +70,7 @@ class InterestIntegrationTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content").isArray())
           .andExpect(jsonPath("$.content").isEmpty())
-          .andExpect(jsonPath("$.hasNext").value(false))
-          .andExpect(jsonPath("$.totalElements").value(0));
+          .andExpect(jsonPath("$.hasNext").value(false));
     }
 
     @Test
@@ -89,8 +88,7 @@ class InterestIntegrationTest {
                   .param("direction", "ASC")
                   .param("limit", "10"))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.content[0].name").value("인공지능"))
-          .andExpect(jsonPath("$.totalElements").value(1));
+          .andExpect(jsonPath("$.content[0].name").value("인공지능"));
     }
 
     @Test

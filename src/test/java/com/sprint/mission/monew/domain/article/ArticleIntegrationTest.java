@@ -63,8 +63,7 @@ class ArticleIntegrationTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content").isArray())
           .andExpect(jsonPath("$.content").isEmpty())
-          .andExpect(jsonPath("$.hasNext").value(false))
-          .andExpect(jsonPath("$.totalElements").value(0));
+          .andExpect(jsonPath("$.hasNext").value(false));
     }
 
     @Test
@@ -89,8 +88,7 @@ class ArticleIntegrationTest {
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content").isArray())
           .andExpect(jsonPath("$.content[0].title").value("테스트 기사"))
-          .andExpect(jsonPath("$.content[0].source").value("NAVER"))
-          .andExpect(jsonPath("$.totalElements").value(1));
+          .andExpect(jsonPath("$.content[0].source").value("NAVER"));
     }
 
     @Test
@@ -115,8 +113,66 @@ class ArticleIntegrationTest {
                   .param("direction", "DESC")
                   .param("limit", "10"))
           .andExpect(status().isOk())
-          .andExpect(jsonPath("$.content").isEmpty())
-          .andExpect(jsonPath("$.totalElements").value(0));
+          .andExpect(jsonPath("$.content").isEmpty());
+    }
+
+    @Test
+    @DisplayName("cursor만 있고 after가 없으면 400을 반환한다")
+    void cursor만_있고_after가_없으면_400을_반환한다() throws Exception {
+      mockMvc
+          .perform(
+              get(URL)
+                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .param("orderBy", "publishDate")
+                  .param("direction", "DESC")
+                  .param("cursor", "2024-01-01T00:00:00Z")
+                  .param("limit", "10"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PUBLISH_DATE cursor 형식이 잘못되면 400을 반환한다")
+    void PUBLISH_DATE_cursor_형식이_잘못되면_400을_반환한다() throws Exception {
+      mockMvc
+          .perform(
+              get(URL)
+                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .param("orderBy", "publishDate")
+                  .param("direction", "DESC")
+                  .param("cursor", "not-an-instant")
+                  .param("after", "2024-01-01T00:00:00Z")
+                  .param("limit", "10"))
+          .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("COMMENT_COUNT cursor가 있으면 정상 응답을 반환한다")
+    void COMMENT_COUNT_cursor가_있으면_정상_응답을_반환한다() throws Exception {
+      mockMvc
+          .perform(
+              get(URL)
+                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .param("orderBy", "commentCount")
+                  .param("direction", "DESC")
+                  .param("cursor", "5")
+                  .param("after", "2024-01-01T00:00:00Z")
+                  .param("limit", "10"))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("COMMENT_COUNT cursor 형식이 잘못되면 400을 반환한다")
+    void COMMENT_COUNT_cursor_형식이_잘못되면_400을_반환한다() throws Exception {
+      mockMvc
+          .perform(
+              get(URL)
+                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .param("orderBy", "commentCount")
+                  .param("direction", "DESC")
+                  .param("cursor", "notANumber")
+                  .param("after", "2024-01-01T00:00:00Z")
+                  .param("limit", "10"))
+          .andExpect(status().isBadRequest());
     }
 
     @Test

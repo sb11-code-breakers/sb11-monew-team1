@@ -263,6 +263,60 @@ class InterestRepositoryTest {
     }
 
     @Test
+    @DisplayName("SUBSCRIBER_COUNT 정렬 hasNext=true 시 nextCursor는 정수 문자열이다")
+    void SUBSCRIBER_COUNT_hasNext_true_시_nextCursor는_정수다() {
+      // given — DESC: Soccer(2), Tennis(1), AI(0)
+      Interest soccer = Interest.create("Soccer", List.of("football"));
+      Interest tennis = Interest.create("Tennis", List.of("racket"));
+      Interest ai = Interest.create("AI", List.of("인공지능"));
+      soccer.increaseSubscriberCount();
+      soccer.increaseSubscriberCount();
+      tennis.increaseSubscriberCount();
+      interestRepository.saveAll(List.of(soccer, tennis, ai));
+      UUID userId = UUID.randomUUID();
+      InterestQueryCondition condition =
+          new InterestQueryCondition(
+              "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.DESC, null, null, 2);
+
+      // when
+      CursorPageResponse<InterestResponse> result =
+          interestRepository.findInterests(condition, userId);
+
+      // then — 첫 페이지 마지막은 Tennis(subscriberCount=1)
+      assertThat(result.hasNext()).isTrue();
+      assertThat(result.content()).hasSize(2);
+      assertThat(result.nextCursor()).isEqualTo("1");
+      assertThat(result.nextAfter()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("SUBSCRIBER_COUNT ASC 정렬 hasNext=true 시 nextCursor는 정수 문자열이다")
+    void SUBSCRIBER_COUNT_ASC_hasNext_true_시_nextCursor는_정수다() {
+      // given — ASC: AI(0), Tennis(1), Soccer(2)
+      Interest soccer = Interest.create("Soccer", List.of("football"));
+      Interest tennis = Interest.create("Tennis", List.of("racket"));
+      Interest ai = Interest.create("AI", List.of("인공지능"));
+      soccer.increaseSubscriberCount();
+      soccer.increaseSubscriberCount();
+      tennis.increaseSubscriberCount();
+      interestRepository.saveAll(List.of(soccer, tennis, ai));
+      UUID userId = UUID.randomUUID();
+      InterestQueryCondition condition =
+          new InterestQueryCondition(
+              "", InterestOrderBy.SUBSCRIBER_COUNT, SortDirection.ASC, null, null, 2);
+
+      // when
+      CursorPageResponse<InterestResponse> result =
+          interestRepository.findInterests(condition, userId);
+
+      // then — 첫 페이지 마지막은 Tennis(subscriberCount=1)
+      assertThat(result.hasNext()).isTrue();
+      assertThat(result.content()).hasSize(2);
+      assertThat(result.nextCursor()).isEqualTo("1");
+      assertThat(result.nextAfter()).isNotNull();
+    }
+
+    @Test
     @DisplayName("cursor 기반으로 다음 페이지를 조회한다")
     void cursor_기반으로_다음_페이지를_조회한다() {
       // given
