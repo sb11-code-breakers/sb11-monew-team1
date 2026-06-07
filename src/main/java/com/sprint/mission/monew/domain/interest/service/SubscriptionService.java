@@ -42,9 +42,9 @@ public class SubscriptionService {
     }
     try {
       Subscription saved = subscriptionRepository.saveAndFlush(Subscription.create(interest, user));
-      interest.increaseSubscriberCount();
+      interestRepository.increaseSubscriberCount(interestId);
       log.info("관심사 구독 완료 | interestId={}, userId={}", interestId, userId);
-      return subscriptionMapper.toResponse(saved);
+      return subscriptionMapper.toResponse(saved, interest.getSubscriberCount() + 1);
     } catch (DataIntegrityViolationException e) {
       throw SubscriptionAlreadyExistsException.withIds(interestId, userId);
     }
@@ -53,14 +53,19 @@ public class SubscriptionService {
   @Transactional
   public void unsubscribe(UUID interestId, UUID userId) {
     log.debug("관심사 구독 취소 시작 | interestId={}, userId={}", interestId, userId);
-    Interest interest = interestRepository.findById(interestId)
-        .orElseThrow(() -> InterestNotFoundException.withId(interestId));
+    if (!interestRepository.existsById(interestId)) {
+      throw InterestNotFoundException.withId(interestId);
+    }
 
-    Subscription subscription = subscriptionRepository.findByInterestIdAndUserId(interestId, userId)
-        .orElseThrow(() -> SubscriptionNotFoundException.withIds(interestId, userId));
+    int deleted = subscriptionRepository.deleteByInterestIdAndUserId(interestId, userId);
+    if (deleted == 0) {
+      throw SubscriptionNotFoundException.withIds(interestId, userId);
+    }
 
-    interest.decreaseSubscriberCount();
-    subscriptionRepository.delete(subscription);
+    int decreased = interestRepository.decreaseSubscriberCount(interestId);
+    if (decreased == 0) {
+      log.warn("구독은 삭제됐으나 subscriberCount가 이미 0이라 감소되지 않음 | interestId={}", interestId);
+    }
     log.info("관심사 구독 취소 완료 | interestId={}, userId={}", interestId, userId);
   }
 }

@@ -1,9 +1,13 @@
 package com.sprint.mission.monew.domain.user.repository;
 
+import com.sprint.mission.monew.batch.dto.UserCleanupItem;
 import com.sprint.mission.monew.domain.user.entity.User;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -22,4 +26,24 @@ public interface UserRepository extends JpaRepository<User, UUID> {
   @Modifying
   @Query("DELETE FROM User u WHERE u.deletedAt < :threshold")
   int deleteAllByDeletedAtBefore(@Param("threshold") Instant threshold);
+
+  @Query("""
+      SELECT new com.sprint.mission.monew.batch.dto.UserCleanupItem(
+          u.id,
+          u.deletedAt
+      )
+      FROM User u
+      WHERE u.deletedAt < :threshold
+      AND (
+          u.deletedAt > :lastDeletedAt
+          OR (u.deletedAt = :lastDeletedAt AND u.id > :lastId)
+      )
+      ORDER BY u.deletedAt ASC, u.id ASC
+      """)
+  List<UserCleanupItem> findUsersForCleanup(
+      @Param("threshold") Instant threshold,
+      @Param("lastDeletedAt") Instant lastDeletedAt,
+      @Param("lastId") UUID lastId,
+      Pageable pageable
+  );
 }

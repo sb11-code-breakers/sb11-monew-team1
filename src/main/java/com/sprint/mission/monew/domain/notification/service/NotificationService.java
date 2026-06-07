@@ -38,14 +38,6 @@ public class NotificationService {
   }
 
   @Transactional
-  public void deleteExpiredNotifications() {
-    Instant cutoff = Instant.now().minus(7, ChronoUnit.DAYS);
-    int deleted = notificationRepository.deleteConfirmedBefore(cutoff);
-    notificationMetrics.countDeleted(deleted);
-    log.info("만료 알림 삭제 완료 | count={}", deleted);
-  }
-
-  @Transactional
   public void createArticleNotifications(UUID interestId, String message, List<UUID> subscriberIds) {
     if (subscriberIds.isEmpty()) {
       return;

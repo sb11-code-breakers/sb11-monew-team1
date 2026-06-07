@@ -2,6 +2,7 @@ package com.sprint.mission.monew.domain.notification.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.sprint.mission.monew.batch.dto.NotificationCleanupItem;
 import com.sprint.mission.monew.common.config.JpaConfig;
 import com.sprint.mission.monew.common.config.QuerydslConfig;
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
@@ -23,7 +24,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -264,6 +267,40 @@ class NotificationRepositoryTest {
       // then
       assertThat(deleted).isEqualTo(1);
       assertThat(notificationRepository.findAll()).isEmpty();
+    }
+  }
+
+  @Nested
+  @DisplayName("confirmedAt + id 기준 cursor 조회가 정렬된 순서로 반환하기")
+  class FindNotificationsForCleanup {
+
+    @Test
+    @DisplayName("confirmedAt + id 기준 cursor 조회가 정렬된 순서로 반환된다")
+    void findNotificationsForCleanup_ordering_test() {
+      Instant cutoff = Instant.now();
+
+      Notification notification1 =
+          Notification.create(userId, "삭제될 알림", ResourceType.INTEREST, UUID.randomUUID());
+      Notification notification2 =
+          Notification.create(userId, "남아있을 알림", ResourceType.INTEREST, UUID.randomUUID());
+
+      ReflectionTestUtils.setField(notification1, "confirmedAt", cutoff.minusSeconds(100));
+      ReflectionTestUtils.setField(notification2, "confirmedAt", cutoff.plusSeconds(100));
+
+      notificationRepository.save(notification1);
+      notificationRepository.save(notification2);
+
+      List<NotificationCleanupItem> result =
+          notificationRepository.findNotificationsForCleanup(
+              cutoff,
+              Instant.EPOCH,
+              UUID.randomUUID(),
+              PageRequest.of(0, 10)
+          );
+
+      assertThat(result)
+          .extracting(NotificationCleanupItem::id)
+          .containsExactly(notification1.getId());
     }
   }
 }

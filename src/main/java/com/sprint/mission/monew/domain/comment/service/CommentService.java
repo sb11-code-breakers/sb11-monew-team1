@@ -52,6 +52,7 @@ public class CommentService {
 
     Comment comment = Comment.create(article, user, request.content());
     Comment savedComment = commentRepository.save(comment);
+    articleRepository.increaseCommentCount(request.articleId());
 
     log.info("댓글 생성 완료 | commentId={}, articleId={}, userId={}",
         savedComment.getId(), request.articleId(), request.userId());
@@ -91,7 +92,11 @@ public class CommentService {
       throw CommentAccessDeniedException.withId(commentId);
     }
 
-    comment.softDelete();
+    if (!comment.isDeleted()) {
+      UUID articleId = comment.getArticle().getId();
+      comment.softDelete();
+      articleRepository.decreaseCommentCount(articleId);
+    }
 
     log.info("댓글 논리 삭제 완료 | commentId={}, userId={}", commentId, userId);
   }
@@ -104,7 +109,12 @@ public class CommentService {
         () -> CommentNotFoundException.withId(commentId)
     );
 
+    boolean wasVisible = !comment.isDeleted();
+    UUID articleId = comment.getArticle().getId();
     commentRepository.delete(comment);
+    if (wasVisible) {
+      articleRepository.decreaseCommentCount(articleId);
+    }
 
     log.info("댓글 물리 삭제 완료 | commentId={}", commentId);
   }

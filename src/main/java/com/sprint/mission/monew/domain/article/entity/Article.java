@@ -50,10 +50,6 @@ public class Article extends BaseSoftDeletableEntity {
     return article;
   }
 
-  public void incrementViewCount() {
-    this.viewCount++;
-  }
-
   public void update(String title, String summary) {
     this.title = title;
     this.summary = summary;

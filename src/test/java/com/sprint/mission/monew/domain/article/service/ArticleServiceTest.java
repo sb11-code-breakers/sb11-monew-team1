@@ -3,6 +3,7 @@ package com.sprint.mission.monew.domain.article.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -301,17 +302,15 @@ class ArticleServiceTest {
       given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
       given(articleViewRepository.findByArticleIdAndUserId(eq(article.getId()), eq(requestUserId)))
           .willReturn(Optional.of(existingView));
-      given(articleViewMapper.toResponse(eq(existingView))).willReturn(dto);
-
-      int viewCountBefore = article.getViewCount();
+      given(articleViewMapper.toResponse(eq(existingView), anyInt())).willReturn(dto);
 
       // when
       ArticleViewResponse result = articleService.registerView(article.getId(), requestUserId);
 
       // then
       assertThat(result).isEqualTo(dto);
-      assertThat(article.getViewCount()).isEqualTo(viewCountBefore);
       verify(articleViewRepository, never()).save(any());
+      verify(articleRepository, never()).increaseViewCount(any());
     }
 
     @Test
@@ -330,7 +329,7 @@ class ArticleServiceTest {
       given(articleViewRepository.findByArticleIdAndUserId(eq(article.getId()), eq(requestUserId)))
           .willReturn(Optional.empty());
       given(articleViewRepository.save(any(ArticleView.class))).willReturn(newView);
-      given(articleViewMapper.toResponse(eq(newView))).willReturn(dto);
+      given(articleViewMapper.toResponse(eq(newView), anyInt())).willReturn(dto);
 
       int viewCountBefore = article.getViewCount();
 
@@ -339,7 +338,9 @@ class ArticleServiceTest {
 
       // then
       assertThat(result).isEqualTo(dto);
-      assertThat(article.getViewCount()).isEqualTo(viewCountBefore + 1);
+      verify(articleViewRepository).save(any(ArticleView.class));
+      verify(articleRepository).increaseViewCount(eq(article.getId()));
+      verify(articleViewMapper).toResponse(eq(newView), eq(viewCountBefore + 1));
     }
   }
 

@@ -9,10 +9,12 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", imports = InterestKeyword.class)
 public interface SubscriptionMapper {
 
-  @Mapping(target = "interestId", source = "interest.id")
-  @Mapping(target = "interestName", source = "interest.name")
+  @Mapping(target = "id", source = "subscription.id")
+  @Mapping(target = "createdAt", source = "subscription.createdAt")
+  @Mapping(target = "interestId", source = "subscription.interest.id")
+  @Mapping(target = "interestName", source = "subscription.interest.name")
   @Mapping(target = "interestKeywords",
       expression = "java(subscription.getInterest().getKeywords().stream().map(InterestKeyword::getKeyword).toList())")
-  @Mapping(target = "interestSubscriberCount", source = "interest.subscriberCount")
-  SubscriptionResponse toResponse(Subscription subscription);
+  @Mapping(target = "interestSubscriberCount", source = "subscriberCount")
+  SubscriptionResponse toResponse(Subscription subscription, long subscriberCount);
 }

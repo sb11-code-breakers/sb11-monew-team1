@@ -48,15 +48,4 @@ public class Interest extends BaseUpdatableEntity {
         .map(k -> InterestKeyword.create(this, k))
         .forEach(this.keywords::add);
   }
-
-  public void increaseSubscriberCount() {
-    this.subscriberCount++;
-  }
-
-  public void decreaseSubscriberCount() {
-    if (this.subscriberCount <= 0) {
-      throw new IllegalStateException("subscriberCount는 0보다 작아질 수 없습니다.");
-    }
-    this.subscriberCount--;
-  }
 }

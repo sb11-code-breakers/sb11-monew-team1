@@ -193,10 +193,10 @@ class InterestRepositoryTest {
       Interest soccer = Interest.create("Soccer", List.of("football"));
       Interest tennis = Interest.create("Tennis", List.of("racket"));
       Interest ai = Interest.create("AI", List.of("인공지능"));
-      soccer.increaseSubscriberCount();
-      soccer.increaseSubscriberCount(); // 2
-      tennis.increaseSubscriberCount(); // 1
       interestRepository.saveAll(List.of(soccer, tennis, ai));
+      interestRepository.increaseSubscriberCount(soccer.getId());
+      interestRepository.increaseSubscriberCount(soccer.getId()); // 2
+      interestRepository.increaseSubscriberCount(tennis.getId()); // 1
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
@@ -219,10 +219,10 @@ class InterestRepositoryTest {
       Interest soccer = Interest.create("Soccer", List.of("football"));
       Interest tennis = Interest.create("Tennis", List.of("racket"));
       Interest ai = Interest.create("AI", List.of("인공지능"));
-      soccer.increaseSubscriberCount();
-      soccer.increaseSubscriberCount(); // 2
-      tennis.increaseSubscriberCount(); // 1
       interestRepository.saveAll(List.of(soccer, tennis, ai));
+      interestRepository.increaseSubscriberCount(soccer.getId());
+      interestRepository.increaseSubscriberCount(soccer.getId()); // 2
+      interestRepository.increaseSubscriberCount(tennis.getId()); // 1
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
@@ -269,10 +269,10 @@ class InterestRepositoryTest {
       Interest soccer = Interest.create("Soccer", List.of("football"));
       Interest tennis = Interest.create("Tennis", List.of("racket"));
       Interest ai = Interest.create("AI", List.of("인공지능"));
-      soccer.increaseSubscriberCount();
-      soccer.increaseSubscriberCount();
-      tennis.increaseSubscriberCount();
       interestRepository.saveAll(List.of(soccer, tennis, ai));
+      interestRepository.increaseSubscriberCount(soccer.getId());
+      interestRepository.increaseSubscriberCount(soccer.getId());
+      interestRepository.increaseSubscriberCount(tennis.getId());
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
@@ -296,10 +296,10 @@ class InterestRepositoryTest {
       Interest soccer = Interest.create("Soccer", List.of("football"));
       Interest tennis = Interest.create("Tennis", List.of("racket"));
       Interest ai = Interest.create("AI", List.of("인공지능"));
-      soccer.increaseSubscriberCount();
-      soccer.increaseSubscriberCount();
-      tennis.increaseSubscriberCount();
       interestRepository.saveAll(List.of(soccer, tennis, ai));
+      interestRepository.increaseSubscriberCount(soccer.getId());
+      interestRepository.increaseSubscriberCount(soccer.getId());
+      interestRepository.increaseSubscriberCount(tennis.getId());
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
@@ -393,10 +393,10 @@ class InterestRepositoryTest {
       Interest soccer = Interest.create("Soccer", List.of("football"));
       Interest tennis = Interest.create("Tennis", List.of("racket"));
       Interest ai = Interest.create("AI", List.of("인공지능"));
-      soccer.increaseSubscriberCount();
-      soccer.increaseSubscriberCount();
-      tennis.increaseSubscriberCount();
       interestRepository.saveAll(List.of(soccer, tennis, ai));
+      interestRepository.increaseSubscriberCount(soccer.getId());
+      interestRepository.increaseSubscriberCount(soccer.getId());
+      interestRepository.increaseSubscriberCount(tennis.getId());
       UUID userId = UUID.randomUUID();
       CursorPageResponse<InterestResponse> firstPage =
           interestRepository.findInterests(
@@ -430,10 +430,10 @@ class InterestRepositoryTest {
       Interest soccer = Interest.create("Soccer", List.of("football"));
       Interest tennis = Interest.create("Tennis", List.of("racket"));
       Interest ai = Interest.create("AI", List.of("인공지능"));
-      soccer.increaseSubscriberCount();
-      soccer.increaseSubscriberCount();
-      tennis.increaseSubscriberCount();
       interestRepository.saveAll(List.of(soccer, tennis, ai));
+      interestRepository.increaseSubscriberCount(soccer.getId());
+      interestRepository.increaseSubscriberCount(soccer.getId());
+      interestRepository.increaseSubscriberCount(tennis.getId());
       UUID userId = UUID.randomUUID();
       CursorPageResponse<InterestResponse> firstPage =
           interestRepository.findInterests(

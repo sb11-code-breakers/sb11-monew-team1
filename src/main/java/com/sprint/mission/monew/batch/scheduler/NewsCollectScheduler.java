@@ -1,5 +1,7 @@
-package com.sprint.mission.monew.batch;
+package com.sprint.mission.monew.batch.scheduler;
 
+import com.sprint.mission.monew.batch.service.NewsCollectService;
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -14,10 +16,11 @@ public class NewsCollectScheduler {
 
   private final NewsCollectService newsCollectService;
 
+  @Timed(value = "monew.news.collect.job.duration", description = "뉴스 수집 배치 Job 전체 소요 시간")
   @Scheduled(cron = "${scheduler.news-collect.cron}")
-  public void collect() {
+  public void collect() throws Exception {
     log.info("뉴스 수집 배치 시작");
-    newsCollectService.collect();
+    newsCollectService.executeCollect();
     log.info("뉴스 수집 배치 완료");
   }
 }

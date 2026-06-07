@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
@@ -152,6 +153,7 @@ public class CommentServiceTest {
       verify(articleRepository).findById(articleId);
       verify(userRepository).findById(userId);
       verify(commentRepository).save(any(Comment.class));
+      verify(articleRepository).increaseCommentCount(articleId);
       verify(commentMapper).toResponse(any(Comment.class), eq(false));
     }
   }
@@ -263,6 +265,22 @@ public class CommentServiceTest {
 
       // then
       assertThat(comment.isDeleted()).isTrue();
+      verify(articleRepository).decreaseCommentCount(article.getId());
+    }
+
+    @Test
+    @DisplayName("이미 논리삭제되어 카운트에서 빠진 댓글은 다시 논리삭제해도 중복 차감하지 않는다")
+    void 이미_논리삭제된_댓글은_다시_논리삭제해도_중복_차감하지_않는다() {
+      // given
+      Comment comment = Comment.create(article, user, content);
+      comment.softDelete();
+      given(commentRepository.findById(comment.getId())).willReturn(Optional.of(comment));
+
+      // when
+      commentService.softDelete(comment.getId(), userId);
+
+      // then
+      verify(articleRepository, never()).decreaseCommentCount(any());
     }
   }
 
@@ -293,6 +311,23 @@ public class CommentServiceTest {
 
       // then
       verify(commentRepository).delete(comment);
+      verify(articleRepository).decreaseCommentCount(article.getId());
+    }
+
+    @Test
+    @DisplayName("이미 논리삭제되어 카운트에서 빠진 댓글은 물리삭제해도 중복 차감하지 않는다")
+    void 이미_논리삭제되어_카운트에서_빠진_댓글은_물리삭제해도_중복_차감하지_않는다() {
+      // given
+      Comment comment = Comment.create(article, user, content);
+      comment.softDelete();
+      given(commentRepository.findById(comment.getId())).willReturn(Optional.of(comment));
+
+      // when
+      commentService.hardDelete(comment.getId());
+
+      // then
+      verify(commentRepository).delete(comment);
+      verify(articleRepository, never()).decreaseCommentCount(any());
     }
   }
 

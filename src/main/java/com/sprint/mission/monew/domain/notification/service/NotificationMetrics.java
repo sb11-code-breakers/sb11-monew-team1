@@ -24,7 +24,7 @@ public class NotificationMetrics {
         .register(registry);
   }
 
-  public void countDeleted(int count) {
+  public void countDeleted(long count) {
     deletedCounter.increment(count);
   }
 

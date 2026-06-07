@@ -128,44 +128,6 @@ NotificationServiceTest {
   }
 
   @Nested
-  @DisplayName("만료 알림 일괄 삭제")
-  class DeleteExpiredNotifications {
-
-    @Test
-    @DisplayName("7일 경과 기준 cutoff로 repository.deleteConfirmedBefore에 위임한다")
-    void 만료_기준_cutoff로_repository_deleteConfirmedBefore에_위임한다() {
-      // given
-      Instant before = Instant.now();
-
-      // when
-      notificationService.deleteExpiredNotifications();
-
-      // then
-      Instant after = Instant.now();
-      then(notificationRepository)
-          .should()
-          .deleteConfirmedBefore(
-              argThat(
-                  cutoff ->
-                      !cutoff.isBefore(before.minus(7, ChronoUnit.DAYS))
-                          && !cutoff.isAfter(after.minus(7, ChronoUnit.DAYS))));
-    }
-
-    @Test
-    @DisplayName("삭제된 알림 건수를 메트릭으로 집계한다")
-    void 삭제된_알림_건수를_메트릭으로_집계한다() {
-      // given — repository가 5건 삭제를 반환
-      given(notificationRepository.deleteConfirmedBefore(any())).willReturn(5);
-
-      // when
-      notificationService.deleteExpiredNotifications();
-
-      // then
-      then(notificationMetrics).should().countDeleted(5);
-    }
-  }
-
-  @Nested
   @DisplayName("알림 생성")
   class Create {
 

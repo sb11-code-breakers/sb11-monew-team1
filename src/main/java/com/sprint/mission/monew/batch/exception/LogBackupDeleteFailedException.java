@@ -1,4 +1,4 @@
-package com.sprint.mission.monew.batch;
+package com.sprint.mission.monew.batch.exception;
 
 import com.sprint.mission.monew.common.exception.InternalErrorCode;
 import com.sprint.mission.monew.common.exception.MonewInternalException;

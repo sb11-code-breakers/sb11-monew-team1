@@ -20,7 +20,7 @@ public class UserMetrics {
         .register(registry);
   }
 
-  public void countDeleted(int count) {
+  public void countDeleted(long count) {
     deletedCounter.increment(count);
   }
 }

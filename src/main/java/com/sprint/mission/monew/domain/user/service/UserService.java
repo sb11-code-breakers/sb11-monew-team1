@@ -148,15 +148,6 @@ public class UserService {
   }
 
   @Transactional
-  public int deleteExpiredUsers(Instant threshold) {
-    log.info("사용자 물리 삭제 시작 | threshold={}", threshold);
-    int deleted = userRepository.deleteAllByDeletedAtBefore(threshold);
-    userMetrics.countDeleted(deleted);
-    log.info("사용자 물리 삭제 완료 | count={}", deleted);
-    return deleted;
-  }
-
-  @Transactional
   public void hardDelete(UUID userId) {
     log.debug("물리 삭제 시도");
     User user = userRepository.findByIdAndDeletedAtIsNotNull(userId)

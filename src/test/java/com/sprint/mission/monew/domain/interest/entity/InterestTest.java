@@ -1,7 +1,6 @@
 package com.sprint.mission.monew.domain.interest.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,56 +36,6 @@ class InterestTest {
           .extracting(InterestKeyword::getKeyword)
           .containsExactlyElementsOf(keywords);
       assertThat(interest.getSubscriberCount()).isZero();
-    }
-  }
-
-  @Nested
-  @DisplayName("구독자 수 증가")
-  class IncreaseSubscriberCount {
-
-    @Test
-    @DisplayName("호출할 때마다 subscriberCount가 1 증가한다")
-    void 호출할_때마다_subscriberCount가_1_증가한다() {
-      // given
-      Interest interest = Interest.create(name, keywords);
-
-      // when
-      interest.increaseSubscriberCount();
-      interest.increaseSubscriberCount();
-
-      // then
-      assertThat(interest.getSubscriberCount()).isEqualTo(2);
-    }
-  }
-
-  @Nested
-  @DisplayName("구독자 수 감소")
-  class DecreaseSubscriberCount {
-
-    @Test
-    @DisplayName("subscriberCount가 0일 때 감소하면 IllegalStateException이 발생한다")
-    void subscriberCount가_0일_때_감소하면_예외가_발생한다() {
-      // given
-      Interest interest = Interest.create(name, keywords);
-
-      // when & then
-      assertThatThrownBy(interest::decreaseSubscriberCount)
-          .isInstanceOf(IllegalStateException.class);
-    }
-
-    @Test
-    @DisplayName("호출할 때마다 subscriberCount가 1 감소한다")
-    void 호출할_때마다_subscriberCount가_1_감소한다() {
-      // given
-      Interest interest = Interest.create(name, keywords);
-      interest.increaseSubscriberCount();
-      interest.increaseSubscriberCount();
-
-      // when
-      interest.decreaseSubscriberCount();
-
-      // then
-      assertThat(interest.getSubscriberCount()).isEqualTo(1);
     }
   }
 

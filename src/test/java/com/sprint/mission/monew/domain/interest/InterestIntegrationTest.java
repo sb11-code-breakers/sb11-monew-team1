@@ -263,8 +263,7 @@ class InterestIntegrationTest {
     void 정상_취소_시_204를_반환하고_DB에서_삭제되며_subscriberCount가_감소한다() throws Exception {
       // given
       subscriptionRepository.save(Subscription.create(interest, user));
-      interest.increaseSubscriberCount();
-      interestRepository.save(interest);
+      interestRepository.increaseSubscriberCount(interest.getId());
 
       // when & then
       mockMvc

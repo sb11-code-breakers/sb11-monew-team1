@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.domain.notification.scheduler;
 
-import com.sprint.mission.monew.domain.notification.service.NotificationService;
+import com.sprint.mission.monew.batch.service.NotificationCleanupService;
 import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,17 +10,17 @@ import org.springframework.stereotype.Component;
 
 @Profile("prod")
 @Slf4j
-@RequiredArgsConstructor
 @Component
+@RequiredArgsConstructor
 public class NotificationCleanupScheduler {
 
-  private final NotificationService notificationService;
+  private final NotificationCleanupService notificationCleanupService;
 
-  @Timed(value = "monew.notification.cleanup.duration", description = "만료 알림 정리 배치 1회 소요 시간")
+  @Timed(value = "monew.notification.cleanup.job.duration", description = "만료 알림 정리 배치 Job 전체 소요 시간")
   @Scheduled(cron = "${scheduler.notification-cleanup.cron}")
-  public void cleanUpExpiredNotifications() {
+  public void cleanUpExpiredNotifications() throws Exception {
     log.debug("만료 알림 삭제 스케줄러 실행");
-    notificationService.deleteExpiredNotifications();
+    notificationCleanupService.executeCleanup();
     log.info("만료 알림 삭제 완료");
   }
 }

@@ -7,7 +7,7 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface ArticleViewMapper {
 
-  default ArticleViewResponse toResponse(ArticleView view) {
+  default ArticleViewResponse toResponse(ArticleView view, int viewCount) {
     return new ArticleViewResponse(
         view.getId(),
         view.getUserId(),
@@ -19,6 +19,6 @@ public interface ArticleViewMapper {
         view.getArticle().getPublishDate(),
         view.getArticle().getSummary(),
         view.getArticle().getCommentCount(),
-        view.getArticle().getViewCount());
+        viewCount);
   }
 }

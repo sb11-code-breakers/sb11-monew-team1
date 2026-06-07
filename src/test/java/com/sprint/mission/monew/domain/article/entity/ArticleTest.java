@@ -56,32 +56,6 @@ class ArticleTest {
     }
   }
 
-  @Nested
-  @DisplayName("조회수 증가")
-  class IncrementViewCount {
-
-    @Test
-    @DisplayName("incrementViewCount 호출 시 viewCount가 1 증가한다")
-    void incrementViewCount_호출_시_viewCount가_1_증가한다() {
-      // when
-      article.incrementViewCount();
-
-      // then
-      assertThat(article.getViewCount()).isEqualTo(1);
-    }
-
-    @Test
-    @DisplayName("여러 번 호출하면 호출 횟수만큼 증가한다")
-    void 여러_번_호출하면_호출_횟수만큼_증가한다() {
-      // when
-      article.incrementViewCount();
-      article.incrementViewCount();
-      article.incrementViewCount();
-
-      // then
-      assertThat(article.getViewCount()).isEqualTo(3);
-    }
-  }
 
   @Nested
   @DisplayName("소프트 딜리트")

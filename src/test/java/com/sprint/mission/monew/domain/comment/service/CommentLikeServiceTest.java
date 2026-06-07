@@ -7,6 +7,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.domain.article.entity.Article;
@@ -37,6 +38,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 
 @ExtendWith(MockitoExtension.class)
 public class CommentLikeServiceTest {
@@ -122,6 +124,22 @@ public class CommentLikeServiceTest {
       // when & then
       assertThatThrownBy(() -> commentLikeService.create(commentId, userId))
           .isInstanceOf(CommentLikeAlreadyExistsException.class);
+    }
+
+    @Test
+    @DisplayName("저장 시 유니크 충돌이 나면 예외로 변환하고 likeCount를 증가시키지 않는다")
+    void 저장_유니크충돌_시_예외변환하고_likeCount를_증가시키지_않는다() {
+      // given
+      given(commentLikeRepository.existsByUserIdAndCommentId(userId, commentId)).willReturn(false);
+      given(userRepository.findById(userId)).willReturn(Optional.of(user));
+      given(commentRepository.findById(commentId)).willReturn(Optional.of(comment));
+      given(commentLikeRepository.saveAndFlush(any(CommentLike.class)))
+          .willThrow(new DataIntegrityViolationException("unique constraint"));
+
+      // when & then
+      assertThatThrownBy(() -> commentLikeService.create(commentId, userId))
+          .isInstanceOf(CommentLikeAlreadyExistsException.class);
+      verify(commentRepository, never()).increaseLikeCount(commentId);
     }
 
     @Test

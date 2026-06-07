@@ -16,6 +16,8 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, UUID
 
   Optional<Subscription> findByInterestIdAndUserId(UUID interestId, UUID userId);
 
+  int deleteByInterestIdAndUserId(UUID interestId, UUID userId);
+
   @Query("SELECT s FROM Subscription s " +
       "JOIN FETCH s.interest i " +
       "WHERE s.user.id = :userId")
