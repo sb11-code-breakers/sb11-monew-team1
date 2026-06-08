@@ -3,6 +3,7 @@ package com.sprint.mission.monew.domain.useractivity.document;
 import jakarta.persistence.Id;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
