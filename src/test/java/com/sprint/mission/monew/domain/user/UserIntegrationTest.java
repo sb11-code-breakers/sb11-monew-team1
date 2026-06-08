@@ -41,7 +41,7 @@ import org.springframework.test.web.servlet.MockMvc;
     "batch.notification-cleanup.chunk-size=10",
     "batch.user-cleanup.chunk-size=10"
 })
-class UserApiTest {
+class UserIntegrationTest {
 
   @Autowired
   private MockMvc mockMvc;
