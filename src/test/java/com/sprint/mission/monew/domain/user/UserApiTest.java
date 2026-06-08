@@ -65,7 +65,7 @@ class UserApiTest {
   @Test
   @DisplayName("회원가입 → 이메일 인증 → 로그인 전체 플로우")
   void 회원가입_이메일인증_로그인_플로우() throws Exception {
-    // 1. 회원가입
+    // given
     UserCreateRequest createRequest = new UserCreateRequest(
         "integration@test.com", "통합테스터", "test1234");
     mockMvc.perform(post("/api/users")
@@ -73,18 +73,12 @@ class UserApiTest {
             .content(objectMapper.writeValueAsString(createRequest)))
         .andExpect(status().isCreated());
 
-    // 2. 이메일 인증 토큰 조회
     String token = emailVerificationRepository.findAll().stream()
-        .findFirst()
-        .orElseThrow()
-        .getToken();
-
-    // 3. 이메일 인증
-    mockMvc.perform(get("/api/users/verify")
-            .param("token", token))
+        .findFirst().orElseThrow().getToken();
+    mockMvc.perform(get("/api/users/verify").param("token", token))
         .andExpect(status().isOk());
 
-    // 4. 로그인 성공
+    // when & then
     UserLoginRequest loginRequest = new UserLoginRequest(
         "integration@test.com", "test1234");
     mockMvc.perform(post("/api/users/login")
@@ -97,7 +91,7 @@ class UserApiTest {
   @Test
   @DisplayName("로그인 5회 실패 시 계정 잠금")
   void 로그인_5회_실패_시_계정_잠금() throws Exception {
-    // 1. 회원가입
+    // given
     UserCreateRequest createRequest = new UserCreateRequest(
         "lock@test.com", "잠금테스터", "test1234");
     mockMvc.perform(post("/api/users")
@@ -105,13 +99,12 @@ class UserApiTest {
             .content(objectMapper.writeValueAsString(createRequest)))
         .andExpect(status().isCreated());
 
-    // 2. 이메일 인증
     String token = emailVerificationRepository.findAll().stream()
         .findFirst().orElseThrow().getToken();
     mockMvc.perform(get("/api/users/verify").param("token", token))
         .andExpect(status().isOk());
 
-    // 3. 로그인 4회 실패
+    // when - 4회 실패
     UserLoginRequest wrongRequest = new UserLoginRequest("lock@test.com", "wrongpassword");
     for (int i = 0; i < 4; i++) {
       mockMvc.perform(post("/api/users/login")
@@ -120,7 +113,7 @@ class UserApiTest {
           .andExpect(status().isUnauthorized());
     }
 
-    // 4. 5회째 → 423
+    // then - 5회째 423
     mockMvc.perform(post("/api/users/login")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(wrongRequest)))
@@ -130,7 +123,7 @@ class UserApiTest {
   @Test
   @DisplayName("계정 잠금 해제 → 로그인 성공 플로우")
   void 계정_잠금_해제_로그인_성공_플로우() throws Exception {
-    // 1. 회원가입
+    // given
     UserCreateRequest createRequest = new UserCreateRequest(
         "unlock@test.com", "잠금테스터", "test1234");
     mockMvc.perform(post("/api/users")
@@ -138,13 +131,11 @@ class UserApiTest {
             .content(objectMapper.writeValueAsString(createRequest)))
         .andExpect(status().isCreated());
 
-    // 2. 이메일 인증
     String verifyToken = emailVerificationRepository.findAll().stream()
         .findFirst().orElseThrow().getToken();
     mockMvc.perform(get("/api/users/verify").param("token", verifyToken))
         .andExpect(status().isOk());
 
-    // 3. 로그인 5회 실패 → 계정 잠금
     UserLoginRequest wrongRequest = new UserLoginRequest("unlock@test.com", "wrongpassword");
     for (int i = 0; i < 4; i++) {
       mockMvc.perform(post("/api/users/login")
@@ -157,21 +148,19 @@ class UserApiTest {
             .content(objectMapper.writeValueAsString(wrongRequest)))
         .andExpect(status().isLocked());
 
-    // 4. 잠금 해제 요청
+    // when
     UserUnlockRequest unlockRequest = new UserUnlockRequest("unlock@test.com");
     mockMvc.perform(post("/api/users/unlock")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(unlockRequest)))
         .andExpect(status().isNoContent());
 
-    // 5. 잠금 해제 토큰 조회 후 해제
     String unlockToken = userUnlockTokenRepository.findAll().stream()
         .findFirst().orElseThrow().getToken();
-    mockMvc.perform(get("/api/users/unlock")
-            .param("token", unlockToken))
+    mockMvc.perform(get("/api/users/unlock").param("token", unlockToken))
         .andExpect(status().isOk());
 
-    // 6. 로그인 성공
+    // then
     UserLoginRequest loginRequest = new UserLoginRequest("unlock@test.com", "test1234");
     mockMvc.perform(post("/api/users/login")
             .contentType(MediaType.APPLICATION_JSON)
@@ -183,7 +172,7 @@ class UserApiTest {
   @Test
   @DisplayName("논리 삭제 후 로그인 불가")
   void 논리_삭제_후_로그인_불가() throws Exception {
-    // 1. 회원가입
+    // given
     UserCreateRequest createRequest = new UserCreateRequest(
         "delete@test.com", "삭제테스터", "test1234");
     String response = mockMvc.perform(post("/api/users")
@@ -194,18 +183,17 @@ class UserApiTest {
 
     UUID userId = UUID.fromString(objectMapper.readTree(response).get("id").asText());
 
-    // 2. 이메일 인증
     String token = emailVerificationRepository.findAll().stream()
         .findFirst().orElseThrow().getToken();
     mockMvc.perform(get("/api/users/verify").param("token", token))
         .andExpect(status().isOk());
 
-    // 3. 논리 삭제
+    // when
     mockMvc.perform(delete("/api/users/" + userId)
             .header("Monew-Request-User-ID", userId))
         .andExpect(status().isNoContent());
 
-    // 4. 로그인 불가
+    // then
     UserLoginRequest loginRequest = new UserLoginRequest("delete@test.com", "test1234");
     mockMvc.perform(post("/api/users/login")
             .contentType(MediaType.APPLICATION_JSON)
