@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record NotificationQueryCondition(
-    Instant cursor,
+    String cursor,
     Instant after,
     UUID idAfter,
     @NotNull @Min(1) Integer limit

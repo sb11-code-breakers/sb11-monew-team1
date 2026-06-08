@@ -89,13 +89,14 @@ public class NotificationCustomRepositoryImpl implements NotificationCustomRepos
   }
 
   private BooleanExpression cursorCondition(NotificationQueryCondition condition) {
-    Instant cursor = condition.cursor();
+    String cursor = condition.cursor();
     UUID idAfter = condition.idAfter();
     if (cursor == null) {
       return null;
     }
-    return notification.createdAt.gt(cursor)
-        .or(notification.createdAt.eq(cursor).and(notification.id.gt(idAfter)));
+    Instant createdAtCursor = Instant.parse(cursor);
+    return notification.createdAt.gt(createdAtCursor)
+        .or(notification.createdAt.eq(createdAtCursor).and(notification.id.gt(idAfter)));
   }
 
   private OrderSpecifier<?> buildCreatedAtOrderSpecifier() {
