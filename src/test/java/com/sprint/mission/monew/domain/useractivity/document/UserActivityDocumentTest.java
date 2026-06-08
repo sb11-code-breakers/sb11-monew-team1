@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.domain.useractivity.document;
 
-import static com.mysema.commons.lang.Assert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.util.UUID;
