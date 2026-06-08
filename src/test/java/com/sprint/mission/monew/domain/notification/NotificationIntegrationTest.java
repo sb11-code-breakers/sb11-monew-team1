@@ -143,12 +143,12 @@ public class NotificationIntegrationTest {
       notificationRepository.save(
           Notification.create(user.getId(), "알림", ResourceType.INTEREST, UUID.randomUUID()));
 
-      // when & then — cursor=Instant.EPOCH → createdAt > Instant.EPOCH인 알림 1건 반환
+      // when & then — 최신순(DESC)이므로 cursor=먼 미래 → createdAt < cursor인 알림 1건 반환
       mockMvc.perform(get("/api/notifications")
               .header("Monew-Request-User-ID", user.getId())
               .param("limit", "10")
-              .param("cursor", "1970-01-01T00:00:00Z")
-              .param("after", "1970-01-01T00:00:00Z")
+              .param("cursor", "2999-01-01T00:00:00Z")
+              .param("after", "2999-01-01T00:00:00Z")
               .param("idAfter", UUID.randomUUID().toString()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(1));

@@ -95,15 +95,15 @@ public class NotificationCustomRepositoryImpl implements NotificationCustomRepos
       return null;
     }
     Instant createdAtCursor = Instant.parse(cursor);
-    return notification.createdAt.gt(createdAtCursor)
-        .or(notification.createdAt.eq(createdAtCursor).and(notification.id.gt(idAfter)));
+    return notification.createdAt.lt(createdAtCursor)
+        .or(notification.createdAt.eq(createdAtCursor).and(notification.id.lt(idAfter)));
   }
 
   private OrderSpecifier<?> buildCreatedAtOrderSpecifier() {
-    return new OrderSpecifier<>(Order.ASC, notification.createdAt);
+    return new OrderSpecifier<>(Order.DESC, notification.createdAt);
   }
 
   private OrderSpecifier<?> buildIdOrderSpecifier() {
-    return new OrderSpecifier<>(Order.ASC, notification.id);
+    return new OrderSpecifier<>(Order.DESC, notification.id);
   }
 }
