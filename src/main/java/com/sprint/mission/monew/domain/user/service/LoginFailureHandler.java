@@ -1,5 +1,7 @@
 package com.sprint.mission.monew.domain.user.service;
 
+import com.sprint.mission.monew.domain.user.entity.User;
+import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -15,13 +17,13 @@ public class LoginFailureHandler {
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public boolean handle(UUID userId) {
-    return userRepository.findById(userId).map(user -> {
-      user.incrementLoginFailCount();
-      if (user.hasExceededLoginFailLimit()) {
-        user.lock();
-        return true;
-      }
-      return false;
-    }).orElse(false);
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+    user.incrementLoginFailCount();
+    if (user.hasExceededLoginFailLimit()) {
+      user.lock();
+      return true;
+    }
+    return false;
   }
 }
