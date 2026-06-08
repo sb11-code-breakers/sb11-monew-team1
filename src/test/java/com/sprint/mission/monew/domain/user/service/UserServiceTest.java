@@ -80,6 +80,9 @@ class UserServiceTest {
   @Mock
   private UserUnlockTokenRepository userUnlockTokenRepository;
 
+  @Mock
+  private LoginFailureHandler loginFailureHandler;
+
   @Nested
   @DisplayName("회원가입")
   class Create {
@@ -213,6 +216,7 @@ class UserServiceTest {
           .willReturn(Optional.of(user));
       given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
 
+      given(loginFailureHandler.handle(any(UUID.class))).willReturn(false);
       // when & then
       assertThatThrownBy(() -> userService.login(request))
           .isInstanceOf(UserLoginFailedException.class);
@@ -264,11 +268,12 @@ class UserServiceTest {
       given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
           .willReturn(Optional.of(user));
       given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
+      given(loginFailureHandler.handle(any(UUID.class))).willReturn(false);
 
       // when & then
       assertThatThrownBy(() -> userService.login(request))
           .isInstanceOf(UserLoginFailedException.class);
-      assertThat(user.getLoginFailCount()).isEqualTo(1);
+      then(loginFailureHandler).should().handle(any(UUID.class));
     }
 
     @Test
@@ -280,15 +285,18 @@ class UserServiceTest {
       given(userRepository.findByEmailAndDeletedAtIsNull(request.email()))
           .willReturn(Optional.of(user));
       given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);
+      given(loginFailureHandler.handle(any(UUID.class)))
+          .willReturn(false, false, false, false, true);
 
-      // when - 5회 실패
-      for (int i = 0; i < 5; i++) {
+      // when - 4회 실패
+      for (int i = 0; i < 4; i++) {
         assertThatThrownBy(() -> userService.login(request))
             .isInstanceOf(UserLoginFailedException.class);
       }
 
-      // then
-      assertThat(user.isLocked()).isTrue();
+      // then - 5회째 423
+      assertThatThrownBy(() -> userService.login(request))
+          .isInstanceOf(UserAccountLockedException.class);
     }
 
     @Test
