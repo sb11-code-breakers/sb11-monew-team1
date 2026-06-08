@@ -51,6 +51,7 @@ public class UserService {
   private final UserUnlockTokenRepository userUnlockTokenRepository;
   private final EmailQueue emailQueue;
   private final UserMetrics userMetrics;
+  private final LoginFailureHandler loginFailureHandler;
 
   @Transactional
   public UserResponse create(UserCreateRequest request) {
@@ -83,6 +84,7 @@ public class UserService {
     return userMapper.toResponse(saved);
   }
 
+  @Transactional(readOnly = true)
   public UserResponse login(UserLoginRequest request) {
     log.debug("로그인 시도");
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
@@ -97,9 +99,9 @@ public class UserService {
     }
 
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-      user.incrementLoginFailCount();
-      if (user.hasExceededLoginFailLimit()) {
-        user.lock();
+      boolean isLocked = loginFailureHandler.handle(user.getId());
+      if (isLocked) {
+        throw UserAccountLockedException.withEmail(request.email());
       }
       throw UserLoginFailedException.withPassword();
     }
