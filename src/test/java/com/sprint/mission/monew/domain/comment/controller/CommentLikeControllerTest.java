@@ -17,9 +17,12 @@ import com.sprint.mission.monew.domain.comment.exception.CommentLikeAlreadyExist
 import com.sprint.mission.monew.domain.comment.exception.CommentLikeNotFoundException;
 import com.sprint.mission.monew.domain.comment.exception.CommentNotFoundException;
 import com.sprint.mission.monew.domain.comment.service.CommentLikeService;
+import com.sprint.mission.monew.domain.user.document.UserSession;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,11 +45,15 @@ public class CommentLikeControllerTest {
   @MockitoBean
   private CommentLikeService commentLikeService;
 
+  @MockitoBean
+  private UserSessionRepository userSessionRepository;
+
   private Article article;
   private User user;
   private Comment comment;
   private UUID articleId;
   private UUID userId;
+  private UUID sessionToken;
   private UUID commentId;
   private UUID commentLikeId;
   private CommentLikeResponse response;
@@ -67,6 +74,9 @@ public class CommentLikeControllerTest {
     userId = user.getId();
     commentId = comment.getId();
     commentLikeId = UUID.randomUUID();
+    UserSession session = UserSession.create(userId, "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    sessionToken = session.getId();
+    given(userSessionRepository.findById(sessionToken)).willReturn(Optional.of(session));
 
     response = new CommentLikeResponse(
         commentLikeId,
@@ -94,8 +104,10 @@ public class CommentLikeControllerTest {
           UserNotFoundException.withId(userId));
 
       // when & then
-      mockMvc.perform(post("/api/comments/{commentId}/comment-likes", commentId)
-              .header("Monew-Request-User-ID", userId))
+      mockMvc.perform(
+              post("/api/comments/{commentId}/comment-likes", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isNotFound());
     }
 
@@ -107,8 +119,10 @@ public class CommentLikeControllerTest {
           CommentNotFoundException.withId(commentId));
 
       // when & then
-      mockMvc.perform(post("/api/comments/{commentId}/comment-likes", commentId)
-              .header("Monew-Request-User-ID", userId))
+      mockMvc.perform(
+              post("/api/comments/{commentId}/comment-likes", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isNotFound());
     }
 
@@ -120,8 +134,10 @@ public class CommentLikeControllerTest {
           CommentLikeAlreadyExistsException.withId(userId, commentId));
 
       // when & then
-      mockMvc.perform(post("/api/comments/{commentId}/comment-likes", commentId)
-              .header("Monew-Request-User-ID", userId))
+      mockMvc.perform(
+              post("/api/comments/{commentId}/comment-likes", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isConflict());
     }
 
@@ -133,8 +149,10 @@ public class CommentLikeControllerTest {
       given(commentLikeService.create(commentId, userId)).willReturn(response);
 
       // when & then
-      mockMvc.perform(post("/api/comments/{commentId}/comment-likes", commentId)
-              .header("Monew-Request-User-ID", userId))
+      mockMvc.perform(
+              post("/api/comments/{commentId}/comment-likes", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isCreated());
     }
   }
@@ -151,8 +169,10 @@ public class CommentLikeControllerTest {
           .cancel(commentId, userId);
 
       // when & then
-      mockMvc.perform(delete("/api/comments/{commentId}/comment-likes", commentId)
-              .header("Monew-Request-User-ID", userId))
+      mockMvc.perform(
+              delete("/api/comments/{commentId}/comment-likes", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isNotFound());
     }
 
@@ -163,8 +183,10 @@ public class CommentLikeControllerTest {
       doNothing().when(commentLikeService).cancel(commentId, userId);
 
       // when & then
-      mockMvc.perform(delete("/api/comments/{commentId}/comment-likes", commentId)
-              .header("Monew-Request-User-ID", userId))
+      mockMvc.perform(
+              delete("/api/comments/{commentId}/comment-likes", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isNoContent());
     }
   }

@@ -17,8 +17,10 @@ import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.entity.Subscription;
 import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepository;
+import com.sprint.mission.monew.domain.user.document.UserSession;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,15 +30,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sprint.mission.monew.common.config.MongoContainerConfig;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@Import(MongoContainerConfig.class)
 class InterestIntegrationTest {
 
   @Autowired MockMvc mockMvc;
@@ -44,12 +50,19 @@ class InterestIntegrationTest {
   @Autowired InterestRepository interestRepository;
   @Autowired SubscriptionRepository subscriptionRepository;
   @Autowired UserRepository userRepository;
+  @Autowired UserSessionRepository userSessionRepository;
+
+  private UUID anySessionToken;
 
   @BeforeEach
   void setUp() {
     subscriptionRepository.deleteAll();
     interestRepository.deleteAll();
     userRepository.deleteAll();
+
+    UserSession anySession = UserSession.create(UUID.randomUUID(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    userSessionRepository.save(anySession);
+    anySessionToken = anySession.getId();
   }
 
   @Nested
@@ -63,7 +76,7 @@ class InterestIntegrationTest {
       mockMvc
           .perform(
               get("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", anySessionToken)
                   .param("orderBy", "name")
                   .param("direction", "ASC")
                   .param("limit", "10"))
@@ -83,7 +96,7 @@ class InterestIntegrationTest {
       mockMvc
           .perform(
               get("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", anySessionToken)
                   .param("orderBy", "name")
                   .param("direction", "ASC")
                   .param("limit", "10"))
@@ -99,11 +112,14 @@ class InterestIntegrationTest {
       User user = userRepository.save(User.create("test@test.com", "테스터", "password123!"));
       subscriptionRepository.save(Subscription.create(interest, user));
 
+      UserSession session = UserSession.create(user.getId(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+      userSessionRepository.save(session);
+
       // when & then
       mockMvc
           .perform(
               get("/api/interests")
-                  .header("Monew-Request-User-ID", user.getId())
+                  .header("Monew-Request-User-ID", session.getId())
                   .param("orderBy", "name")
                   .param("direction", "ASC")
                   .param("limit", "10"))
@@ -127,6 +143,7 @@ class InterestIntegrationTest {
       mockMvc
           .perform(
               post("/api/interests")
+                  .header("Monew-Request-User-ID", anySessionToken)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isConflict())
@@ -143,6 +160,7 @@ class InterestIntegrationTest {
       mockMvc
           .perform(
               post("/api/interests")
+                  .header("Monew-Request-User-ID", anySessionToken)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isCreated())
@@ -166,6 +184,7 @@ class InterestIntegrationTest {
       mockMvc
           .perform(
               patch("/api/interests/{id}", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", anySessionToken)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isNotFound())
@@ -183,6 +202,7 @@ class InterestIntegrationTest {
       mockMvc
           .perform(
               patch("/api/interests/{id}", interest.getId())
+                  .header("Monew-Request-User-ID", anySessionToken)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
           .andExpect(status().isOk())
@@ -202,7 +222,8 @@ class InterestIntegrationTest {
       // when & then
       mockMvc
           .perform(
-              delete("/api/interests/{id}", UUID.randomUUID()))
+              delete("/api/interests/{id}", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", anySessionToken))
           .andExpect(status().isNotFound())
           .andExpect(jsonPath("$.code").value("INTEREST_NOT_FOUND"));
     }
@@ -216,7 +237,8 @@ class InterestIntegrationTest {
       // when & then
       mockMvc
           .perform(
-              delete("/api/interests/{id}", interest.getId()))
+              delete("/api/interests/{id}", interest.getId())
+                  .header("Monew-Request-User-ID", anySessionToken))
           .andExpect(status().isNoContent());
 
       assertThat(interestRepository.findById(interest.getId())).isEmpty();
@@ -229,11 +251,16 @@ class InterestIntegrationTest {
 
     Interest interest;
     User user;
+    UUID sessionToken;
 
     @BeforeEach
     void setUp() {
       interest = interestRepository.save(Interest.create("인공지능", List.of("AI", "머신러닝")));
       user = userRepository.save(User.create("test@test.com", "테스터", "password123!"));
+
+      UserSession session = UserSession.create(user.getId(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+      userSessionRepository.save(session);
+      sessionToken = session.getId();
     }
 
     @Test
@@ -242,7 +269,7 @@ class InterestIntegrationTest {
       // when & then
       mockMvc
           .perform(delete("/api/interests/{interestId}/subscriptions", UUID.randomUUID())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNotFound())
           .andExpect(jsonPath("$.code").value("INTEREST_NOT_FOUND"));
     }
@@ -253,7 +280,7 @@ class InterestIntegrationTest {
       // when & then
       mockMvc
           .perform(delete("/api/interests/{interestId}/subscriptions", interest.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNotFound())
           .andExpect(jsonPath("$.code").value("SUBSCRIPTION_NOT_FOUND"));
     }
@@ -268,7 +295,7 @@ class InterestIntegrationTest {
       // when & then
       mockMvc
           .perform(delete("/api/interests/{interestId}/subscriptions", interest.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNoContent());
 
       assertThat(subscriptionRepository.existsByInterestIdAndUserId(
@@ -284,11 +311,16 @@ class InterestIntegrationTest {
 
     Interest interest;
     User user;
+    UUID sessionToken;
 
     @BeforeEach
     void setUp() {
       interest = interestRepository.save(Interest.create("인공지능", List.of("AI", "머신러닝")));
       user = userRepository.save(User.create("test@test.com", "테스터", "password123!"));
+
+      UserSession session = UserSession.create(user.getId(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+      userSessionRepository.save(session);
+      sessionToken = session.getId();
     }
 
     @Test
@@ -297,7 +329,7 @@ class InterestIntegrationTest {
       // when & then
       mockMvc
           .perform(post("/api/interests/{interestId}/subscriptions", UUID.randomUUID())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNotFound())
           .andExpect(jsonPath("$.code").value("INTEREST_NOT_FOUND"));
     }
@@ -311,7 +343,7 @@ class InterestIntegrationTest {
       // when & then
       mockMvc
           .perform(post("/api/interests/{interestId}/subscriptions", interest.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isConflict())
           .andExpect(jsonPath("$.code").value("SUBSCRIPTION_ALREADY_EXISTS"));
     }
@@ -322,7 +354,7 @@ class InterestIntegrationTest {
       // when & then
       mockMvc
           .perform(post("/api/interests/{interestId}/subscriptions", interest.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isCreated())
           .andExpect(jsonPath("$.interestId").value(interest.getId().toString()))
           .andExpect(jsonPath("$.interestName").value("인공지능"))

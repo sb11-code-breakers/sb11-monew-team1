@@ -1,6 +1,8 @@
 package com.sprint.mission.monew.domain.user.controller;
 
 import com.sprint.mission.monew.domain.user.controller.api.UserApi;
+import com.sprint.mission.monew.common.util.RequestUtils;
+import com.sprint.mission.monew.domain.user.dto.LoginResult;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
@@ -15,6 +17,7 @@ import jakarta.validation.constraints.NotBlank;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -50,8 +53,14 @@ public class UserController implements UserApi {
 
   @PostMapping("/login")
   @Override
-  public ResponseEntity<UserResponse> login(@Valid @RequestBody UserLoginRequest request) {
-    return ResponseEntity.ok(userService.login(request));
+  public ResponseEntity<UserResponse> login(@Valid @RequestBody UserLoginRequest request,
+      HttpServletRequest httpRequest) {
+    String ip = RequestUtils.resolveClientIp(httpRequest);
+    String fingerprint = RequestUtils.buildFingerprint(httpRequest);
+    LoginResult result = userService.login(request, ip, fingerprint);
+    return ResponseEntity.ok()
+        .header("Monew-Request-User-ID", result.sessionToken().toString())
+        .body(result.response());
   }
 
   @GetMapping(value = "/verify", produces = "text/html;charset=UTF-8")

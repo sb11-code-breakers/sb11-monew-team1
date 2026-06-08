@@ -8,6 +8,7 @@ import com.sprint.mission.monew.domain.comment.dto.CommentUpdateRequest;
 import com.sprint.mission.monew.domain.comment.dto.CommentResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -70,9 +71,15 @@ public interface CommentApi {
       @PathVariable @Parameter(description = "댓글 ID") UUID commentId,
       @RequestHeader("Monew-Request-User-ID") @Parameter(description = "요청자 ID") UUID userId);
 
-  @Operation(summary = "댓글 물리 삭제", description = "댓글을 물리적으로 삭제합니다.")
+  @Operation(
+      summary = "댓글 물리 삭제",
+      description = "댓글을 물리적으로 삭제합니다.",
+      parameters = @Parameter(name = "Monew-Request-User-ID", in = ParameterIn.HEADER,
+          description = "어드민 토큰 (ADR-11: 세션 토큰과 동일 헤더를 어드민 경로에서 재사용)", required = true))
   @ApiResponses(value = {
       @ApiResponse(responseCode = "204", description = "삭제 성공"),
+      @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+          content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "404", description = "댓글 정보 없음",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",

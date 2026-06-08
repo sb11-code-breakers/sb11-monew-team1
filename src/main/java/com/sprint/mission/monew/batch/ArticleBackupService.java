@@ -56,8 +56,7 @@ public class ArticleBackupService {
       return;
     }
 
-    String s3Key = "articles/" + yesterday.format(BatchGzipUtils.PATH_FORMATTER)
-        + "/articles-" + yesterday.format(BatchGzipUtils.FILE_FORMATTER) + ".json.gz";
+    String s3Key = BatchGzipUtils.articleS3Key(yesterday);
 
     try {
       s3Client.headObject(HeadObjectRequest.builder().bucket(bucket).key(s3Key).build());

@@ -26,6 +26,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         )
         .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         .allowedHeaders("Content-Type", "Monew-Request-User-ID")
+        .exposedHeaders("Monew-Request-User-ID")
         .allowCredentials(false)
         .maxAge(3600);
   }
