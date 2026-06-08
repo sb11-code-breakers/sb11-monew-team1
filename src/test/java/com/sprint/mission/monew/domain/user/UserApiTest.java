@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.domain.user;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -8,8 +9,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
+import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
+import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import com.sprint.mission.monew.domain.user.repository.UserUnlockTokenRepository;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,8 +23,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -43,8 +48,16 @@ class UserApiTest {
   @Autowired
   private UserRepository userRepository;
 
+  @Autowired
+  private UserUnlockTokenRepository userUnlockTokenRepository;
+
+  @Autowired
+  private PasswordResetTokenRepository passwordResetTokenRepository;
+
   @AfterEach
   void tearDown() {
+    userUnlockTokenRepository.deleteAll();
+    passwordResetTokenRepository.deleteAll();
     emailVerificationRepository.deleteAll();
     userRepository.deleteAll();
   }
@@ -61,8 +74,7 @@ class UserApiTest {
         .andExpect(status().isCreated());
 
     // 2. 이메일 인증 토큰 조회
-    String token = emailVerificationRepository
-        .findAll().stream()
+    String token = emailVerificationRepository.findAll().stream()
         .findFirst()
         .orElseThrow()
         .getToken();
@@ -113,5 +125,91 @@ class UserApiTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(wrongRequest)))
         .andExpect(status().isLocked());
+  }
+
+  @Test
+  @DisplayName("계정 잠금 해제 → 로그인 성공 플로우")
+  void 계정_잠금_해제_로그인_성공_플로우() throws Exception {
+    // 1. 회원가입
+    UserCreateRequest createRequest = new UserCreateRequest(
+        "unlock@test.com", "잠금테스터", "test1234");
+    mockMvc.perform(post("/api/users")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(createRequest)))
+        .andExpect(status().isCreated());
+
+    // 2. 이메일 인증
+    String verifyToken = emailVerificationRepository.findAll().stream()
+        .findFirst().orElseThrow().getToken();
+    mockMvc.perform(get("/api/users/verify").param("token", verifyToken))
+        .andExpect(status().isOk());
+
+    // 3. 로그인 5회 실패 → 계정 잠금
+    UserLoginRequest wrongRequest = new UserLoginRequest("unlock@test.com", "wrongpassword");
+    for (int i = 0; i < 4; i++) {
+      mockMvc.perform(post("/api/users/login")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(wrongRequest)))
+          .andExpect(status().isUnauthorized());
+    }
+    mockMvc.perform(post("/api/users/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(wrongRequest)))
+        .andExpect(status().isLocked());
+
+    // 4. 잠금 해제 요청
+    UserUnlockRequest unlockRequest = new UserUnlockRequest("unlock@test.com");
+    mockMvc.perform(post("/api/users/unlock")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(unlockRequest)))
+        .andExpect(status().isNoContent());
+
+    // 5. 잠금 해제 토큰 조회 후 해제
+    String unlockToken = userUnlockTokenRepository.findAll().stream()
+        .findFirst().orElseThrow().getToken();
+    mockMvc.perform(get("/api/users/unlock")
+            .param("token", unlockToken))
+        .andExpect(status().isOk());
+
+    // 6. 로그인 성공
+    UserLoginRequest loginRequest = new UserLoginRequest("unlock@test.com", "test1234");
+    mockMvc.perform(post("/api/users/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(loginRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.email").value("unlock@test.com"));
+  }
+
+  @Test
+  @DisplayName("논리 삭제 후 로그인 불가")
+  void 논리_삭제_후_로그인_불가() throws Exception {
+    // 1. 회원가입
+    UserCreateRequest createRequest = new UserCreateRequest(
+        "delete@test.com", "삭제테스터", "test1234");
+    String response = mockMvc.perform(post("/api/users")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(createRequest)))
+        .andExpect(status().isCreated())
+        .andReturn().getResponse().getContentAsString();
+
+    UUID userId = UUID.fromString(objectMapper.readTree(response).get("id").asText());
+
+    // 2. 이메일 인증
+    String token = emailVerificationRepository.findAll().stream()
+        .findFirst().orElseThrow().getToken();
+    mockMvc.perform(get("/api/users/verify").param("token", token))
+        .andExpect(status().isOk());
+
+    // 3. 논리 삭제
+    mockMvc.perform(delete("/api/users/" + userId)
+            .header("Monew-Request-User-ID", userId))
+        .andExpect(status().isNoContent());
+
+    // 4. 로그인 불가
+    UserLoginRequest loginRequest = new UserLoginRequest("delete@test.com", "test1234");
+    mockMvc.perform(post("/api/users/login")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(loginRequest)))
+        .andExpect(status().isUnauthorized());
   }
 }
