@@ -2,7 +2,7 @@ package com.sprint.mission.monew.domain.useractivity.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sprint.mission.monew.common.config.MongoContainerConfig; // 설정 임포트
+import com.sprint.mission.monew.common.config.MongoContainerConfig;
 import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
 import java.time.Instant;
 import java.util.Optional;
@@ -16,7 +16,7 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
 
 @DataMongoTest
-@Import(MongoContainerConfig.class) // 도커 컨테이너 설정 주입
+@Import(MongoContainerConfig.class)
 class UserActivityMongoRepositoryTest {
 
   @Autowired
@@ -49,6 +49,39 @@ class UserActivityMongoRepositoryTest {
       assertThat(found).isPresent();
       assertThat(found.get().getEmail()).isEqualTo("test@example.com");
       assertThat(found.get().getNickname()).isEqualTo("닉네임");
+    }
+  }
+
+  @Nested
+  @DisplayName("nickname 존재 여부로 활성 사용자 조회")
+  class FindByIdAndNicknameIsNotNull {
+
+    @Test
+    @DisplayName("nickname이 있으면 UserActivity를 반환한다")
+    void nickname이_있으면_UserActivity를_반환한다() {
+      // given
+      repository.save(activity);
+
+      // when
+      Optional<UserActivity> found = repository.findByIdAndNicknameIsNotNull(userId);
+
+      // then
+      assertThat(found).isPresent();
+      assertThat(found.get().getId()).isEqualTo(userId);
+    }
+
+    @Test
+    @DisplayName("nickname이 null이면 empty를 반환한다")
+    void nickname이_null이면_empty를_반환한다() {
+      // given
+      UserActivity deleted = UserActivity.of(userId, "test@example.com", null, Instant.now());
+      repository.save(deleted);
+
+      // when
+      Optional<UserActivity> found = repository.findByIdAndNicknameIsNotNull(userId);
+
+      // then
+      assertThat(found).isEmpty();
     }
   }
 }
