@@ -22,11 +22,11 @@ class UserActivityDocumentTest {
       Instant now = Instant.now();
 
       // when
-      UserActivity activity = UserActivity.of(id, "test@example.com", "닉네임", now);
+      UserActivity activity = UserActivity.of(id, "testTest@example.com", "닉네임", now);
 
       // then
       assertThat(activity.getId()).isEqualTo(id);
-      assertThat(activity.getEmail()).isEqualTo("test@example.com");
+      assertThat(activity.getEmail()).isEqualTo("testTest@example.com");
       assertThat(activity.getNickname()).isEqualTo("닉네임");
       assertThat(activity.getCreatedAt()).isEqualTo(now);
       assertThat(activity.getSubscriptions()).isEmpty();
