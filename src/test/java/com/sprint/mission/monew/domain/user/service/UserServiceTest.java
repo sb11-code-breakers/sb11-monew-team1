@@ -323,7 +323,7 @@ class UserServiceTest {
       userService.login(request);
 
       // then
-      assertThat(user.getLoginFailCount()).isEqualTo(0);
+      then(loginSuccessHandler).should().handle(any(UUID.class));
     }
   }
 

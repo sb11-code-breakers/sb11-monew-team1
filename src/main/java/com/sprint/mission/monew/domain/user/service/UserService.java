@@ -52,6 +52,7 @@ public class UserService {
   private final EmailQueue emailQueue;
   private final UserMetrics userMetrics;
   private final LoginFailureHandler loginFailureHandler;
+  private final LoginSuccessHandler loginSuccessHandler;
 
   @Transactional
   public UserResponse create(UserCreateRequest request) {
@@ -106,7 +107,7 @@ public class UserService {
       throw UserLoginFailedException.withPassword();
     }
 
-    user.resetLoginFailCount();
+    loginSuccessHandler.handle(user.getId());
     log.info("로그인 완료 | userId={}", user.getId());
     return userMapper.toResponse(user);
   }
