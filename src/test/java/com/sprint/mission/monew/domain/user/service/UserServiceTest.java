@@ -83,6 +83,9 @@ class UserServiceTest {
   @Mock
   private LoginFailureHandler loginFailureHandler;
 
+  @Mock
+  private LoginSuccessHandler loginSuccessHandler;
+
   @Nested
   @DisplayName("회원가입")
   class Create {
@@ -242,6 +245,7 @@ class UserServiceTest {
       // then
       assertThat(result).isNotNull();
       assertThat(result.email()).isEqualTo("test@test.com");
+      then(loginSuccessHandler).should().handle(any(UUID.class));
     }
 
     @Test
