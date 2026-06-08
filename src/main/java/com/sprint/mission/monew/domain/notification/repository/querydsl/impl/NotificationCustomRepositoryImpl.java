@@ -60,14 +60,9 @@ public class NotificationCustomRepositoryImpl implements NotificationCustomRepos
       nextIdAfter = last.id();
     }
 
-    Long totalElements = queryFactory
-        .select(notification.count())
-        .from(notification)
-        .where(
-            eqUserId(userId),
-            isNullConfirmedAt()
-        )
-        .fetchOne();
+    // 미확인 개수는 페이지마다 동일하므로 첫 페이지(커서 없음)에서만 집계하고
+    // 이후 페이지는 null로 반환해 불필요한 count(*) 쿼리를 줄인다.
+    Long totalElements = condition.cursor() == null ? countUnconfirmed(userId) : null;
 
     return CursorPageResponse.of(
         content,
@@ -78,6 +73,17 @@ public class NotificationCustomRepositoryImpl implements NotificationCustomRepos
         content.size(),
         totalElements
     );
+  }
+
+  private Long countUnconfirmed(UUID userId) {
+    return queryFactory
+        .select(notification.count())
+        .from(notification)
+        .where(
+            eqUserId(userId),
+            isNullConfirmedAt()
+        )
+        .fetchOne();
   }
 
   private BooleanExpression eqUserId(UUID userId) {
