@@ -19,10 +19,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@TestPropertySource(properties = {
+    "batch.news-collect.chunk-size=10",
+    "batch.notification-cleanup.chunk-size=10",
+    "batch.user-cleanup.chunk-size=10"
+})
 class UserApiTest {
 
   @Autowired
