@@ -6,11 +6,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sprint.mission.monew.common.config.MongoContainerConfig;
 import com.sprint.mission.monew.domain.notification.entity.Notification;
 import com.sprint.mission.monew.domain.notification.entity.ResourceType;
 import com.sprint.mission.monew.domain.notification.repository.NotificationRepository;
+import com.sprint.mission.monew.domain.user.document.UserSession;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@Import(MongoContainerConfig.class)
 public class NotificationIntegrationTest {
 
   @Autowired
@@ -39,11 +44,19 @@ public class NotificationIntegrationTest {
   @Autowired
   private UserRepository userRepository;
 
+  @Autowired
+  private UserSessionRepository userSessionRepository;
+
   private User user;
+  private UUID sessionToken;
 
   @BeforeEach
   void setUp() {
     user = userRepository.save(User.create("notify@test.com", "알림테스트유저", "password123!"));
+
+    UserSession session = UserSession.create(user.getId(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    userSessionRepository.save(session);
+    sessionToken = session.getId();
   }
 
   @Nested
@@ -60,7 +73,7 @@ public class NotificationIntegrationTest {
 
       // when & then
       mockMvc.perform(get("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .param("limit", "10"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(1))
@@ -88,7 +101,7 @@ public class NotificationIntegrationTest {
 
       // when & then
       mockMvc.perform(get("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .param("limit", "10"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(1))
@@ -107,7 +120,7 @@ public class NotificationIntegrationTest {
 
       // when & then
       mockMvc.perform(get("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .param("limit", "2"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(2))
@@ -120,7 +133,7 @@ public class NotificationIntegrationTest {
     @DisplayName("cursor만 있고 after가 없으면 400을 반환한다")
     void cursor만_있고_after가_없으면_400을_반환한다() throws Exception {
       mockMvc.perform(get("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .param("limit", "10")
               .param("cursor", "1970-01-01T00:00:00Z"))
           .andExpect(status().isBadRequest());
@@ -130,7 +143,7 @@ public class NotificationIntegrationTest {
     @DisplayName("after만 있고 cursor가 없으면 400을 반환한다")
     void after만_있고_cursor가_없으면_400을_반환한다() throws Exception {
       mockMvc.perform(get("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .param("limit", "10")
               .param("after", "1970-01-01T00:00:00Z"))
           .andExpect(status().isBadRequest());
@@ -145,7 +158,7 @@ public class NotificationIntegrationTest {
 
       // when & then — cursor=Instant.EPOCH → createdAt > Instant.EPOCH인 알림 1건 반환
       mockMvc.perform(get("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .param("limit", "10")
               .param("cursor", "1970-01-01T00:00:00Z")
               .param("after", "1970-01-01T00:00:00Z")
@@ -155,10 +168,10 @@ public class NotificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
-    void 헤더가_없으면_400을_반환한다() throws Exception {
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 401을 반환한다")
+    void 헤더가_없으면_401을_반환한다() throws Exception {
       mockMvc.perform(get("/api/notifications"))
-          .andExpect(status().isBadRequest());
+          .andExpect(status().isUnauthorized());
     }
   }
 
@@ -175,7 +188,7 @@ public class NotificationIntegrationTest {
 
       // when
       mockMvc.perform(patch("/api/notifications/{notificationId}", notification.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNoContent());
 
       // then — DB 상태 검증
@@ -195,7 +208,7 @@ public class NotificationIntegrationTest {
 
       // when & then
       mockMvc.perform(patch("/api/notifications/{notificationId}", notification.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNotFound())
           .andExpect(jsonPath("$.status").value(404))
           .andExpect(jsonPath("$.message").exists());
@@ -206,7 +219,7 @@ public class NotificationIntegrationTest {
     void 존재하지_않는_알림_확인_시_404와_에러_응답을_반환한다() throws Exception {
       // when & then
       mockMvc.perform(patch("/api/notifications/{notificationId}", UUID.randomUUID())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNotFound())
           .andExpect(jsonPath("$.status").value(404))
           .andExpect(jsonPath("$.message").exists());
@@ -222,16 +235,16 @@ public class NotificationIntegrationTest {
 
       // when & then
       mockMvc.perform(patch("/api/notifications/{notificationId}", notification.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNotFound())
           .andExpect(jsonPath("$.status").value(404));
     }
 
     @Test
-    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
-    void 헤더가_없으면_400을_반환한다() throws Exception {
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 401을 반환한다")
+    void 헤더가_없으면_401을_반환한다() throws Exception {
       mockMvc.perform(patch("/api/notifications/{notificationId}", UUID.randomUUID()))
-          .andExpect(status().isBadRequest());
+          .andExpect(status().isUnauthorized());
     }
   }
 
@@ -250,7 +263,7 @@ public class NotificationIntegrationTest {
 
       // when
       mockMvc.perform(patch("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNoContent());
 
       // then — DB 상태 검증: 해당 유저의 모든 알림이 확인 처리됐는지 직접 조회
@@ -272,7 +285,7 @@ public class NotificationIntegrationTest {
       // when
       Instant confirmAllTime = Instant.now();
       mockMvc.perform(patch("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNoContent());
 
       // then — confirmAll 이전에 확인된 알림이므로 confirmedAt이 confirmAllTime보다 이전이어야 함
@@ -292,12 +305,12 @@ public class NotificationIntegrationTest {
 
       // when — 전체 확인
       mockMvc.perform(patch("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNoContent());
 
       // then — 목록 조회 시 0건
       mockMvc.perform(get("/api/notifications")
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .param("limit", "10"))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(0))
@@ -306,10 +319,10 @@ public class NotificationIntegrationTest {
     }
 
     @Test
-    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
-    void 헤더가_없으면_400을_반환한다() throws Exception {
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 401을 반환한다")
+    void 헤더가_없으면_401을_반환한다() throws Exception {
       mockMvc.perform(patch("/api/notifications"))
-          .andExpect(status().isBadRequest());
+          .andExpect(status().isUnauthorized());
     }
   }
 }

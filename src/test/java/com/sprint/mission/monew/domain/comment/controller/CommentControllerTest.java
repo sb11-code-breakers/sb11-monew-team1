@@ -6,9 +6,9 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,8 +19,11 @@ import com.sprint.mission.monew.domain.comment.dto.CommentResponse;
 import com.sprint.mission.monew.domain.comment.exception.CommentAccessDeniedException;
 import com.sprint.mission.monew.domain.comment.exception.CommentNotFoundException;
 import com.sprint.mission.monew.domain.comment.service.CommentService;
+import com.sprint.mission.monew.domain.user.document.UserSession;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -44,8 +47,12 @@ public class CommentControllerTest {
   @MockitoBean
   private CommentService commentService;
 
+  @MockitoBean
+  private UserSessionRepository userSessionRepository;
+
   private UUID articleId;
   private UUID userId;
+  private UUID sessionToken;
   private UUID commentId;
   private CommentCreateRequest request;
   private CommentResponse createResponse;
@@ -62,7 +69,10 @@ public class CommentControllerTest {
   void setUp() {
     articleId = UUID.randomUUID();
     userId = UUID.randomUUID();
+    sessionToken = UUID.randomUUID();
     commentId = UUID.randomUUID();
+    UserSession session = UserSession.create(userId, "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    given(userSessionRepository.findById(any(UUID.class))).willReturn(Optional.of(session));
     firstCommentId = UUID.randomUUID();
     secondCommentId = UUID.randomUUID();
 
@@ -116,7 +126,7 @@ public class CommentControllerTest {
         Instant.parse("2024-01-01T00:00:01Z") // 1초 후 생성
     );
 
-     fixedTime = Instant.parse("2024-01-01T00:00:00Z");
+    fixedTime = Instant.parse("2024-01-01T00:00:00Z");
   }
 
   @Nested
@@ -135,10 +145,12 @@ public class CommentControllerTest {
           """;
 
       // when & then
-      mockMvc.perform(post("/api/comments")
-              .header("Monew-Request-User-ID", userId)
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(invalidRawJson))
+      mockMvc.perform(
+              post("/api/comments")
+                  .header("Monew-Request-User-ID", sessionToken)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(invalidRawJson)
+          )
           .andExpect(status().isBadRequest());
 
       verifyNoInteractions(commentService); // 유효성 검증 실패 시 CommentService가 미호출 되어야함
@@ -156,10 +168,12 @@ public class CommentControllerTest {
           """;
 
       // when & then
-      mockMvc.perform(post("/api/comments")
-              .header("Monew-Request-User-ID", userId)
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(invalidRawJson))
+      mockMvc.perform(
+              post("/api/comments")
+                  .header("Monew-Request-User-ID", sessionToken)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(invalidRawJson)
+          )
           .andExpect(status().isBadRequest());
 
       verifyNoInteractions(commentService); // 유효성 검증 실패 시 CommentService가 미호출 되어야함
@@ -178,10 +192,12 @@ public class CommentControllerTest {
           """;
 
       // when & then
-      mockMvc.perform(post("/api/comments")
-              .header("Monew-Request-User-ID", userId)
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(invalidRawJson))
+      mockMvc.perform(
+              post("/api/comments")
+                  .header("Monew-Request-User-ID", sessionToken)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(invalidRawJson)
+          )
           .andExpect(status().isBadRequest());
 
       verifyNoInteractions(commentService); // 유효성 검증 실패 시 CommentService가 미호출 되어야함
@@ -194,10 +210,12 @@ public class CommentControllerTest {
       given(commentService.create(any(CommentCreateRequest.class))).willReturn(createResponse);
 
       // when & then
-      mockMvc.perform(post("/api/comments")
-              .header("Monew-Request-User-ID", userId)
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(objectMapper.writeValueAsString(request)))
+      mockMvc.perform(
+              post("/api/comments")
+                  .header("Monew-Request-User-ID", sessionToken)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(request))
+          )
           .andExpect(status().isCreated())
           .andExpect(jsonPath("$.content").value("댓글 내용"));
     }
@@ -221,10 +239,12 @@ public class CommentControllerTest {
           }
           """;
 
-      mockMvc.perform(patch("/api/comments/{commentId}", commentId)
-              .header("Monew-Request-User-ID", userId)
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(rawJson))
+      mockMvc.perform(
+              patch("/api/comments/{commentId}", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(rawJson)
+          )
           .andExpect(status().isNotFound());
     }
 
@@ -242,10 +262,12 @@ public class CommentControllerTest {
           }
           """;
 
-      mockMvc.perform(patch("/api/comments/{commentId}", commentId)
-              .header("Monew-Request-User-ID", userId)
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(rawJson))
+      mockMvc.perform(
+              patch("/api/comments/{commentId}", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(rawJson)
+          )
           .andExpect(status().isForbidden());
     }
 
@@ -260,10 +282,12 @@ public class CommentControllerTest {
           """;
 
       // when & then
-      mockMvc.perform(patch("/api/comments/{commentId}", commentId)
-              .header("Monew-Request-User-ID", userId)
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(invalidRawJson))
+      mockMvc.perform(
+              patch("/api/comments/{commentId}", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(invalidRawJson)
+          )
           .andExpect(status().isBadRequest());
 
       verifyNoInteractions(commentService); // 유효성 검증 실패 시 CommentService가 미호출 되어야함
@@ -283,10 +307,12 @@ public class CommentControllerTest {
           }
           """;
 
-      mockMvc.perform(patch("/api/comments/{commentId}", commentId)
-              .header("Monew-Request-User-ID", userId)
-              .contentType(MediaType.APPLICATION_JSON)
-              .content(rawJson))
+      mockMvc.perform(
+              patch("/api/comments/{commentId}", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(rawJson)
+          )
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content").value("수정한 댓글 내용"));
     }
@@ -304,8 +330,10 @@ public class CommentControllerTest {
           .softDelete(commentId, userId);
 
       // when & then
-      mockMvc.perform(delete("/api/comments/{commentId}", commentId)
-              .header("Monew-Request-User-ID", userId))
+      mockMvc.perform(
+              delete("/api/comments/{commentId}", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isNotFound());
     }
 
@@ -317,8 +345,10 @@ public class CommentControllerTest {
           .softDelete(commentId, userId);
 
       // when & then
-      mockMvc.perform(delete("/api/comments/{commentId}", commentId)
-              .header("Monew-Request-User-ID", userId))
+      mockMvc.perform(
+              delete("/api/comments/{commentId}", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isForbidden());
     }
 
@@ -330,8 +360,10 @@ public class CommentControllerTest {
       doNothing().when(commentService).softDelete(commentId, userId);
 
       // when & then
-      mockMvc.perform(delete("/api/comments/{commentId}", commentId)
-              .header("Monew-Request-User-ID", userId))
+      mockMvc.perform(
+              delete("/api/comments/{commentId}", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isNoContent());
     }
   }
@@ -348,7 +380,10 @@ public class CommentControllerTest {
           .hardDelete(commentId);
 
       // when & then
-      mockMvc.perform(delete("/api/comments/{commentId}/hard", commentId))
+      mockMvc.perform(
+              delete("/api/comments/{commentId}/hard", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isNotFound());
     }
 
@@ -359,7 +394,10 @@ public class CommentControllerTest {
       doNothing().when(commentService).hardDelete(commentId);
 
       // when & then
-      mockMvc.perform(delete("/api/comments/{commentId}/hard", commentId))
+      mockMvc.perform(
+              delete("/api/comments/{commentId}/hard", commentId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isNoContent());
     }
   }
@@ -380,7 +418,8 @@ public class CommentControllerTest {
                   .param("articleId", articleId.toString())
                   .param("direction", "DESC")
                   .param("limit", "5")
-                  .header("Monew-Request-User-ID", userId.toString()))
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isBadRequest());
 
       verifyNoInteractions(commentService);
@@ -398,7 +437,8 @@ public class CommentControllerTest {
                   .param("articleId", articleId.toString())
                   .param("orderBy", "CREATED_AT")
                   .param("limit", "5")
-                  .header("Monew-Request-User-ID", userId.toString()))
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isBadRequest());
 
       verifyNoInteractions(commentService);
@@ -417,7 +457,8 @@ public class CommentControllerTest {
                   .param("articleId", articleId.toString())
                   .param("orderBy", "CREATED_AT")
                   .param("direction", "DESC")
-                  .header("Monew-Request-User-ID", userId.toString()))
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isBadRequest());
 
       verifyNoInteractions(commentService);
@@ -436,7 +477,8 @@ public class CommentControllerTest {
                   .param("orderBy", "CREATED_AT")
                   .param("direction", "DESC")
                   .param("limit", "0")
-                  .header("Monew-Request-User-ID", userId.toString()))
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isBadRequest());
 
       verifyNoInteractions(commentService);
@@ -456,7 +498,8 @@ public class CommentControllerTest {
                   .param("direction", "DESC")
                   .param("cursor", "notNumber")
                   .param("limit", "0")
-                  .header("Monew-Request-User-ID", userId.toString()))
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isBadRequest());
 
       verifyNoInteractions(commentService);
@@ -488,7 +531,8 @@ public class CommentControllerTest {
               .param("after", "2024-01-01T00:00:00Z")
               .param("idAfter", UUID.randomUUID().toString())
               .param("limit", "5")
-              .header("Monew-Request-User-ID", userId.toString()))
+              .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content").isArray())
           .andExpect(jsonPath("$.content.length()").value(2))

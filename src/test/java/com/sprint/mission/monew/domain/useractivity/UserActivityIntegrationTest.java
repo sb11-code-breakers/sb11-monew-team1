@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sprint.mission.monew.common.config.MongoContainerConfig;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.entity.ArticleView;
@@ -17,8 +18,10 @@ import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.entity.Subscription;
 import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
 import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepository;
+import com.sprint.mission.monew.domain.user.document.UserSession;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -29,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@Import(MongoContainerConfig.class)
 public class UserActivityIntegrationTest {
 
   @Autowired
@@ -63,8 +68,14 @@ public class UserActivityIntegrationTest {
   @Autowired
   private SubscriptionRepository subscriptionRepository;
 
+  @Autowired
+  private UserSessionRepository userSessionRepository;
+
   private User user;
   private Article article;
+  private UUID sessionToken;
+  private UUID ghostSessionToken;
+  private UUID ghostUserId;
 
   @BeforeEach
   void setUp() {
@@ -80,6 +91,15 @@ public class UserActivityIntegrationTest {
             "테스트 요약"
         )
     );
+
+    UserSession session = UserSession.create(user.getId(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    userSessionRepository.save(session);
+    sessionToken = session.getId();
+
+    ghostUserId = UUID.randomUUID();
+    UserSession ghostSession = UserSession.create(ghostUserId, "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    userSessionRepository.save(ghostSession);
+    ghostSessionToken = ghostSession.getId();
   }
 
   @Nested
@@ -89,12 +109,9 @@ public class UserActivityIntegrationTest {
     @Test
     @DisplayName("존재하지 않는 userId면 404와 에러 응답을 반환한다")
     void 존재하지_않는_userId면_404와_에러_응답을_반환한다() throws Exception {
-      // given
-      UUID nonExistentUserId = UUID.randomUUID();
-
       // when & then
-      mockMvc.perform(get("/api/user-activities/{userId}", nonExistentUserId)
-              .header("Monew-Request-User-ID", nonExistentUserId))
+      mockMvc.perform(get("/api/user-activities/{userId}", ghostUserId)
+              .header("Monew-Request-User-ID", ghostSessionToken))
           .andExpect(status().isNotFound())
           .andExpect(jsonPath("$.status").value(404))
           .andExpect(jsonPath("$.message").exists());
@@ -109,7 +126,7 @@ public class UserActivityIntegrationTest {
 
       // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNotFound());
     }
 
@@ -118,7 +135,7 @@ public class UserActivityIntegrationTest {
     void 성공_시_200과_활동_내역을_반환한다() throws Exception {
       // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.id").value(user.getId().toString()))
           .andExpect(jsonPath("$.email").value("test@test.com"))
@@ -140,7 +157,7 @@ public class UserActivityIntegrationTest {
 
       // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.subscriptions.length()").value(1))
           .andExpect(jsonPath("$.subscriptions[0].interestName").value("인공지능"));
@@ -154,7 +171,7 @@ public class UserActivityIntegrationTest {
 
       // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.comments.length()").value(1))
           .andExpect(jsonPath("$.comments[0].content").value("테스트 댓글"));
@@ -169,7 +186,7 @@ public class UserActivityIntegrationTest {
 
       // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.commentLikes.length()").value(1))
           .andExpect(jsonPath("$.commentLikes[0].commentId").value(comment.getId().toString()));
@@ -183,7 +200,7 @@ public class UserActivityIntegrationTest {
 
       // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.articleViews.length()").value(1))
           .andExpect(jsonPath("$.articleViews[0].articleTitle").value("테스트 기사"));

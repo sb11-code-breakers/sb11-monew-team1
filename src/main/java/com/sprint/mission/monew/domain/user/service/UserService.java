@@ -1,5 +1,7 @@
 package com.sprint.mission.monew.domain.user.service;
 
+import com.sprint.mission.monew.domain.user.document.UserSession;
+import com.sprint.mission.monew.domain.user.dto.LoginResult;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
@@ -23,10 +25,12 @@ import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordExcepti
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import com.sprint.mission.monew.domain.user.repository.UserUnlockTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -49,10 +53,14 @@ public class UserService {
   private final EmailVerificationRepository emailVerificationRepository;
   private final PasswordResetTokenRepository passwordResetTokenRepository;
   private final UserUnlockTokenRepository userUnlockTokenRepository;
+  private final UserSessionRepository userSessionRepository;
   private final EmailQueue emailQueue;
   private final UserMetrics userMetrics;
   private final LoginFailureHandler loginFailureHandler;
   private final LoginSuccessHandler loginSuccessHandler;
+
+  @Value("${monew.session.timeout-minutes}")
+  private int sessionTimeoutMinutes;
 
   @Transactional
   public UserResponse create(UserCreateRequest request) {
@@ -85,8 +93,7 @@ public class UserService {
     return userMapper.toResponse(saved);
   }
 
-  @Transactional(readOnly = true)
-  public UserResponse login(UserLoginRequest request) {
+  public LoginResult login(UserLoginRequest request, String ip, String deviceFingerprint) {
     log.debug("로그인 시도");
     User user = userRepository.findByEmailAndDeletedAtIsNull(request.email())
         .orElseThrow(UserLoginFailedException::withEmail);
@@ -108,8 +115,10 @@ public class UserService {
     }
 
     loginSuccessHandler.handle(user.getId());
+    UserSession session = userSessionRepository.save(
+        UserSession.create(user.getId(), ip, deviceFingerprint, sessionTimeoutMinutes));
     log.info("로그인 완료 | userId={}", user.getId());
-    return userMapper.toResponse(user);
+    return new LoginResult(userMapper.toResponse(user), session.getId());
   }
 
   @Transactional
@@ -147,6 +156,7 @@ public class UserService {
     User user = userRepository.findByIdAndDeletedAtIsNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
     user.softDelete();
+    userSessionRepository.deleteByUserId(userId);
     log.info("사용자 논리 삭제 완료 | userId={}", userId);
   }
 

@@ -1,5 +1,7 @@
 package com.sprint.mission.monew.domain.user;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -7,20 +9,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sprint.mission.monew.domain.user.document.UserSession;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import com.sprint.mission.monew.domain.user.repository.UserUnlockTokenRepository;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -53,6 +60,21 @@ class UserApiTest {
 
   @Autowired
   private PasswordResetTokenRepository passwordResetTokenRepository;
+
+  @MockBean
+  private UserSessionRepository userSessionRepository;
+
+  @BeforeEach
+  void setUp() {
+    given(userSessionRepository.save(any(UserSession.class)))
+        .willAnswer(inv -> inv.getArgument(0));
+    given(userSessionRepository.findById(any(UUID.class)))
+        .willAnswer(inv -> {
+          UUID id = inv.getArgument(0);
+          return Optional.of(UserSession.create(
+              id, "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30));
+        });
+  }
 
   @AfterEach
   void tearDown() {
@@ -188,12 +210,12 @@ class UserApiTest {
     mockMvc.perform(get("/api/users/verify").param("token", token))
         .andExpect(status().isOk());
 
-    // when
+    // when - 논리 삭제 (userId를 sessionToken으로 사용 — mock이 동일 UUID로 세션 반환)
     mockMvc.perform(delete("/api/users/" + userId)
             .header("Monew-Request-User-ID", userId))
         .andExpect(status().isNoContent());
 
-    // then
+    // then - 로그인 불가
     UserLoginRequest loginRequest = new UserLoginRequest("delete@test.com", "test1234");
     mockMvc.perform(post("/api/users/login")
             .contentType(MediaType.APPLICATION_JSON)

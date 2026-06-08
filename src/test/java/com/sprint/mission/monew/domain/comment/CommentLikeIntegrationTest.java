@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sprint.mission.monew.common.config.MongoContainerConfig;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
@@ -12,8 +13,10 @@ import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.entity.CommentLike;
 import com.sprint.mission.monew.domain.comment.repository.CommentLikeRepository;
 import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
+import com.sprint.mission.monew.domain.user.document.UserSession;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@Import(MongoContainerConfig.class)
 public class CommentLikeIntegrationTest {
 
   @Autowired
@@ -48,9 +53,14 @@ public class CommentLikeIntegrationTest {
   @Autowired
   private CommentLikeRepository commentLikeRepository;
 
+  @Autowired
+  private UserSessionRepository userSessionRepository;
+
   private Article article;
   private User user;
   private Comment comment;
+  private UUID sessionToken;
+  private UUID ghostSessionToken;
 
   @BeforeEach
   void setUp() {
@@ -69,6 +79,14 @@ public class CommentLikeIntegrationTest {
     comment = commentRepository.save(
         Comment.create(article, user, "댓글 내용")
     );
+
+    UserSession session = UserSession.create(user.getId(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    userSessionRepository.save(session);
+    sessionToken = session.getId();
+
+    UserSession ghostSession = UserSession.create(UUID.randomUUID(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    userSessionRepository.save(ghostSession);
+    ghostSessionToken = ghostSession.getId();
   }
 
   @Nested
@@ -78,12 +96,9 @@ public class CommentLikeIntegrationTest {
     @Test
     @DisplayName("댓글 좋아요 등록 실패 - 사용자가 존재하지 않음")
     void 댓글_좋아요_등록_실패_사용자_없음() throws Exception {
-      // given
-      UUID notExistUserId = UUID.randomUUID();
-
       // when & then
       mockMvc.perform(post("/api/comments/{commentId}/comment-likes", comment.getId())
-              .header("Monew-Request-User-ID", notExistUserId))
+              .header("Monew-Request-User-ID", ghostSessionToken))
           .andExpect(status().isNotFound());
     }
 
@@ -95,7 +110,7 @@ public class CommentLikeIntegrationTest {
 
       // when & then
       mockMvc.perform(post("/api/comments/{commentId}/comment-likes", notExistCommentId)
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNotFound());
     }
 
@@ -108,7 +123,7 @@ public class CommentLikeIntegrationTest {
 
       // when & then
       mockMvc.perform(post("/api/comments/{commentId}/comment-likes", comment.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isConflict());
     }
 
@@ -120,7 +135,7 @@ public class CommentLikeIntegrationTest {
 
       // when & then
       mockMvc.perform(post("/api/comments/{commentId}/comment-likes", comment.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isCreated());
 
       // DB 검증
@@ -144,11 +159,10 @@ public class CommentLikeIntegrationTest {
     void 댓글_좋아요_취소_실패_좋아요_없음() throws Exception {
       // given
       UUID notExistCommentId = UUID.randomUUID();
-      UUID notExistUserId = UUID.randomUUID();
 
       // when & then
       mockMvc.perform(delete("/api/comments/{commentId}/comment-likes", notExistCommentId)
-              .header("Monew-Request-User-ID", notExistUserId))
+              .header("Monew-Request-User-ID", ghostSessionToken))
           .andExpect(status().isNotFound());
     }
 
@@ -162,7 +176,7 @@ public class CommentLikeIntegrationTest {
 
       // when & then
       mockMvc.perform(delete("/api/comments/{commentId}/comment-likes", comment.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNoContent());
 
       // DB 검증

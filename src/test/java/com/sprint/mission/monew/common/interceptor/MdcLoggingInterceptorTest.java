@@ -62,6 +62,21 @@ class MdcLoggingInterceptorTest {
     }
 
     @Test
+    @DisplayName("CF-Connecting-IP 헤더가 있으면 X-Forwarded-For보다 우선 적용한다")
+    void CF_Connecting_IP_헤더가_있으면_X_Forwarded_For보다_우선_적용한다() {
+      // given
+      request.addHeader("CF-Connecting-IP", "203.0.113.1");
+      request.addHeader("X-Forwarded-For", "10.0.0.1, 172.16.0.1");
+      request.setRemoteAddr("192.168.0.1");
+
+      // when
+      interceptor.preHandle(request, response, new Object());
+
+      // then
+      assertThat(MDC.get("clientIp")).isEqualTo("203.0.113.1");
+    }
+
+    @Test
     @DisplayName("X-Forwarded-For 헤더가 없으면 remoteAddr을 clientIp로 세팅한다")
     void X_Forwarded_For_헤더가_없으면_remoteAddr을_clientIp로_세팅한다() {
       // given

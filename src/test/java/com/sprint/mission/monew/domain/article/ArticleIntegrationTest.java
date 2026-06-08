@@ -12,6 +12,8 @@ import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
+import com.sprint.mission.monew.domain.user.document.UserSession;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
@@ -22,27 +24,38 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.sprint.mission.monew.common.config.MongoContainerConfig;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@Import(MongoContainerConfig.class)
 class ArticleIntegrationTest {
 
   @Autowired MockMvc mockMvc;
   @Autowired ArticleRepository articleRepository;
   @Autowired ArticleViewRepository articleViewRepository;
+  @Autowired UserSessionRepository userSessionRepository;
   @Autowired EntityManager em;
 
   private static final String URL = "/api/articles";
   private static final String USER_ID_HEADER = "Monew-Request-User-ID";
 
+  private UUID sessionToken;
+
   @BeforeEach
   void setUp() {
     articleRepository.deleteAll();
+
+    UserSession session = UserSession.create(UUID.randomUUID(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    userSessionRepository.save(session);
+    sessionToken = session.getId();
   }
 
   @Nested
@@ -56,7 +69,7 @@ class ArticleIntegrationTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "publishDate")
                   .param("direction", "DESC")
                   .param("limit", "10"))
@@ -81,7 +94,7 @@ class ArticleIntegrationTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "publishDate")
                   .param("direction", "DESC")
                   .param("limit", "10"))
@@ -108,7 +121,7 @@ class ArticleIntegrationTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "publishDate")
                   .param("direction", "DESC")
                   .param("limit", "10"))
@@ -122,7 +135,7 @@ class ArticleIntegrationTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "publishDate")
                   .param("direction", "DESC")
                   .param("cursor", "2024-01-01T00:00:00Z")
@@ -136,7 +149,7 @@ class ArticleIntegrationTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "publishDate")
                   .param("direction", "DESC")
                   .param("after", "2024-01-01T00:00:00Z")
@@ -150,7 +163,7 @@ class ArticleIntegrationTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "publishDate")
                   .param("direction", "DESC")
                   .param("cursor", "not-an-instant")
@@ -165,7 +178,7 @@ class ArticleIntegrationTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "commentCount")
                   .param("direction", "DESC")
                   .param("cursor", "5")
@@ -181,7 +194,7 @@ class ArticleIntegrationTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "commentCount")
                   .param("direction", "DESC")
                   .param("cursor", "notANumber")
@@ -207,7 +220,7 @@ class ArticleIntegrationTest {
       mockMvc
           .perform(
               get(URL)
-                  .header(USER_ID_HEADER, UUID.randomUUID())
+                  .header(USER_ID_HEADER, sessionToken)
                   .param("orderBy", "publishDate")
                   .param("direction", "DESC")
                   .param("limit", "2"))
@@ -226,7 +239,8 @@ class ArticleIntegrationTest {
     void 모든_출처_목록을_200으로_반환한다() throws Exception {
       // when & then
       mockMvc
-          .perform(get(URL + "/sources"))
+          .perform(get(URL + "/sources")
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$").isArray())
           .andExpect(jsonPath("$.length()").value(ArticleSource.values().length))
@@ -239,12 +253,12 @@ class ArticleIntegrationTest {
   class GetArticle {
 
     @Test
-    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
-    void Monew_Request_User_ID_헤더가_없으면_400을_반환한다() throws Exception {
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 401을 반환한다")
+    void Monew_Request_User_ID_헤더가_없으면_401을_반환한다() throws Exception {
       // when & then
       mockMvc
           .perform(get(URL + "/{articleId}", UUID.randomUUID()))
-          .andExpect(status().isBadRequest());
+          .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -253,7 +267,7 @@ class ArticleIntegrationTest {
       // when & then
       mockMvc
           .perform(get(URL + "/{articleId}", UUID.randomUUID())
-              .header(USER_ID_HEADER, UUID.randomUUID()))
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNotFound());
     }
 
@@ -270,7 +284,7 @@ class ArticleIntegrationTest {
       // when & then
       mockMvc
           .perform(get(URL + "/{articleId}", article.getId())
-              .header(USER_ID_HEADER, UUID.randomUUID()))
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNotFound());
     }
 
@@ -284,7 +298,7 @@ class ArticleIntegrationTest {
       // when & then
       mockMvc
           .perform(get(URL + "/{articleId}", article.getId())
-              .header(USER_ID_HEADER, UUID.randomUUID()))
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.id").value(article.getId().toString()))
           .andExpect(jsonPath("$.title").value("테스트 기사"))
@@ -301,10 +315,13 @@ class ArticleIntegrationTest {
       UUID userId = UUID.randomUUID();
       articleViewRepository.save(ArticleView.create(userId, article));
 
+      UserSession session = UserSession.create(userId, "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+      userSessionRepository.save(session);
+
       // when & then
       mockMvc
           .perform(get(URL + "/{articleId}", article.getId())
-              .header(USER_ID_HEADER, userId))
+              .header(USER_ID_HEADER, session.getId()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.viewedByMe").value(true));
     }
@@ -315,12 +332,12 @@ class ArticleIntegrationTest {
   class RegisterView {
 
     @Test
-    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
-    void Monew_Request_User_ID_헤더가_없으면_400을_반환한다() throws Exception {
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 401을 반환한다")
+    void Monew_Request_User_ID_헤더가_없으면_401을_반환한다() throws Exception {
       // when & then
       mockMvc
           .perform(post(URL + "/{articleId}/article-views", UUID.randomUUID()))
-          .andExpect(status().isBadRequest());
+          .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -329,7 +346,7 @@ class ArticleIntegrationTest {
       // when & then
       mockMvc
           .perform(post(URL + "/{articleId}/article-views", UUID.randomUUID())
-              .header(USER_ID_HEADER, UUID.randomUUID()))
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNotFound());
     }
 
@@ -346,7 +363,7 @@ class ArticleIntegrationTest {
       // when & then
       mockMvc
           .perform(post(URL + "/{articleId}/article-views", article.getId())
-              .header(USER_ID_HEADER, UUID.randomUUID()))
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNotFound());
     }
 
@@ -357,11 +374,13 @@ class ArticleIntegrationTest {
       Article article = articleRepository.save(Article.create(
           ArticleSource.NAVER, "https://example.com/news/1", "테스트 기사", Instant.now(), "요약"));
       UUID userId = UUID.randomUUID();
+      UserSession session = UserSession.create(userId, "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+      userSessionRepository.save(session);
 
       // when & then
       mockMvc
           .perform(post(URL + "/{articleId}/article-views", article.getId())
-              .header(USER_ID_HEADER, userId))
+              .header(USER_ID_HEADER, session.getId()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.articleId").value(article.getId().toString()))
           .andExpect(jsonPath("$.viewedBy").value(userId.toString()))
@@ -377,10 +396,13 @@ class ArticleIntegrationTest {
       UUID userId = UUID.randomUUID();
       articleViewRepository.save(ArticleView.create(userId, article));
 
+      UserSession session = UserSession.create(userId, "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+      userSessionRepository.save(session);
+
       // when & then
       mockMvc
           .perform(post(URL + "/{articleId}/article-views", article.getId())
-              .header(USER_ID_HEADER, userId))
+              .header(USER_ID_HEADER, session.getId()))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.articleViewCount").value(0));
     }
@@ -395,7 +417,8 @@ class ArticleIntegrationTest {
     void 존재하지_않는_기사이면_404를_반환한다() throws Exception {
       // when & then
       mockMvc
-          .perform(delete(URL + "/{articleId}/hard", UUID.randomUUID()))
+          .perform(delete(URL + "/{articleId}/hard", UUID.randomUUID())
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNotFound());
     }
 
@@ -411,7 +434,8 @@ class ArticleIntegrationTest {
 
       // when & then
       mockMvc
-          .perform(delete(URL + "/{articleId}/hard", article.getId()))
+          .perform(delete(URL + "/{articleId}/hard", article.getId())
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNoContent());
     }
 
@@ -425,13 +449,14 @@ class ArticleIntegrationTest {
 
       // when
       mockMvc
-          .perform(delete(URL + "/{articleId}/hard", article.getId()))
+          .perform(delete(URL + "/{articleId}/hard", article.getId())
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNoContent());
 
       // then
       mockMvc
           .perform(get(URL + "/{articleId}", article.getId())
-              .header(USER_ID_HEADER, UUID.randomUUID()))
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNotFound());
     }
 
@@ -448,7 +473,8 @@ class ArticleIntegrationTest {
 
       // when
       mockMvc
-          .perform(delete(URL + "/{articleId}/hard", articleId))
+          .perform(delete(URL + "/{articleId}/hard", articleId)
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNoContent());
 
       // then — 삭제 후 세션 초기화: delete된 Article을 참조하는 ArticleView가 세션에 남아 flush 충돌 방지
@@ -467,7 +493,8 @@ class ArticleIntegrationTest {
     void 존재하지_않는_기사이면_404를_반환한다() throws Exception {
       // when & then
       mockMvc
-          .perform(delete(URL + "/{articleId}", UUID.randomUUID()))
+          .perform(delete(URL + "/{articleId}", UUID.randomUUID())
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNotFound());
     }
 
@@ -483,7 +510,8 @@ class ArticleIntegrationTest {
 
       // when & then
       mockMvc
-          .perform(delete(URL + "/{articleId}", article.getId()))
+          .perform(delete(URL + "/{articleId}", article.getId())
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNotFound());
     }
 
@@ -497,13 +525,14 @@ class ArticleIntegrationTest {
 
       // when
       mockMvc
-          .perform(delete(URL + "/{articleId}", article.getId()))
+          .perform(delete(URL + "/{articleId}", article.getId())
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNoContent());
 
       // then
       mockMvc
           .perform(get(URL + "/{articleId}", article.getId())
-              .header(USER_ID_HEADER, UUID.randomUUID()))
+              .header(USER_ID_HEADER, sessionToken))
           .andExpect(status().isNotFound());
     }
   }

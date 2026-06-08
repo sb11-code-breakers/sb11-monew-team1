@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.UUID;
@@ -53,7 +54,8 @@ public interface UserApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
-  ResponseEntity<UserResponse> login(@Valid @RequestBody UserLoginRequest request);
+  ResponseEntity<UserResponse> login(@Valid @RequestBody UserLoginRequest request,
+      HttpServletRequest httpRequest);
 
   @Operation(summary = "이메일 인증", description = "이메일 인증 토큰을 검증합니다.")
   @ApiResponses({
