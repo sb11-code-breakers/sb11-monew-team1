@@ -17,4 +17,8 @@ public class UserActivityEventListener {
   public void handle(UserCreatedEvent event) {
     userActivityMongoRepository.createUserActivity(event.userActivity());
   }
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(UserNicknameUpdatedEvent event) {
+    userActivityMongoRepository.updateNickname(event.userId(), event.nickname());
+  }
 }
