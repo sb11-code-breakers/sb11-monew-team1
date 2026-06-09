@@ -7,7 +7,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 
 public interface UserActivityMongoRepository extends MongoRepository<UserActivity, UUID> {
 
-  // 🟢 핵심: 자바 컴파일러와 Mockito가 메서드의 규격을 인식할 수 있도록 껍데기 명세만 선언
+  //자바 컴파일러와 Mockito가 메서드의 규격을 인식할 수 있도록 껍데기 명세만 선언
   void createUserActivity(UserActivity userActivity);
   Optional<UserActivity> findByIdAndNicknameIsNotNull(UUID id);
   void updateNickname(UUID userId, String nickname);
@@ -20,4 +20,8 @@ public interface UserActivityMongoRepository extends MongoRepository<UserActivit
   void pushCommentLike(UUID userId, UUID commentId);
   void pullCommentLike(UUID userId, UUID commentId);
   void pushArticleView(UUID userId, UUID articleId);
+  void pullArticle(UUID userId, UUID articleId);
+  void pullArticleLike(UUID userId, UUID articleId);
+  void pullArticleView(UUID userId, UUID articleId);
+
 }

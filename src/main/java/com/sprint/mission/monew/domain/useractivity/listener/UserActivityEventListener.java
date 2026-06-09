@@ -54,4 +54,10 @@ public class UserActivityEventListener {
   public void handle(ArticleViewedEvent event) {
     userActivityMongoRepository.pushArticleView(event.userId(), event.articleId());
   }
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(ArticleDeletedEvent event) {
+    userActivityMongoRepository.pullArticle(event.userId(), event.articleId());
+    userActivityMongoRepository.pullArticleLike(event.userId(), event.articleId());
+    userActivityMongoRepository.pullArticleView(event.userId(), event.articleId());
+  }
 }
