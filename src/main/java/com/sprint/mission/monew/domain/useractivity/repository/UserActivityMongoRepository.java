@@ -19,4 +19,5 @@ public interface UserActivityMongoRepository extends MongoRepository<UserActivit
   void updateCommentContent(UUID userId, UUID commentId, String content);
   void pushCommentLike(UUID userId, UUID commentId);
   void pullCommentLike(UUID userId, UUID commentId);
+  void pushArticleView(UUID userId, UUID articleId);
 }
