@@ -171,5 +171,18 @@ class UserActivityEventListenerTest {
       verify(userActivityMongoRepository).pullArticleView(userId, articleId);
     }
   }
+  @Nested
+  @DisplayName("InterestDeletedEvent")
+  class InterestDeleted {
+    @Test
+    @DisplayName("InterestDeletedEvent를 받으면 pullSubscriptionsByInterestId를 호출한다")
+    void InterestDeletedEvent를_받으면_pullSubscriptionsByInterestId를_호출한다() {
+      UUID interestId = UUID.randomUUID();
+
+      listener.handle(new InterestDeletedEvent(interestId));
+
+      verify(userActivityMongoRepository).pullSubscriptionsByInterestId(interestId);
+    }
+  }
 
 }
