@@ -113,4 +113,18 @@ class UserActivityEventListenerTest {
       verify(userActivityMongoRepository).updateCommentContent(userId, commentId, content);
     }
   }
+  @Nested
+  @DisplayName("CommentLikedEvent")
+  class CommentLiked {
+    @Test
+    @DisplayName("CommentLikedEvent를 받으면 pushCommentLike를 호출한다")
+    void CommentLikedEvent를_받으면_pushCommentLike를_호출한다() {
+      UUID userId = UUID.randomUUID();
+      UUID commentId = UUID.randomUUID();
+
+      listener.handle(new CommentLikedEvent(userId, commentId));
+
+      verify(userActivityMongoRepository).pushCommentLike(userId, commentId);
+    }
+  }
 }
