@@ -35,4 +35,15 @@ public class UserActivityMongoRepositoryImpl {
 
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }
+
+  public void updateNickname(UUID id, String newNickname) {
+    Query query = Query.query(Criteria.where("_id").is(id));
+
+    // comments.$[].userNickname 구문이 배열 내부의 모든 엘리먼트를 타겟팅합니다.
+    Update update = new Update()
+        .set("nickname", newNickname)
+        .set("comments.$[].userNickname", newNickname);
+
+    mongoTemplate.updateFirst(query, update, UserActivity.class);
+  }
 }
