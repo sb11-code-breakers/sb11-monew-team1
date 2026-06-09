@@ -861,4 +861,21 @@ class UserServiceTest {
       then(userUnlockTokenRepository).should().delete(token);
     }
   }
+  @Nested
+  @DisplayName("로그아웃")
+  class Logout {
+
+    @Test
+    @DisplayName("로그아웃 성공 시 해당 유저의 전체 세션이 삭제된다")
+    void 로그아웃_성공_시_해당_유저의_전체_세션이_삭제된다() {
+      // given
+      UUID userId = UUID.randomUUID();
+
+      // when
+      userService.logout(userId);
+
+      // then
+      then(userSessionRepository).should(times(1)).deleteByUserId(userId);
+    }
+  }
  }

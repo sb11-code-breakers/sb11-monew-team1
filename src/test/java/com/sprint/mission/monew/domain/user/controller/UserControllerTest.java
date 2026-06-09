@@ -715,4 +715,29 @@ class UserControllerTest {
       then(userService).should().hardDelete(eq(userId));
     }
   }
+  @Nested
+  @DisplayName("DELETE /api/users/logout — 로그아웃")
+  class Logout {
+
+    @Test
+    @DisplayName("성공 시 204 반환")
+    void 성공_시_204_반환() throws Exception {
+      // given
+      UUID userId = UUID.randomUUID();
+      willDoNothing().given(userService).logout(userId);
+
+      // when & then
+      mockMvc.perform(delete("/api/users/logout")
+              .header("Monew-Request-User-ID", userId.toString()))
+          .andExpect(status().isNoContent());
+    }
+
+    @Test
+    @DisplayName("Monew-Request-User-ID 헤더 없으면 400 반환")
+    void 헤더_없으면_400_반환() throws Exception {
+      // given & when & then
+      mockMvc.perform(delete("/api/users/logout"))
+          .andExpect(status().isBadRequest());
+    }
+  }
 }
