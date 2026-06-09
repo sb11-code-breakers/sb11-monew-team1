@@ -33,4 +33,15 @@ class UserActivityEventListenerTest {
       verify(userActivityMongoRepository).createUserActivity(activity);
     }
   }
+  @Nested
+  @DisplayName("UserNicknameUpdatedEvent")
+  class UserNicknameUpdated {
+    @Test
+    @DisplayName("UserNicknameUpdatedEvent를 받으면 updateNickname을 호출한다")
+    void UserNicknameUpdatedEvent를_받으면_updateNickname을_호출한다() {
+      UUID userId = UUID.randomUUID();
+      listener.handle(new UserNicknameUpdatedEvent(userId, "새닉네임"));
+      verify(userActivityMongoRepository).updateNickname(userId, "새닉네임");
+    }
+  }
 }
