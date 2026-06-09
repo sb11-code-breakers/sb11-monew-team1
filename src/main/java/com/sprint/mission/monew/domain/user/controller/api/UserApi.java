@@ -182,7 +182,7 @@ public interface UserApi {
   @Operation(summary = "로그아웃", description = "해당 사용자의 모든 세션을 삭제합니다.")
   @ApiResponses({
       @ApiResponse(responseCode = "204", description = "로그아웃 성공"),
-      @ApiResponse(responseCode = "401", description = "인증 정보 없음",
+      @ApiResponse(responseCode = "401", description = "인증 헤더 없음",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))

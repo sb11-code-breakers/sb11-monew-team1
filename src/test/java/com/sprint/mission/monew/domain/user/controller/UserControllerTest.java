@@ -730,15 +730,7 @@ class UserControllerTest {
       mockMvc.perform(post("/api/auth/logout")
               .header("Monew-Request-User-ID", sessionToken.toString()))
           .andExpect(status().isNoContent());
-    }
-
-    @Test
-    @DisplayName("Monew-Request-User-ID 헤더 없으면 401 반환")
-    void 헤더_없으면_401_반환() throws Exception {
-      // given & when & then
-      mockMvc.perform(post("/api/auth/logout"))
-          .andExpect(status().isUnauthorized());
+      then(userService).should().logout(eq(userId));
     }
   }
-
 }

@@ -284,7 +284,7 @@ class UserIntegrationTest {
     @Test
     @DisplayName("로그아웃 성공 시 전체 세션이 삭제되고 204 반환")
     void 로그아웃_성공_시_전체_세션이_삭제되고_204_반환() throws Exception {
-      // given — 회원가입 → 이메일 인증 → 로그인
+      // given — 회원가입 → 이메일 인증 → 로그인 2회
       UserCreateRequest createRequest = new UserCreateRequest(
           "logout@test.com", "로그아웃테스터", "test1234");
       mockMvc.perform(post("/api/users")
@@ -295,20 +295,32 @@ class UserIntegrationTest {
           .findFirst().orElseThrow().getToken();
       mockMvc.perform(get("/api/users/verify").param("token", verifyToken))
           .andExpect(status().isOk());
+
       UserLoginRequest loginRequest = new UserLoginRequest("logout@test.com", "test1234");
-      MvcResult loginResult = mockMvc.perform(post("/api/users/login")
+      MvcResult loginResult1 = mockMvc.perform(post("/api/users/login")
               .contentType(MediaType.APPLICATION_JSON)
               .content(objectMapper.writeValueAsString(loginRequest)))
           .andExpect(status().isOk())
           .andReturn();
-      String sessionToken = loginResult.getResponse().getHeader("Monew-Request-User-ID");
+      String sessionToken1 = loginResult1.getResponse().getHeader("Monew-Request-User-ID");
+
+      MvcResult loginResult2 = mockMvc.perform(post("/api/users/login")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(loginRequest)))
+          .andExpect(status().isOk())
+          .andReturn();
+      String sessionToken2 = loginResult2.getResponse().getHeader("Monew-Request-User-ID");
+
+      assertThat(sessionToken1).isNotBlank();
+      assertThat(sessionToken2).isNotBlank();
+      assertThat(userSessionRepository.findAll()).hasSize(2);
 
       // when
       mockMvc.perform(post("/api/auth/logout")
-              .header("Monew-Request-User-ID", sessionToken))
+              .header("Monew-Request-User-ID", sessionToken1))
           .andExpect(status().isNoContent());
 
-      // then — 세션 전체 삭제 확인
+      // then — 전체 세션 삭제 확인
       assertThat(userSessionRepository.findAll()).isEmpty();
     }
   }
