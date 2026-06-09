@@ -7,6 +7,9 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,32 +21,26 @@ public class LoginFailureHandler {
 
   private final UserRepository userRepository;
 
+  @Retryable(
+      retryFor = ObjectOptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 50, multiplier = 2)
+  )
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public boolean handle(UUID userId) {
-    int maxRetry = 3;
-    for (int i = 0; i < maxRetry; i++) {
-      try {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> UserNotFoundException.withId(userId));
-        user.incrementLoginFailCount();
-        if (user.hasExceededLoginFailLimit()) {
-          user.lock();
-          return true;
-        }
-        return false;
-      } catch (ObjectOptimisticLockingFailureException e) {
-        if (i == maxRetry - 1) {
-          log.warn("로그인 실패 처리 낙관적락 최종 실패 | userId={}", userId);
-          throw e;
-        }
-        log.warn("로그인 실패 처리 낙관적락 충돌, 재시도 {}/{} | userId={}", i + 1, maxRetry, userId);
-        try {
-          Thread.sleep(50L * (i + 1));
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-        }
-      }
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+    user.incrementLoginFailCount();
+    if (user.hasExceededLoginFailLimit()) {
+      user.lock();
+      return true;
     }
-    throw new IllegalStateException("unreachable");
+    return false;
+  }
+
+  @Recover
+  public boolean recoverHandle(ObjectOptimisticLockingFailureException e, UUID userId) {
+    log.warn("로그인 실패 처리 낙관적락 최종 실패 | userId={}", userId);
+    throw e;
   }
 }

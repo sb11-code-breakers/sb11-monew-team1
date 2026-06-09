@@ -37,6 +37,9 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -136,93 +139,78 @@ public class UserService {
     log.info("이메일 인증 완료 | userId={}", user.getId());
   }
 
+  @Retryable(
+      retryFor = ObjectOptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 50, multiplier = 2)
+  )
   @Transactional
   public UserResponse update(UUID userId, UUID requestUserId, UserUpdateRequest request) {
     log.debug("닉네임 수정 시도");
     if (!userId.equals(requestUserId)) {
       throw UserAccessDeniedException.forUser(requestUserId);
     }
-    int maxRetry = 3;
-    for (int i = 0; i < maxRetry; i++) {
-      try {
-        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
-            .orElseThrow(() -> UserNotFoundException.withId(userId));
-        user.updateNickname(request.nickname());
-        log.info("닉네임 수정 완료 | userId={}", userId);
-        return userMapper.toResponse(user);
-      } catch (ObjectOptimisticLockingFailureException e) {
-        if (i == maxRetry - 1) {
-          log.warn("닉네임 수정 낙관적락 최종 실패 | userId={}", userId);
-          throw e;
-        }
-        log.warn("닉네임 수정 낙관적락 충돌, 재시도 {}/{} | userId={}", i + 1, maxRetry, userId);
-        try {
-          Thread.sleep(50L * (i + 1));
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-        }
-      }
-    }
-    throw new IllegalStateException("unreachable");
+    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+    user.updateNickname(request.nickname());
+    log.info("닉네임 수정 완료 | userId={}", userId);
+    return userMapper.toResponse(user);
   }
 
+  @Recover
+  public UserResponse recoverUpdate(ObjectOptimisticLockingFailureException e,
+      UUID userId, UUID requestUserId, UserUpdateRequest request) {
+    log.warn("닉네임 수정 낙관적락 최종 실패 | userId={}", userId);
+    throw e;
+  }
+
+  @Retryable(
+      retryFor = ObjectOptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 50, multiplier = 2)
+  )
   @Transactional
   public void updatePassword(UUID requestUserId, UserPasswordUpdateRequest request) {
     log.debug("비밀번호 변경 시도");
-    int maxRetry = 3;
-    for (int i = 0; i < maxRetry; i++) {
-      try {
-        User user = userRepository.findByIdAndDeletedAtIsNull(requestUserId)
-            .orElseThrow(() -> UserNotFoundException.withId(requestUserId));
-        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-          throw UserInvalidPasswordException.withoutDetail();
-        }
-        user.updatePassword(passwordEncoder.encode(request.newPassword()));
-        log.info("비밀번호 변경 완료 | userId={}", requestUserId);
-        return;
-      } catch (ObjectOptimisticLockingFailureException e) {
-        if (i == maxRetry - 1) {
-          log.warn("비밀번호 변경 낙관적락 최종 실패 | userId={}", requestUserId);
-          throw e;
-        }
-        log.warn("비밀번호 변경 낙관적락 충돌, 재시도 {}/{} | userId={}", i + 1, maxRetry, requestUserId);
-        try {
-          Thread.sleep(50L * (i + 1));
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-        }
-      }
+    User user = userRepository.findByIdAndDeletedAtIsNull(requestUserId)
+        .orElseThrow(() -> UserNotFoundException.withId(requestUserId));
+    if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+      throw UserInvalidPasswordException.withoutDetail();
     }
+    user.updatePassword(passwordEncoder.encode(request.newPassword()));
+    log.info("비밀번호 변경 완료 | userId={}", requestUserId);
   }
 
+  @Recover
+  public void recoverUpdatePassword(ObjectOptimisticLockingFailureException e,
+      UUID requestUserId, UserPasswordUpdateRequest request) {
+    log.warn("비밀번호 변경 낙관적락 최종 실패 | userId={}", requestUserId);
+    throw e;
+  }
+
+  @Retryable(
+      retryFor = ObjectOptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 50, multiplier = 2)
+  )
   @Transactional
   public void delete(UUID userId, UUID requestUserId) {
     log.debug("논리 삭제 시도");
     if (!userId.equals(requestUserId)) {
       throw UserAccessDeniedException.forUser(requestUserId);
     }
-    int maxRetry = 3;
-    for (int i = 0; i < maxRetry; i++) {
-      try {
-        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
-            .orElseThrow(() -> UserNotFoundException.withId(userId));
-        user.softDelete();
-        userSessionRepository.deleteByUserId(userId);
-        log.info("사용자 논리 삭제 완료 | userId={}", userId);
-        return;
-      } catch (ObjectOptimisticLockingFailureException e) {
-        if (i == maxRetry - 1) {
-          log.warn("논리 삭제 낙관적락 최종 실패 | userId={}", userId);
-          throw e;
-        }
-        log.warn("논리 삭제 낙관적락 충돌, 재시도 {}/{} | userId={}", i + 1, maxRetry, userId);
-        try {
-          Thread.sleep(50L * (i + 1));
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-        }
-      }
-    }
+    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+    user.softDelete();
+    userSessionRepository.deleteByUserId(userId);
+    log.info("사용자 논리 삭제 완료 | userId={}", userId);
+  }
+
+  @Recover
+  public void recoverDelete(ObjectOptimisticLockingFailureException e,
+      UUID userId, UUID requestUserId) {
+    log.warn("논리 삭제 낙관적락 최종 실패 | userId={}", userId);
+    throw e;
   }
 
   @Transactional

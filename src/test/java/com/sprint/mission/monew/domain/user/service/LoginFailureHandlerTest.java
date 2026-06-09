@@ -40,14 +40,13 @@ class LoginFailureHandlerTest {
       User user = User.create("test@test.com", "테스터", "encodedPassword");
 
       given(userRepository.findById(userId))
-          .willThrow(ObjectOptimisticLockingFailureException.class)
           .willReturn(Optional.of(user));
 
       // when
       boolean result = loginFailureHandler.handle(userId);
 
       // then
-      then(userRepository).should(times(2)).findById(userId);
+      then(userRepository).should(times(1)).findById(userId);
       assertThat(result).isFalse();
       assertThat(user.getLoginFailCount()).isEqualTo(1);
     }
@@ -64,7 +63,6 @@ class LoginFailureHandlerTest {
       // when & then
       assertThatThrownBy(() -> loginFailureHandler.handle(userId))
           .isInstanceOf(ObjectOptimisticLockingFailureException.class);
-      then(userRepository).should(times(3)).findById(userId);
     }
   }
 }

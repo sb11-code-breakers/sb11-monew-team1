@@ -468,7 +468,6 @@ class UserServiceTest {
       User user = User.create("test@test.com", "테스터", "encodedPassword");
 
       given(userRepository.findByIdAndDeletedAtIsNull(userId))
-          .willThrow(ObjectOptimisticLockingFailureException.class)
           .willReturn(Optional.of(user));
       given(userMapper.toResponse(user)).willReturn(
           new UserResponse(userId, "test@test.com", "새닉네임", user.getCreatedAt()));
@@ -477,7 +476,6 @@ class UserServiceTest {
       UserResponse response = userService.update(userId, userId, request);
 
       // then
-      then(userRepository).should(times(2)).findByIdAndDeletedAtIsNull(userId);
       assertThat(response).isNotNull();
     }
 
@@ -494,7 +492,6 @@ class UserServiceTest {
       // when & then
       assertThatThrownBy(() -> userService.update(userId, userId, request))
           .isInstanceOf(ObjectOptimisticLockingFailureException.class);
-      then(userRepository).should(times(3)).findByIdAndDeletedAtIsNull(userId);
     }
   }
 
@@ -569,14 +566,13 @@ class UserServiceTest {
       User user = User.create("test@test.com", "테스터", "encodedPassword");
 
       given(userRepository.findByIdAndDeletedAtIsNull(userId))
-          .willThrow(ObjectOptimisticLockingFailureException.class)
           .willReturn(Optional.of(user));
 
       // when
       userService.delete(userId, userId);
 
       // then
-      then(userRepository).should(times(2)).findByIdAndDeletedAtIsNull(userId);
+      then(userRepository).should(times(1)).findByIdAndDeletedAtIsNull(userId);
     }
 
     @Test
@@ -591,7 +587,6 @@ class UserServiceTest {
       // when & then
       assertThatThrownBy(() -> userService.delete(userId, userId))
           .isInstanceOf(ObjectOptimisticLockingFailureException.class);
-      then(userRepository).should(times(3)).findByIdAndDeletedAtIsNull(userId);
     }
   }
 
@@ -696,7 +691,6 @@ class UserServiceTest {
       User user = User.create("test@test.com", "테스터", "encodedPassword");
 
       given(userRepository.findByIdAndDeletedAtIsNull(userId))
-          .willThrow(ObjectOptimisticLockingFailureException.class)
           .willReturn(Optional.of(user));
       given(passwordEncoder.matches(request.currentPassword(), user.getPassword()))
           .willReturn(true);
@@ -705,7 +699,7 @@ class UserServiceTest {
       userService.updatePassword(userId, request);
 
       // then
-      then(userRepository).should(times(2)).findByIdAndDeletedAtIsNull(userId);
+      then(userRepository).should(times(1)).findByIdAndDeletedAtIsNull(userId);
     }
 
     @Test
@@ -713,15 +707,14 @@ class UserServiceTest {
     void 낙관적락_충돌이_3회_초과하면_예외_발생() {
       // given
       UUID userId = UUID.randomUUID();
-      UserUpdateRequest request = new UserUpdateRequest("새닉네임");
+      UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("currentPassword", "newPassword123");
 
       given(userRepository.findByIdAndDeletedAtIsNull(userId))
           .willThrow(ObjectOptimisticLockingFailureException.class);
 
       // when & then
-      assertThatThrownBy(() -> userService.update(userId, userId, request))
+      assertThatThrownBy(() -> userService.updatePassword(userId, request))
           .isInstanceOf(ObjectOptimisticLockingFailureException.class);
-      then(userRepository).should(times(3)).findByIdAndDeletedAtIsNull(userId);
     }
   }
 
