@@ -241,5 +241,26 @@ class UserActivityMongoRepositoryTest {
       assertThat(mongoTemplate.findById(user2, UserActivity.class).getComments()).isEmpty();
     }
   }
+  @Nested
+  @DisplayName("pullCommentLikesByArticleId()")
+  class PullCommentLikesByArticleId {
 
+    @Test
+    @DisplayName("모든 유저 도큐먼트에서 해당 articleId의 댓글 좋아요 기록을 제거한다")
+    void 모든_유저_도큐먼트에서_해당_articleId의_댓글_좋아요_기록을_제거한다() {
+      UUID articleId = UUID.randomUUID();
+      UUID user1 = UUID.randomUUID();
+      UUID user2 = UUID.randomUUID();
+      mongoTemplate.insert(UserActivity.of(user1, "a@b.com", "유저1", Instant.now()));
+      mongoTemplate.insert(UserActivity.of(user2, "c@d.com", "유저2", Instant.now()));
+
+      userActivityMongoRepositoryImpl.pushCommentLike(user1, articleId, UUID.randomUUID());
+      userActivityMongoRepositoryImpl.pushCommentLike(user2, articleId, UUID.randomUUID());
+
+      userActivityMongoRepositoryImpl.pullCommentLikesByArticleId(articleId);
+
+      assertThat(mongoTemplate.findById(user1, UserActivity.class).getCommentLikes()).isEmpty();
+      assertThat(mongoTemplate.findById(user2, UserActivity.class).getCommentLikes()).isEmpty();
+    }
+  }
 }
