@@ -1,10 +1,11 @@
-package com.sprint.mission.monew.domain.useractivity.repository;
+package com.sprint.mission.monew.domain.useractivity.repository.impl;
 
 import com.sprint.mission.monew.domain.useractivity.document.RecentArticleView;
 import com.sprint.mission.monew.domain.useractivity.document.RecentComment;
 import com.sprint.mission.monew.domain.useractivity.document.RecentCommentLike;
 import com.sprint.mission.monew.domain.useractivity.document.RecentSubscription;
 import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
+import com.sprint.mission.monew.domain.useractivity.repository.UserActivityCustomMongoRepository;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;

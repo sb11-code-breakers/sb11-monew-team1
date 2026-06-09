@@ -8,6 +8,7 @@ import com.sprint.mission.monew.domain.useractivity.document.RecentComment;
 import com.sprint.mission.monew.domain.useractivity.document.RecentCommentLike;
 import com.sprint.mission.monew.domain.useractivity.document.RecentSubscription;
 import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
+import com.sprint.mission.monew.domain.useractivity.repository.impl.UserActivityCustomMongoRepositoryImpl;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
