@@ -2,6 +2,7 @@ package com.sprint.mission.monew.domain.useractivity.document;
 
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
@@ -26,7 +27,7 @@ public class RecentSubscription {
     doc.id = id;
     doc.interestId = interestId;
     doc.interestName = interestName;
-    doc.interestKeywords = interestKeywords;
+    doc.interestKeywords = interestKeywords != null ? new ArrayList<>(interestKeywords) : new ArrayList<>();
     doc.interestSubscriberCount = interestSubscriberCount;
     doc.createdAt = createdAt;
     return doc;
