@@ -44,4 +44,16 @@ class UserActivityEventListenerTest {
       verify(userActivityMongoRepository).updateNickname(userId, "새닉네임");
     }
   }
+  @Nested
+  @DisplayName("UserDeletedEvent")
+  class UserDeleted {
+    @Test
+    @DisplayName("UserDeletedEvent를 받으면 anonymize와 anonymizeCommentLikesByCommentUserId를 모두 호출한다")
+    void UserDeletedEvent를_받으면_anonymize와_anonymizeCommentLikes를_모두_호출한다() {
+      UUID userId = UUID.randomUUID();
+      listener.handle(new UserDeletedEvent(userId));
+      verify(userActivityMongoRepository).anonymize(userId);
+      verify(userActivityMongoRepository).anonymizeCommentLikesByCommentUserId(userId);
+    }
+  }
 }
