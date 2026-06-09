@@ -23,5 +23,6 @@ public interface UserActivityMongoRepository extends MongoRepository<UserActivit
   void pullArticle(UUID userId, UUID articleId);
   void pullArticleLike(UUID userId, UUID articleId);
   void pullArticleView(UUID userId, UUID articleId);
+  void pullSubscriptionsByInterestId(UUID interestId);
 
 }
