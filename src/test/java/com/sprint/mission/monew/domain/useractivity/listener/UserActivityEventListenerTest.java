@@ -98,4 +98,19 @@ class UserActivityEventListenerTest {
       verify(userActivityMongoRepository).pushComment(userId, articleId, commentId);
     }
   }
+  @Nested
+  @DisplayName("CommentUpdatedEvent")
+  class CommentUpdated {
+    @Test
+    @DisplayName("CommentUpdatedEvent를 받으면 updateCommentContent를 호출한다")
+    void CommentUpdatedEvent를_받으면_updateCommentContent를_호출한다() {
+      UUID userId = UUID.randomUUID();
+      UUID commentId = UUID.randomUUID();
+      String content = "수정된 댓글 내용";
+
+      listener.handle(new CommentUpdatedEvent(userId, commentId, content));
+
+      verify(userActivityMongoRepository).updateCommentContent(userId, commentId, content);
+    }
+  }
 }
