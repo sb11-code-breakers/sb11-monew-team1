@@ -51,4 +51,10 @@ public class UserActivityMongoRepositoryImpl {
     Update update = new Update().pull("articleViews", articleId);
     mongoTemplate.updateMulti(query, update, UserActivity.class);
   }
+  public void pullCommentsByArticleId(UUID articleId) {
+    Query query = new Query();
+    Update update = new Update().pull("comments", Query.query(Criteria.where("articleId").is(articleId)));
+    mongoTemplate.updateMulti(query, update, UserActivity.class);
+  }
+
 }
