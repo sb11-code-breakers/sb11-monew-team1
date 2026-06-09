@@ -16,14 +16,19 @@ public class UserActivityMongoRepositoryImpl {
 
   private final MongoTemplate mongoTemplate;
 
-
-  //댓글을 사용자의 활동 문서 내 comments 배열 맨 앞(0번 인덱스)에 추가
-
+  /**
+   * 댓글을 사용자의 활동 문서 내 comments 배열 맨 앞(0번 인덱스)에 추가하고,
+   * 전체 댓글 수가 10개를 초과하면 최신 10개만 남기고 나머지는 잘라냅니다.
+   */
   public void pushComment(UUID id, RecentComment comment) {
     Query query = Query.query(Criteria.where("_id").is(id));
 
-    // $push 연산과 position(0)을 사용하여 최신 댓글이 항상 배열 첫 번째에 오도록 처리
-    Update update = new Update().push("comments").atPosition(0).value(comment);
+    // .slice(10)을 추가하여 배열이 항상 최대 10개만 유지되도록 원자적 제어
+    Update update = new Update()
+        .push("comments")
+        .atPosition(0)
+        .slice(10)
+        .value(comment);
 
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }

@@ -116,5 +116,36 @@ class UserActivityMongoRepositoryTest {
       assertThat(found.getComments()).hasSize(1);
       assertThat(found.getComments().get(0).getId()).isEqualTo(comment.getId());
     }
+
+    @Test
+    @DisplayName("댓글이 10개를 초과하면 최신 10개만 유지한다")
+    void 댓글이_10개를_초과하면_최신_10개만_유지한다() {
+      // given: 이미 10개의 댓글이 가득 차 있는 사용자 활동 문서를 생성하여 삽입합니다.
+      UserActivity fullActivity = UserActivity.of(userId, "a@b.com", "닉네임", Instant.now());
+      for (int i = 1; i <= 10; i++) {
+        fullActivity.getComments().add(
+            RecentComment.of(
+                UUID.randomUUID(), UUID.randomUUID(), "기존 제목 " + i,
+                userId, "닉네임", "기존 내용 " + i, 0L, Instant.now()
+            )
+        );
+      }
+      mongoTemplate.insert(fullActivity);
+
+      // 새롭게 맨 앞에 찔러 넣을 11번째 최신 댓글을 생성합니다.
+      RecentComment newComment = RecentComment.of(
+          UUID.randomUUID(), UUID.randomUUID(), "가장 최신 기사",
+          userId, "닉네임", "가장 최신 댓글 내용", 0L, Instant.now()
+      );
+
+      // when: 11번째 댓글 삽입을 시도합니다.
+      userActivityMongoRepositoryImpl.pushComment(userId, newComment);
+
+      // then: 전체 개수는 여전히 10개여야 하고, 0번 인덱스에는 방금 넣은 새 댓글이 위치해야 합니다.
+      UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
+      assertThat(found).isNotNull();
+      assertThat(found.getComments()).hasSize(10);
+      assertThat(found.getComments().get(0).getId()).isEqualTo(newComment.getId());
+    }
   }
 }
