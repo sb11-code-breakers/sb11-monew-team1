@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.mission.monew.common.config.MongoContainerConfig;
@@ -29,6 +30,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -264,6 +266,50 @@ class UserIntegrationTest {
               delete("/api/users/{userId}/hard", userId)
                   .header("Monew-Request-User-ID", ADMIN_TOKEN))
           .andExpect(status().isNoContent());
+    }
+  }
+
+  @Nested
+  @DisplayName("DELETE /api/users/logout — 로그아웃")
+  class Logout {
+
+    @Test
+    @DisplayName("로그아웃 성공 시 전체 세션이 삭제되고 204 반환")
+    void 로그아웃_성공_시_전체_세션이_삭제되고_204_반환() throws Exception {
+      // given — 회원가입 → 이메일 인증 → 로그인
+      UserCreateRequest createRequest = new UserCreateRequest(
+          "logout@test.com", "로그아웃테스터", "test1234");
+      mockMvc.perform(post("/api/users")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(createRequest)))
+          .andExpect(status().isCreated());
+      String verifyToken = emailVerificationRepository.findAll().stream()
+          .findFirst().orElseThrow().getToken();
+      mockMvc.perform(get("/api/users/verify").param("token", verifyToken))
+          .andExpect(status().isOk());
+      UserLoginRequest loginRequest = new UserLoginRequest("logout@test.com", "test1234");
+      MvcResult loginResult = mockMvc.perform(post("/api/users/login")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(objectMapper.writeValueAsString(loginRequest)))
+          .andExpect(status().isOk())
+          .andReturn();
+      String sessionToken = loginResult.getResponse().getHeader("Monew-Request-User-ID");
+
+      // when
+      mockMvc.perform(delete("/api/users/logout")
+              .header("Monew-Request-User-ID", sessionToken))
+          .andExpect(status().isNoContent());
+
+      // then — 세션 전체 삭제 확인
+      assertThat(userSessionRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("세션 없이 요청 시 401 반환")
+    void 세션_없이_요청_시_401_반환() throws Exception {
+      // given & when & then
+      mockMvc.perform(delete("/api/users/logout"))
+          .andExpect(status().isUnauthorized());
     }
   }
 }
