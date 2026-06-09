@@ -167,7 +167,6 @@ class UserActivityMongoRepositoryTest {
     }
   }
 
-  // 🔴 [커밋 29] 모든 유저 대상 기사 조회 기록 제거 Red 테스트 추가 단계
   @Nested
   @DisplayName("pullArticleViewsByArticleId()")
   class PullArticleViewsByArticleId {
@@ -179,16 +178,17 @@ class UserActivityMongoRepositoryTest {
       UUID user2 = UUID.randomUUID();
       mongoTemplate.insert(UserActivity.of(user1, "a@b.com", "유저1", Instant.now()));
       mongoTemplate.insert(UserActivity.of(user2, "c@d.com", "유저2", Instant.now()));
+      userActivityMongoRepositoryImpl.pushArticleView(user1, articleView(articleId));
+      userActivityMongoRepositoryImpl.pushArticleView(user2, articleView(articleId));
 
-      // 🔴 현재 pushArticleView 메서드가 구현체에 없으므로 컴파일 에러 발생 대상
-      userActivityMongoRepositoryImpl.pushArticleView(user1, articleId);
-      userActivityMongoRepositoryImpl.pushArticleView(user2, articleId);
-
-      // 🔴 현재 pullArticleViewsByArticleId 메서드가 구현체에 없으므로 컴파일 에러 발생 대상
       userActivityMongoRepositoryImpl.pullArticleViewsByArticleId(articleId);
 
       assertThat(mongoTemplate.findById(user1, UserActivity.class).getArticleViews()).isEmpty();
       assertThat(mongoTemplate.findById(user2, UserActivity.class).getArticleViews()).isEmpty();
     }
+  }
+
+  private UUID articleView(UUID articleId) {
+    return articleId;
   }
 }
