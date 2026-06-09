@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.user.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sprint.mission.monew.batch.dto.UserCleanupItem;
 import com.sprint.mission.monew.domain.user.entity.User;
@@ -11,6 +12,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -19,9 +21,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -31,6 +35,9 @@ class UserRepositoryTest {
 
   @Autowired
   private UserRepository userRepository;
+
+  @Autowired
+  private jakarta.persistence.EntityManager entityManager;
 
   @BeforeEach
   void setUp() {
@@ -112,6 +119,7 @@ class UserRepositoryTest {
   @Nested
   @DisplayName("deletedAt이 지난 유저는 삭제하기")
   class DeleteByDeletedAt {
+
     @Test
     @DisplayName("deletedAt이 지난 유저 삭제")
     void deletedAt이_지난_유저_삭제() {
@@ -130,14 +138,15 @@ class UserRepositoryTest {
       int deletedCount = userRepository.deleteAllByDeletedAtBefore(now);
 
       // then
-      assertThat(deletedCount).isEqualTo(1); // user1 삭제
-      assertThat(userRepository.findById(user2.getId())).isPresent(); // user2 유지
+      assertThat(deletedCount).isEqualTo(1);
+      assertThat(userRepository.findById(user2.getId())).isPresent();
     }
   }
 
   @Nested
   @DisplayName("deletedAt + id 기준 cursor 조회가 정렬된 순서로 반환하기")
   class FindUsersForCleanup {
+
     @Test
     @DisplayName("deletedAt + id 기준 cursor 조회가 정렬된 순서로 반환된다")
     void findUsersForCleanup_ordering_test() {
@@ -172,6 +181,63 @@ class UserRepositoryTest {
               user2.getId(),
               user3.getId()
           );
+    }
+  }
+
+  @Nested
+  @DisplayName("낙관적락")
+  class OptimisticLock {
+
+    @Test
+    @DisplayName("persist 후 version이 0으로 초기화된다")
+    void persist_후_version이_0으로_초기화된다() {
+      // given
+      User user = User.create("version@test.com", "테스터", "encodedPassword");
+
+      // when
+      User saved = userRepository.save(user);
+
+      // then
+      assertThat(saved.getVersion()).isEqualTo(0L);
+    }
+
+    @Test
+    @DisplayName("엔티티 수정 후 version이 증가한다")
+    void 엔티티_수정_후_version이_증가한다() {
+      // given
+      User user = User.create("version@test.com", "테스터", "encodedPassword");
+      userRepository.saveAndFlush(user);
+
+      // when
+      user.updateNickname("새닉네임");
+      User updated = userRepository.saveAndFlush(user);
+
+      // then
+      assertThat(updated.getVersion()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("동일 엔티티를 다른 버전으로 수정 시 예외 발생")
+    @org.springframework.transaction.annotation.Transactional(
+        propagation = org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED)
+    void 동일_엔티티를_다른_버전으로_수정_시_예외_발생() {
+      // given
+      User user = User.create("version@test.com", "테스터", "encodedPassword");
+      User saved = userRepository.saveAndFlush(user);
+
+      User user1 = userRepository.findById(saved.getId()).orElseThrow();
+      User user2 = userRepository.findById(saved.getId()).orElseThrow();
+
+      user1.updateNickname("첫번째수정");
+      userRepository.saveAndFlush(user1);
+
+      // when & then
+      user2.updateNickname("두번째수정");
+      assertThatThrownBy(() -> userRepository.saveAndFlush(user2))
+          .isInstanceOf(ObjectOptimisticLockingFailureException.class);
+
+      // cleanup
+      userRepository.deleteById(saved.getId());
     }
   }
 }
