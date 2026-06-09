@@ -155,4 +155,21 @@ class UserActivityEventListenerTest {
       verify(userActivityMongoRepository).pushArticleView(userId, articleId);
     }
   }
+  @Nested
+  @DisplayName("ArticleDeletedEvent")
+  class ArticleDeleted {
+    @Test
+    @DisplayName("ArticleDeletedEvent를 받으면 pull 3개 메서드를 모두 호출한다")
+    void ArticleDeletedEvent를_받으면_pull_3개_메서드를_모두_호출한다() {
+      UUID userId = UUID.randomUUID();
+      UUID articleId = UUID.randomUUID();
+
+      listener.handle(new ArticleDeletedEvent(userId, articleId));
+
+      verify(userActivityMongoRepository).pullArticle(userId, articleId);
+      verify(userActivityMongoRepository).pullArticleLike(userId, articleId);
+      verify(userActivityMongoRepository).pullArticleView(userId, articleId);
+    }
+  }
+
 }
