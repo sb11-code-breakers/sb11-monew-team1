@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.user.controller.api;
 
 import com.sprint.mission.monew.common.dto.ErrorResponse;
+import com.sprint.mission.monew.domain.user.dto.UnlockTokenRequest;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
@@ -9,6 +10,7 @@ import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
+import com.sprint.mission.monew.domain.user.dto.VerifyEmailRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -19,13 +21,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import java.util.UUID;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "User", description = "사용자 API")
 public interface UserApi {
@@ -67,7 +69,8 @@ public interface UserApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
-  ResponseEntity<String> verifyEmail(@NotBlank @RequestParam String token);
+  ResponseEntity<String> verifyEmail(
+      @ParameterObject @Valid @ModelAttribute VerifyEmailRequest request);
 
   @Operation(summary = "닉네임 수정", description = "사용자의 닉네임을 수정합니다.")
   @ApiResponses({
@@ -143,8 +146,7 @@ public interface UserApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
-  ResponseEntity<Void> resetPassword(
-      @Valid @RequestBody UserPasswordResetRequest request);
+  ResponseEntity<Void> resetPassword(@Valid @RequestBody UserPasswordResetRequest request);
 
   @Operation(summary = "비밀번호 재설정", description = "인증 코드로 비밀번호를 재설정합니다.")
   @ApiResponses({
@@ -154,8 +156,7 @@ public interface UserApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
-  ResponseEntity<Void> resetPassword(
-      @Valid @RequestBody UserPasswordResetCodeRequest request);
+  ResponseEntity<Void> resetPassword(@Valid @RequestBody UserPasswordResetCodeRequest request);
 
   @Operation(summary = "계정 잠금 해제 요청", description = "이메일로 계정 잠금 해제 토큰을 발송합니다.")
   @ApiResponses({
@@ -177,7 +178,8 @@ public interface UserApi {
       @ApiResponse(responseCode = "500", description = "서버 내부 오류",
           content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
   })
-  ResponseEntity<Void> unlock(@RequestParam UUID token);
+  ResponseEntity<Void> unlock(
+      @ParameterObject @Valid @ModelAttribute UnlockTokenRequest request);
 
   @Operation(summary = "로그아웃", description = "해당 사용자의 모든 세션을 삭제합니다.")
   @ApiResponses({

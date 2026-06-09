@@ -3,6 +3,7 @@ package com.sprint.mission.monew.domain.user.controller;
 import com.sprint.mission.monew.domain.user.controller.api.UserApi;
 import com.sprint.mission.monew.common.util.RequestUtils;
 import com.sprint.mission.monew.domain.user.dto.LoginResult;
+import com.sprint.mission.monew.domain.user.dto.UnlockTokenRequest;
 import com.sprint.mission.monew.domain.user.dto.UserCreateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserLoginRequest;
 import com.sprint.mission.monew.domain.user.dto.UserPasswordResetCodeRequest;
@@ -11,9 +12,9 @@ import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
+import com.sprint.mission.monew.domain.user.dto.VerifyEmailRequest;
 import com.sprint.mission.monew.domain.user.service.UserService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -22,19 +23,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Validated
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
 @RestController
@@ -65,8 +64,8 @@ public class UserController implements UserApi {
 
   @GetMapping(value = "/verify", produces = "text/html;charset=UTF-8")
   @Override
-  public ResponseEntity<String> verifyEmail(@NotBlank @RequestParam String token) {
-    userService.verifyEmail(token);
+  public ResponseEntity<String> verifyEmail(@Valid @ModelAttribute VerifyEmailRequest request) {
+    userService.verifyEmail(request.token());
     String html = "<html><head><meta charset='UTF-8'>"
         + "<meta http-equiv='refresh' content='5;url=" + baseUrl + "/#/login'>"
         + "<title>이메일 인증 완료</title></head>"
@@ -141,8 +140,8 @@ public class UserController implements UserApi {
 
   @GetMapping("/unlock")
   @Override
-  public ResponseEntity<Void> unlock(@RequestParam UUID token) {
-    userService.unlock(token.toString());
+  public ResponseEntity<Void> unlock(@Valid @ModelAttribute UnlockTokenRequest request) {
+    userService.unlock(request.token().toString());
     return ResponseEntity.ok().build();
   }
 
