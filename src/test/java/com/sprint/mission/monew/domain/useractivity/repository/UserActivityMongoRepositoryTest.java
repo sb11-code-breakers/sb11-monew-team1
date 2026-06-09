@@ -210,4 +210,29 @@ class UserActivityMongoRepositoryTest {
       assertThat(found.getComments()).hasSize(1);
     }
   }
+  @Nested
+  @DisplayName("updateNickname()")
+  class UpdateNickname {
+
+    @Test
+    @DisplayName("nickname과 모든 comments의 userNickname을 동시에 변경한다")
+    void nickname과_모든_comments의_userNickname을_동시에_변경한다() {
+      // given
+      mongoTemplate.insert(UserActivity.of(userId, "a@b.com", "구닉네임", Instant.now()));
+      userActivityMongoRepositoryImpl.pushComment(userId, RecentComment.of(UUID.randomUUID(), UUID.randomUUID(),
+          "기사", userId, "구닉네임", "내용", 0L, Instant.now()));
+      userActivityMongoRepositoryImpl.pushComment(userId, RecentComment.of(UUID.randomUUID(), UUID.randomUUID(),
+          "기사2", userId, "구닉네임", "내용2", 0L, Instant.now()));
+
+      // when
+      userActivityMongoRepositoryImpl.updateNickname(userId, "새닉네임");
+
+      // then
+      UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
+      assertThat(found.getNickname()).isEqualTo("새닉네임");
+      assertThat(found.getComments())
+          .extracting(RecentComment::getUserNickname)
+          .containsOnly("새닉네임");
+    }
+  }
 }
