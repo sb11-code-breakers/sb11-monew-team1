@@ -21,4 +21,9 @@ public class UserActivityEventListener {
   public void handle(UserNicknameUpdatedEvent event) {
     userActivityMongoRepository.updateNickname(event.userId(), event.nickname());
   }
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(UserDeletedEvent event) {
+    userActivityMongoRepository.anonymize(event.userId());
+    userActivityMongoRepository.anonymizeCommentLikesByCommentUserId(event.userId());
+  }
 }

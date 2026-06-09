@@ -11,4 +11,6 @@ public interface UserActivityMongoRepository extends MongoRepository<UserActivit
   void createUserActivity(UserActivity userActivity);
   Optional<UserActivity> findByIdAndNicknameIsNotNull(UUID id);
   void updateNickname(UUID userId, String nickname);
+  void anonymize(UUID userId);
+  void anonymizeCommentLikesByCommentUserId(UUID userId);
 }
