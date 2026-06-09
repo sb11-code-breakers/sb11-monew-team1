@@ -141,4 +141,18 @@ class UserActivityEventListenerTest {
       verify(userActivityMongoRepository).pullCommentLike(userId, commentId);
     }
   }
+  @Nested
+  @DisplayName("ArticleViewedEvent")
+  class ArticleViewed {
+    @Test
+    @DisplayName("ArticleViewedEvent를 받으면 pushArticleView를 호출한다")
+    void ArticleViewedEvent를_받으면_pushArticleView를_호출한다() {
+      UUID userId = UUID.randomUUID();
+      UUID articleId = UUID.randomUUID();
+
+      listener.handle(new ArticleViewedEvent(userId, articleId));
+
+      verify(userActivityMongoRepository).pushArticleView(userId, articleId);
+    }
+  }
 }
