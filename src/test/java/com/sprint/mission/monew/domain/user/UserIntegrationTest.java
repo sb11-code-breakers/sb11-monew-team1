@@ -31,13 +31,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.context.TestPropertySource;
+
 
 @SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 @Import(MongoContainerConfig.class)
-@TestPropertySource(locations = "classpath:/application-test.yaml")
 class UserIntegrationTest {
 
   @Autowired
