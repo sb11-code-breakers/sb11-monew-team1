@@ -83,4 +83,19 @@ class UserActivityEventListenerTest {
       verify(userActivityMongoRepository).pullSubscription(userId, targetId);
     }
   }
+  @Nested
+  @DisplayName("CommentCreatedEvent")
+  class CommentCreated {
+    @Test
+    @DisplayName("CommentCreatedEvent를 받으면 pushComment를 호출한다")
+    void CommentCreatedEvent를_받으면_pushComment를_호출한다() {
+      UUID userId = UUID.randomUUID();
+      UUID articleId = UUID.randomUUID();
+      UUID commentId = UUID.randomUUID();
+
+      listener.handle(new CommentCreatedEvent(userId, articleId, commentId));
+
+      verify(userActivityMongoRepository).pushComment(userId, articleId, commentId);
+    }
+  }
 }
