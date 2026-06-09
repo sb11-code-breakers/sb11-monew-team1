@@ -42,6 +42,7 @@ class UserActivityMongoRepositoryTest {
   @Nested
   @DisplayName("UserActivity 저장 및 단건 조회")
   class SaveAndFind {
+
     @Test
     @DisplayName("저장한 UserActivity를 id로 조회할 수 있다")
     void 저장한_UserActivity를_id로_조회할_수_있다() {
@@ -54,6 +55,7 @@ class UserActivityMongoRepositoryTest {
   @Nested
   @DisplayName("nickname 존재 여부로 활성 사용자 조회")
   class FindByIdAndNicknameIsNotNull {
+
     @Test
     @DisplayName("nickname이 있으면 UserActivity를 반환한다")
     void nickname이_있으면_UserActivity를_반환한다() {
@@ -75,11 +77,13 @@ class UserActivityMongoRepositoryTest {
   @Nested
   @DisplayName("pushComment()")
   class PushComment {
+
     @Test
     @DisplayName("댓글을 배열 첫 번째에 삽입한다")
     void 댓글을_배열_첫_번째에_삽입한다() {
       mongoTemplate.insert(UserActivity.of(userId, "a@b.com", "닉네임", Instant.now()));
-      RecentComment comment = RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사 제목", userId, "닉네임", "댓글 내용", 0L, Instant.now());
+      RecentComment comment = RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사 제목",
+          userId, "닉네임", "댓글 내용", 0L, Instant.now());
       userActivityMongoRepositoryImpl.pushComment(userId, comment);
       UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
       assertThat(found).isNotNull();
@@ -90,10 +94,13 @@ class UserActivityMongoRepositoryTest {
     void 댓글이_10개를_초과하면_최신_10개만_유지한다() {
       UserActivity fullActivity = UserActivity.of(userId, "a@b.com", "닉네임", Instant.now());
       for (int i = 1; i <= 10; i++) {
-        fullActivity.getComments().add(RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기존 " + i, userId, "닉네임", "기존 " + i, 0L, Instant.now()));
+        fullActivity.getComments().add(
+            RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기존 " + i, userId, "닉네임",
+                "기존 " + i, 0L, Instant.now()));
       }
       mongoTemplate.insert(fullActivity);
-      RecentComment newComment = RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "최신 기사", userId, "닉네임", "최신 댓글", 0L, Instant.now());
+      RecentComment newComment = RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "최신 기사",
+          userId, "닉네임", "최신 댓글", 0L, Instant.now());
       userActivityMongoRepositoryImpl.pushComment(userId, newComment);
       UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
       assertThat(found.getComments()).hasSize(10);
@@ -102,7 +109,8 @@ class UserActivityMongoRepositoryTest {
     @Test
     @DisplayName("도큐먼트가 없으면 upsert로 신규 생성한다")
     void 도큐먼트가_없으면_upsert로_신규_생성한다() {
-      RecentComment comment = RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사", userId, "닉네임", "내용", 0L, Instant.now());
+      RecentComment comment = RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사", userId,
+          "닉네임", "내용", 0L, Instant.now());
       userActivityMongoRepositoryImpl.pushComment(userId, comment);
       UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
       assertThat(found).isNotNull();
@@ -112,12 +120,15 @@ class UserActivityMongoRepositoryTest {
   @Nested
   @DisplayName("pullComment()")
   class PullComment {
+
     @Test
     @DisplayName("해당 commentId의 댓글을 제거한다")
     void 해당_commentId의_댓글을_제거한다() {
       UUID commentId = UUID.randomUUID();
       mongoTemplate.insert(UserActivity.of(userId, "a@b.com", "닉네임", Instant.now()));
-      userActivityMongoRepositoryImpl.pushComment(userId, RecentComment.of(commentId, UUID.randomUUID(), "기사", userId, "닉네임", "내용", 0L, Instant.now()));
+      userActivityMongoRepositoryImpl.pushComment(userId,
+          RecentComment.of(commentId, UUID.randomUUID(), "기사", userId, "닉네임", "내용", 0L,
+              Instant.now()));
       userActivityMongoRepositoryImpl.pullComment(userId, commentId);
       UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
       assertThat(found.getComments()).isEmpty();
@@ -128,7 +139,9 @@ class UserActivityMongoRepositoryTest {
     void 존재하지_않는_commentId면_배열_변화가_없다() {
       UUID existingId = UUID.randomUUID();
       mongoTemplate.insert(UserActivity.of(userId, "a@b.com", "닉네임", Instant.now()));
-      userActivityMongoRepositoryImpl.pushComment(userId, RecentComment.of(existingId, UUID.randomUUID(), "기사", userId, "닉네임", "내용", 0L, Instant.now()));
+      userActivityMongoRepositoryImpl.pushComment(userId,
+          RecentComment.of(existingId, UUID.randomUUID(), "기사", userId, "닉네임", "내용", 0L,
+              Instant.now()));
       userActivityMongoRepositoryImpl.pullComment(userId, UUID.randomUUID());
       UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
       assertThat(found).isNotNull();
@@ -139,27 +152,36 @@ class UserActivityMongoRepositoryTest {
   @Nested
   @DisplayName("updateNickname()")
   class UpdateNickname {
+
     @Test
     @DisplayName("nickname과 모든 comments의 userNickname을 동시에 변경한다")
     void nickname과_모든_comments의_userNickname을_동시에_변경한다() {
       mongoTemplate.insert(UserActivity.of(userId, "a@b.com", "구닉네임", Instant.now()));
-      userActivityMongoRepositoryImpl.pushComment(userId, RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사", userId, "구닉네임", "내용", 0L, Instant.now()));
-      userActivityMongoRepositoryImpl.pushComment(userId, RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사2", userId, "구닉네임", "내용2", 0L, Instant.now()));
+      userActivityMongoRepositoryImpl.pushComment(userId,
+          RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사", userId, "구닉네임", "내용", 0L,
+              Instant.now()));
+      userActivityMongoRepositoryImpl.pushComment(userId,
+          RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사2", userId, "구닉네임", "내용2", 0L,
+              Instant.now()));
       userActivityMongoRepositoryImpl.updateNickname(userId, "새닉네임");
       UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
       assertThat(found.getNickname()).isEqualTo("새닉네임");
-      assertThat(found.getComments()).extracting(RecentComment::getUserNickname).containsOnly("새닉네임");
+      assertThat(found.getComments()).extracting(RecentComment::getUserNickname)
+          .containsOnly("새닉네임");
     }
   }
 
   @Nested
   @DisplayName("anonymize()")
   class Anonymize {
+
     @Test
     @DisplayName("nickname과 모든 comments의 userNickname을 알 수 없음으로 변경한다")
     void nickname과_모든_comments의_userNickname을_알수없음으로_변경한다() {
       mongoTemplate.insert(UserActivity.of(userId, "a@b.com", "닉네임", Instant.now()));
-      userActivityMongoRepositoryImpl.pushComment(userId, RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사", userId, "닉네임", "내용", 0L, Instant.now()));
+      userActivityMongoRepositoryImpl.pushComment(userId,
+          RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사", userId, "닉네임", "내용", 0L,
+              Instant.now()));
       userActivityMongoRepositoryImpl.anonymize(userId);
       UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
       assertThat(found.getNickname()).isEqualTo("알 수 없음");
@@ -167,9 +189,14 @@ class UserActivityMongoRepositoryTest {
     }
   }
 
+  private UUID articleView(UUID articleId) {
+    return articleId;
+  }
+
   @Nested
   @DisplayName("pullArticleViewsByArticleId()")
   class PullArticleViewsByArticleId {
+
     @Test
     @DisplayName("모든 유저 도큐먼트에서 해당 articleId의 조회 기록을 제거한다")
     void 모든_유저_도큐먼트에서_해당_articleId의_조회_기록을_제거한다() {
@@ -188,7 +215,31 @@ class UserActivityMongoRepositoryTest {
     }
   }
 
-  private UUID articleView(UUID articleId) {
-    return articleId;
+  @Nested
+  @DisplayName("pullCommentsByArticleId()")
+  class PullCommentsByArticleId {
+
+    @Test
+    @DisplayName("모든 유저 도큐먼트에서 해당 articleId의 댓글들을 제거한다")
+    void 모든_유저_도큐먼트에서_해당_articleId의_댓글들을_제거한다() {
+      UUID articleId = UUID.randomUUID();
+      UUID user1 = UUID.randomUUID();
+      UUID user2 = UUID.randomUUID();
+      mongoTemplate.insert(UserActivity.of(user1, "a@b.com", "유저1", Instant.now()));
+      mongoTemplate.insert(UserActivity.of(user2, "c@d.com", "유저2", Instant.now()));
+
+      userActivityMongoRepositoryImpl.pushComment(user1,
+          RecentComment.of(UUID.randomUUID(), articleId, "제목1", user1, "유저1", "내용1", 0L,
+              Instant.now()));
+      userActivityMongoRepositoryImpl.pushComment(user2,
+          RecentComment.of(UUID.randomUUID(), articleId, "제목2", user2, "유저2", "내용2", 0L,
+              Instant.now()));
+
+      userActivityMongoRepositoryImpl.pullCommentsByArticleId(articleId);
+
+      assertThat(mongoTemplate.findById(user1, UserActivity.class).getComments()).isEmpty();
+      assertThat(mongoTemplate.findById(user2, UserActivity.class).getComments()).isEmpty();
+    }
   }
+
 }
