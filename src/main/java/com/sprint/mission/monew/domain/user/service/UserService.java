@@ -156,6 +156,11 @@ public class UserService {
           throw e;
         }
         log.warn("닉네임 수정 낙관적락 충돌, 재시도 {}/{} | userId={}", i + 1, maxRetry, userId);
+        try {
+          Thread.sleep(50L * (i + 1));
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+        }
       }
     }
     throw new IllegalStateException("unreachable");
@@ -181,6 +186,11 @@ public class UserService {
           throw e;
         }
         log.warn("비밀번호 변경 낙관적락 충돌, 재시도 {}/{} | userId={}", i + 1, maxRetry, requestUserId);
+        try {
+          Thread.sleep(50L * (i + 1));
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+        }
       }
     }
   }
@@ -206,6 +216,11 @@ public class UserService {
           throw e;
         }
         log.warn("논리 삭제 낙관적락 충돌, 재시도 {}/{} | userId={}", i + 1, maxRetry, userId);
+        try {
+          Thread.sleep(50L * (i + 1));
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+        }
       }
     }
   }
