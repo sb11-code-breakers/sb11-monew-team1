@@ -13,6 +13,8 @@ import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
+import com.sprint.mission.monew.domain.comment.entity.CommentLike;
+import com.sprint.mission.monew.domain.comment.repository.CommentLikeRepository;
 import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
 import com.sprint.mission.monew.domain.comment.service.CommentService;
 import com.sprint.mission.monew.domain.user.document.UserSession;
@@ -46,6 +48,9 @@ public class CommentIntegrationTest {
 
   @Autowired
   private CommentRepository commentRepository;
+
+  @Autowired
+  private CommentLikeRepository commentLikeRepository;
 
   @Autowired
   private ArticleRepository articleRepository;
@@ -334,8 +339,10 @@ public class CommentIntegrationTest {
     @Test
     @DisplayName("댓글 물리삭제 실패 - 댓글이 존재하지 않음")
     void 댓글_물리삭제_실패_댓글_없음() throws Exception {
+      // given
       UUID notExistCommentId = UUID.randomUUID();
 
+      // when & then
       mockMvc.perform(delete("/api/comments/{commentId}/hard", notExistCommentId)
               .header("Monew-Request-User-ID", ADMIN_TOKEN))
           .andExpect(status().isNotFound());
@@ -344,6 +351,10 @@ public class CommentIntegrationTest {
     @Test
     @DisplayName("댓글 물리삭제 성공")
     void 댓글_물리삭제_성공() throws Exception {
+      // given
+      // comment, user를 BeforeEach에서 초기화
+
+      // when & then
       mockMvc.perform(delete("/api/comments/{commentId}/hard", comment.getId())
               .header("Monew-Request-User-ID", ADMIN_TOKEN))
           .andExpect(status().isNoContent());
@@ -420,6 +431,7 @@ public class CommentIntegrationTest {
     @Test
     @DisplayName("after만 있고 cursor가 없으면 400을 반환한다")
     void after만_있고_cursor가_없으면_400을_반환한다() throws Exception {
+      // when & then
       mockMvc.perform(get("/api/comments")
               .param("articleId", article.getId().toString())
               .param("orderBy", "CREATED_AT")
@@ -516,6 +528,113 @@ public class CommentIntegrationTest {
           .andExpect(jsonPath("$.content").isArray())
           .andExpect(jsonPath("$.content.length()").value(1))
           .andExpect(jsonPath("$.hasNext").value(false));
+    }
+  }
+
+  @Nested
+  @DisplayName("댓글 좋아요 등록하기")
+  class LikeCreate {
+
+    @Test
+    @DisplayName("댓글 좋아요 등록 실패 - 사용자가 존재하지 않음")
+    void 댓글_좋아요_등록_실패_사용자_없음() throws Exception {
+      // given
+      UUID ghostSessionToken;
+      UserSession ghostSession = UserSession.create(UUID.randomUUID(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+      userSessionRepository.save(ghostSession);
+      ghostSessionToken = ghostSession.getId();
+
+      // when & then
+      mockMvc.perform(post("/api/comments/{commentId}/comment-likes", comment.getId())
+              .header("Monew-Request-User-ID", ghostSessionToken))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("댓글 좋아요 등록 실패 - 댓글이 존재하지 않음")
+    void 댓글_좋아요_등록_실패_댓글_없음() throws Exception {
+      // given
+      UUID notExistCommentId = UUID.randomUUID();
+
+      // when & then
+      mockMvc.perform(post("/api/comments/{commentId}/comment-likes", notExistCommentId)
+              .header("Monew-Request-User-ID", sessionToken))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("댓글 좋아요 등록 실패 - 이미 좋아요가 등록되어 있음")
+    void 댓글_좋아요_등록_실패_좋아요_중복등록() throws Exception {
+      // given
+      // 미리 좋아요 생성
+      commentLikeRepository.save(CommentLike.create(user, comment));
+
+      // when & then
+      mockMvc.perform(post("/api/comments/{commentId}/comment-likes", comment.getId())
+              .header("Monew-Request-User-ID", sessionToken))
+          .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("댓글 좋아요 등록 성공")
+    void 댓글_좋아요_등록_성공() throws Exception {
+      // given
+      // comment(article, user)는 BeforeEach에서 초기화
+
+      // when & then
+      mockMvc.perform(post("/api/comments/{commentId}/comment-likes", comment.getId())
+              .header("Monew-Request-User-ID", sessionToken))
+          .andExpect(status().isCreated());
+
+      // DB 검증
+      boolean exists = commentLikeRepository.existsByUserIdAndCommentId(user.getId(),
+          comment.getId());
+
+      assertThat(exists).isTrue();
+
+      // LikeCount 증가 검증
+      Comment foundComment = commentRepository.findById(comment.getId()).orElseThrow();
+      assertThat(foundComment.getLikeCount()).isEqualTo(1);
+    }
+  }
+
+  @Nested
+  @DisplayName("댓글 좋아요 취소하기")
+  class LikeCancel {
+
+    @Test
+    @DisplayName("댓글 좋아요 취소 실패 - 좋아요가 존재하지 않음")
+    void 댓글_좋아요_취소_실패_좋아요_없음() throws Exception {
+      // given
+      UUID notExistCommentId = UUID.randomUUID();
+
+      // when & then
+      mockMvc.perform(delete("/api/comments/{commentId}/comment-likes", notExistCommentId)
+              .header("Monew-Request-User-ID", anotherSessionToken))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("댓글 좋아요 취소 성공")
+    void 댓글_좋아요_취소_성공() throws Exception {
+      // given
+      // comment(article, user)는 BeforeEach에서 초기화
+      commentLikeRepository.save(CommentLike.create(user, comment));
+      commentRepository.increaseLikeCount(comment.getId());
+
+      // when & then
+      mockMvc.perform(delete("/api/comments/{commentId}/comment-likes", comment.getId())
+              .header("Monew-Request-User-ID", sessionToken))
+          .andExpect(status().isNoContent());
+
+      // DB 검증
+      boolean exists = commentLikeRepository.existsByUserIdAndCommentId(user.getId(),
+          comment.getId());
+      assertThat(exists).isFalse();
+
+      // LikeCount 감소 검증
+      Comment foundComment = commentRepository.findById(comment.getId()).orElseThrow();
+      assertThat(foundComment.getLikeCount()).isEqualTo(0);
     }
   }
 }
