@@ -145,4 +145,12 @@ public class UserController implements UserApi {
     userService.unlock(token.toString());
     return ResponseEntity.ok().build();
   }
+
+  @DeleteMapping("/logout")
+  @Override
+  public ResponseEntity<Void> logout(
+      @RequestHeader("Monew-Request-User-ID") UUID requestUserId) {
+    userService.logout(requestUserId);
+    return ResponseEntity.noContent().build();
+  }
 }

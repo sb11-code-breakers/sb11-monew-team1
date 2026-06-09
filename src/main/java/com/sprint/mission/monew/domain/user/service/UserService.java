@@ -265,4 +265,11 @@ public class UserService {
     userUnlockTokenRepository.delete(unlockToken);
     log.info("계정 잠금 해제 완료 | userId={}", user.getId());
   }
+  @Transactional
+  public void logout(UUID userId) {
+    log.debug("로그아웃 시도");
+    userSessionRepository.deleteByUserId(userId);
+    log.info("로그아웃 완료 | userId={}", userId);
+  }
+
 }
