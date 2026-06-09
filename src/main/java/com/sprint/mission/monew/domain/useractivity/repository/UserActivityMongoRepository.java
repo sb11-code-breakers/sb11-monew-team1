@@ -5,8 +5,9 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-public interface UserActivityMongoRepository
-    extends MongoRepository<UserActivity, UUID> {
+public interface UserActivityMongoRepository extends MongoRepository<UserActivity, UUID> {
 
+  // 🟢 핵심: 자바 컴파일러와 Mockito가 메서드의 규격을 인식할 수 있도록 껍데기 명세만 선언
+  void createUserActivity(UserActivity userActivity);
   Optional<UserActivity> findByIdAndNicknameIsNotNull(UUID id);
 }
