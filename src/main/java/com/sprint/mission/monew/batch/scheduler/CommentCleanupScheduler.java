@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.batch.scheduler;
 
-import com.sprint.mission.monew.batch.service.UserCleanupService;
+import com.sprint.mission.monew.batch.service.CommentCleanupService;
 import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,15 +12,15 @@ import org.springframework.stereotype.Component;
 @Profile("prod")
 @Component
 @RequiredArgsConstructor
-public class UserCleanupScheduler {
+public class CommentCleanupScheduler {
 
-  private final UserCleanupService userCleanupService;
+  private final CommentCleanupService commentCleanupService;
 
-  @Timed(value = "monew.user.cleanup.job.duration", description = "만료 사용자 물리 삭제 배치 Job 전체 소요 시간")
-  @Scheduled(cron = "${scheduler.user-cleanup.cron}")
-  public void cleanUpDeletedUsers() throws Exception {
+  @Timed(value = "monew.comment.cleanup.job.duration", description = "만료 댓글 물리 삭제 배치 Job 전체 소요 시간")
+  @Scheduled(cron = "${scheduler.comment-cleanup.cron}")
+  public void cleanUpDeletedComments() throws Exception {
     log.debug("물리 삭제 스케줄러 실행");
-    userCleanupService.executeCleanup();
+    commentCleanupService.executeCleanup();
     log.info("물리 삭제 완료");
   }
 }

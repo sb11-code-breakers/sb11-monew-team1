@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 
-import com.sprint.mission.monew.batch.dto.UserCleanupItem;
-import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import com.sprint.mission.monew.batch.dto.CommentCleanupItem;
+import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -20,13 +20,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-public class UserCleanupReaderTest {
+public class CommentCleanupReaderTest {
 
   @InjectMocks
-  UserCleanupReader reader;
+  CommentCleanupReader reader;
 
   @Mock
-  UserRepository userRepository;
+  CommentRepository commentRepository;
 
   @BeforeEach
   void setUp() {
@@ -34,25 +34,25 @@ public class UserCleanupReaderTest {
   }
 
   @Nested
-  @DisplayName("사용자 삭제 목록 읽기")
+  @DisplayName("댓글 삭제 목록 읽기")
   class Reader {
 
     @Test
-    @DisplayName("cursor 기반으로 chunk 단위로 데이터를 순차 조회한다")
+    @DisplayName("cursor 기반 chunk 단위로 데이터를 순차 조회한다")
     void chunk_단위_cursor_기반으로_조회() {
       // given
       Instant now = Instant.now();
 
-      UserCleanupItem item1 = new UserCleanupItem(UUID.randomUUID(), now.minusSeconds(10));
-      UserCleanupItem item2 = new UserCleanupItem(UUID.randomUUID(), now.minusSeconds(5));
+      CommentCleanupItem item1 = new CommentCleanupItem(UUID.randomUUID(), now.minusSeconds(10));
+      CommentCleanupItem item2 = new CommentCleanupItem(UUID.randomUUID(), now.minusSeconds(5));
 
-      given(userRepository.findUsersForCleanup(any(), any(), any(), any()))
+      given(commentRepository.findCommentsForCleanup(any(), any(), any(), any()))
           .willReturn(List.of(item1, item2), List.of());
 
       // when
-      UserCleanupItem r1 = reader.read();
-      UserCleanupItem r2 = reader.read();
-      UserCleanupItem r3 = reader.read();
+      CommentCleanupItem r1 = reader.read();
+      CommentCleanupItem r2 = reader.read();
+      CommentCleanupItem r3 = reader.read();
 
       // then
       assertThat(r1).isNotNull();

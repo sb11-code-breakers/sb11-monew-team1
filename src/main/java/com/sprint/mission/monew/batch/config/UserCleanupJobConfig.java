@@ -1,4 +1,4 @@
-package com.sprint.mission.monew.common.config;
+package com.sprint.mission.monew.batch.config;
 
 import com.sprint.mission.monew.batch.dto.UserCleanupItem;
 import com.sprint.mission.monew.batch.listener.UserCleanupStepListener;

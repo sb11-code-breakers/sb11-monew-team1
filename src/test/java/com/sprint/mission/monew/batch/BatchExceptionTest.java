@@ -12,7 +12,7 @@ public class BatchExceptionTest {
 
   private BatchErrorCode errorCode;
 
-  // 테스트용 구현체 (abstract라 직접 못 만들 수가 없음)
+  // 테스트용 구현체 (abstract라 직접 만들 수 없음)
   private static class TestBatchException extends BatchException {
 
     public TestBatchException(BatchErrorCode errorCode, String detail, Throwable cause) {

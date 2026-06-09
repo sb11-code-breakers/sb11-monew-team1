@@ -35,7 +35,7 @@ import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.exception.UserAccountLockedException;
 import com.sprint.mission.monew.domain.user.exception.UserInvalidUnlockTokenException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
-import com.sprint.mission.monew.domain.user.metrics.UserMetrics;
+import com.sprint.mission.monew.batch.metrics.UserCleanupMetrics;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
 import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
@@ -81,7 +81,7 @@ class UserServiceTest {
   private EmailQueue emailQueue;
 
   @Mock
-  private UserMetrics userMetrics;
+  private UserCleanupMetrics userMetrics;
 
   @Mock
   private UserUnlockTokenRepository userUnlockTokenRepository;

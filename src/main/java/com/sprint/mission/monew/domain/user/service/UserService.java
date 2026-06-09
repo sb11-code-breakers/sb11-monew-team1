@@ -25,7 +25,6 @@ import com.sprint.mission.monew.domain.user.exception.UserInvalidPasswordExcepti
 import com.sprint.mission.monew.domain.user.exception.UserLoginFailedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.mapper.UserMapper;
-import com.sprint.mission.monew.domain.user.metrics.UserMetrics;
 import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import com.sprint.mission.monew.domain.user.repository.UserUnlockTokenRepository;
 import com.sprint.mission.monew.domain.user.repository.EmailVerificationRepository;
@@ -60,7 +59,6 @@ public class UserService {
   private final UserUnlockTokenRepository userUnlockTokenRepository;
   private final UserSessionRepository userSessionRepository;
   private final EmailQueue emailQueue;
-  private final UserMetrics userMetrics;
   private final LoginFailureHandler loginFailureHandler;
   private final LoginSuccessHandler loginSuccessHandler;
 

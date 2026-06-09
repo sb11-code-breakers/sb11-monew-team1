@@ -1,6 +1,8 @@
 package com.sprint.mission.monew.domain.comment.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+
+import com.sprint.mission.monew.batch.dto.CommentCleanupItem;
 import com.sprint.mission.monew.common.config.JpaConfig;
 import com.sprint.mission.monew.common.config.QuerydslConfig;
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
@@ -14,6 +16,7 @@ import com.sprint.mission.monew.domain.comment.dto.CommentResponse;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -31,6 +34,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @DataJpaTest
 @ActiveProfiles("test")
@@ -623,6 +627,45 @@ public class CommentRepositoryTest {
           .extracting(CommentResponse::createdAt)
           .isSortedAccordingTo(Comparator.naturalOrder()); // ASC 기준
     }
+  }
 
+  @Nested
+  @DisplayName("deletedAt + id 기준 cursor 조회가 정렬된 순서로 반환하기")
+  class FindCommentsForCleanup {
+    @Test
+    @DisplayName("deletedAt + id 기준 cursor 조회가 정렬된 순서로 반환된다")
+    void findCommentsForCleanup_ordering_test() {
+      // given
+      Instant base = Instant.now().minus(Duration.ofDays(2));
+
+      Comment comment1 = Comment.create(article, user, "첫 번째 댓글");
+      Comment comment2 = Comment.create(article, user, "두 번째 댓글");
+      Comment comment3 = Comment.create(article, user, "세 번째 댓글");
+
+      ReflectionTestUtils.setField(comment1, "deletedAt", base.minusSeconds(10));
+      ReflectionTestUtils.setField(comment2, "deletedAt", base.plusSeconds(10));
+      ReflectionTestUtils.setField(comment3, "deletedAt", base.plusSeconds(20));
+
+      commentRepository.save(comment1);
+      commentRepository.save(comment2);
+      commentRepository.save(comment3);
+
+      // when
+      List<CommentCleanupItem> result = commentRepository.findCommentsForCleanup(
+          Instant.now(),
+          Instant.EPOCH,
+          UUID.randomUUID(),
+          PageRequest.of(0, 10)
+      );
+
+      // then
+      assertThat(result)
+          .extracting(CommentCleanupItem::id)
+          .containsExactly(
+              comment1.getId(),
+              comment2.getId(),
+              comment3.getId()
+          );
+    }
   }
 }

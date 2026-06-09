@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 
 import com.sprint.mission.monew.batch.reader.NewsCollectReader;
 import com.sprint.mission.monew.batch.writer.NewsCollectWriter;
-import com.sprint.mission.monew.common.config.NewsCollectJobConfig;
+import com.sprint.mission.monew.batch.config.NewsCollectJobConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

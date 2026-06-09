@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
-import com.sprint.mission.monew.batch.listener.NotificationCleanupStepListener;
-import com.sprint.mission.monew.batch.reader.NotificationCleanupReader;
-import com.sprint.mission.monew.batch.writer.NotificationCleanupWriter;
-import com.sprint.mission.monew.batch.config.NotificationCleanupJobConfig;
+import com.sprint.mission.monew.batch.listener.CommentCleanupStepListener;
+import com.sprint.mission.monew.batch.reader.CommentCleanupReader;
+import com.sprint.mission.monew.batch.writer.CommentCleanupWriter;
+import com.sprint.mission.monew.batch.config.CommentCleanupJobConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -16,25 +16,25 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.transaction.PlatformTransactionManager;
 
-class NotificationCleanupJobConfigTest {
+public class CommentCleanupJobConfigTest {
 
   private final JobRepository jobRepository = mock(JobRepository.class);
   private final PlatformTransactionManager transactionManager = mock(
       PlatformTransactionManager.class);
 
   @Nested
-  @DisplayName("NotificationCleanupJobConfig Job, Step 테스트")
+  @DisplayName("CommentCleanupJobConfig Job, Step 테스트")
   class JobStepTest {
 
     @Test
     @DisplayName("Job, Step 생성 성공")
     void job_step_생성_성공() throws Exception {
       // given
-      NotificationCleanupReader reader = mock(NotificationCleanupReader.class);
-      NotificationCleanupWriter writer = mock(NotificationCleanupWriter.class);
-      NotificationCleanupStepListener listener = mock(NotificationCleanupStepListener.class);
+      CommentCleanupReader reader = mock(CommentCleanupReader.class);
+      CommentCleanupWriter writer = mock(CommentCleanupWriter.class);
+      CommentCleanupStepListener listener = mock(CommentCleanupStepListener.class);
 
-      NotificationCleanupJobConfig config = new NotificationCleanupJobConfig(
+      CommentCleanupJobConfig config = new CommentCleanupJobConfig(
           jobRepository,
           transactionManager,
           reader,
@@ -42,20 +42,20 @@ class NotificationCleanupJobConfigTest {
           listener
       );
 
-      var field = NotificationCleanupJobConfig.class.getDeclaredField("chunkSize");
+      var field = CommentCleanupJobConfig.class.getDeclaredField("chunkSize");
       field.setAccessible(true);
       field.set(config, 1000);
 
       // when
-      Job job = config.notificationCleanupJob();
-      Step step = config.notificationCleanupStep();
+      Job job = config.commentCleanupJob();
+      Step step = config.commentCleanupStep();
 
       // then
       assertNotNull(job);
-      assertThat(job.getName()).isEqualTo("notificationCleanupJob");
+      assertThat(job.getName()).isEqualTo("commentCleanupJob");
 
       assertNotNull(step);
-      assertThat(step.getName()).isEqualTo("notificationCleanupStep");
+      assertThat(step.getName()).isEqualTo("commentCleanupStep");
     }
   }
 }

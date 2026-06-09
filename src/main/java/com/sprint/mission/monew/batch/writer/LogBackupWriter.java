@@ -1,11 +1,8 @@
 package com.sprint.mission.monew.batch.writer;
 
-import com.sprint.mission.monew.batch.exception.LogBackupDeleteFailedException;
 import com.sprint.mission.monew.batch.exception.LogBackupFailedException;
 import com.sprint.mission.monew.batch.metrics.LogBackupMetrics;
 import com.sprint.mission.monew.batch.dto.UploadPayload;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,13 +37,10 @@ public class LogBackupWriter implements ItemWriter<UploadPayload> {
         if (exists(item.s3Key())) {
           log.info("이미 존재 → skip: {}", item.s3Key());
           metrics.countSkipped();
-          deleteLocalFile(item);
-
           continue;
         }
 
         doUpload(item);
-        deleteLocalFile(item);
       }
     } finally {
       metrics.recordDuration(Duration.ofNanos(System.nanoTime() - start));
@@ -87,13 +81,5 @@ public class LogBackupWriter implements ItemWriter<UploadPayload> {
     }
   }
 
-  private void deleteLocalFile(UploadPayload item) {
-    try {
-      Files.delete(item.logFile());
-      log.info("로컬 로그 파일 삭제: {}", item.logFile());
-    } catch (IOException e) {
-      throw LogBackupDeleteFailedException.withPath(item.logFile(), e);
-    }
-  }
-
 }
+

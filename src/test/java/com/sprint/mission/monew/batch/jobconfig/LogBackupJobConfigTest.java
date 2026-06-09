@@ -7,7 +7,7 @@ import static org.mockito.Mockito.mock;
 import com.sprint.mission.monew.batch.processor.LogBackupProcessor;
 import com.sprint.mission.monew.batch.reader.LogBackupReader;
 import com.sprint.mission.monew.batch.writer.LogBackupWriter;
-import com.sprint.mission.monew.common.config.LogBackupJobConfig;
+import com.sprint.mission.monew.batch.config.LogBackupJobConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
