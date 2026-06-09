@@ -49,6 +49,7 @@ class LoginFailureHandlerTest {
       // then
       then(userRepository).should(times(2)).findById(userId);
       assertThat(result).isFalse();
+      assertThat(user.getLoginFailCount()).isEqualTo(1);
     }
 
     @Test
