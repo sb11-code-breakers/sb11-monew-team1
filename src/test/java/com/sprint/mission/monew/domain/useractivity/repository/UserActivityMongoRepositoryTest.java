@@ -146,6 +146,24 @@ class UserActivityMongoRepositoryTest {
       assertThat(found.getComments()).hasSize(10);
       assertThat(found.getComments().get(0).getId()).isEqualTo(newComment.getId());
     }
+
+    @Test
+    @DisplayName("도큐먼트가 없으면 upsert로 신규 생성한다")
+    void 도큐먼트가_없으면_upsert로_신규_생성한다() {
+      // given: 이 userId를 가진 문서가 몽고DB에 아예 존재하지 않는 상태
+      RecentComment comment = RecentComment.of(
+          UUID.randomUUID(), UUID.randomUUID(), "기사",
+          userId, "닉네임", "내용", 0L, Instant.now()
+      );
+
+      // when: 일꾼 클래스를 통해 댓글 추가 시도
+      userActivityMongoRepositoryImpl.pushComment(userId, comment);
+
+      // then: 아직 구현체에서 updateFirst를 쓰므로 새 문서가 안 만들어져 여기서 FAILED가 나야 정상
+      UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
+      assertThat(found).isNotNull();
+      assertThat(found.getComments()).hasSize(1);
+    }
   }
 
   @Nested
