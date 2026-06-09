@@ -150,16 +150,16 @@ class UserActivityMongoRepositoryTest {
     @Test
     @DisplayName("도큐먼트가 없으면 upsert로 신규 생성한다")
     void 도큐먼트가_없으면_upsert로_신규_생성한다() {
-      // given: 이 userId를 가진 문서가 몽고DB에 아예 존재하지 않는 상태
+      // given
       RecentComment comment = RecentComment.of(
           UUID.randomUUID(), UUID.randomUUID(), "기사",
           userId, "닉네임", "내용", 0L, Instant.now()
       );
 
-      // when: 일꾼 클래스를 통해 댓글 추가 시도
+      // when
       userActivityMongoRepositoryImpl.pushComment(userId, comment);
 
-      // then: 아직 구현체에서 updateFirst를 쓰므로 새 문서가 안 만들어져 여기서 FAILED가 나야 정상
+      // then
       UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
       assertThat(found).isNotNull();
       assertThat(found.getComments()).hasSize(1);
@@ -171,17 +171,15 @@ class UserActivityMongoRepositoryTest {
   class PullComment {
 
     @Test
-    @DisplayName("배열에서 특정 댓글을 삭제한다")
-    void 배열에서_특정_댓글을_삭제한다() {
+    @DisplayName("해당 commentId의 댓글을 제거한다")
+    void 해당_commentId의_댓글을_제거한다() {
       // given
-      UserActivity activityWithComment = UserActivity.of(userId, "a@b.com", "닉네임", Instant.now());
       UUID commentId = UUID.randomUUID();
-      RecentComment comment = RecentComment.of(
-          commentId, UUID.randomUUID(), "기사 제목",
-          userId, "닉네임", "삭제될 댓글 내용", 0L, Instant.now()
-      );
-      activityWithComment.getComments().add(comment);
-      mongoTemplate.insert(activityWithComment);
+      mongoTemplate.insert(UserActivity.of(userId, "a@b.com", "닉네임", Instant.now()));
+
+      userActivityMongoRepositoryImpl.pushComment(userId, RecentComment.of(
+          commentId, UUID.randomUUID(), "기사", userId, "닉네임", "내용", 0L, Instant.now()
+      ));
 
       // when
       userActivityMongoRepositoryImpl.pullComment(userId, commentId);
@@ -190,6 +188,26 @@ class UserActivityMongoRepositoryTest {
       UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
       assertThat(found).isNotNull();
       assertThat(found.getComments()).isEmpty();
+    }
+
+    //
+    @Test
+    @DisplayName("존재하지 않는 commentId면 배열 변화가 없다")
+    void 존재하지_않는_commentId면_배열_변화가_없다() {
+      // given
+      UUID existingId = UUID.randomUUID();
+      mongoTemplate.insert(UserActivity.of(userId, "a@b.com", "닉네임", Instant.now()));
+      userActivityMongoRepositoryImpl.pushComment(userId, RecentComment.of(
+          existingId, UUID.randomUUID(), "기사", userId, "닉네임", "내용", 0L, Instant.now()
+      ));
+
+      // when
+      userActivityMongoRepositoryImpl.pullComment(userId, UUID.randomUUID());
+
+      // then
+      UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
+      assertThat(found).isNotNull();
+      assertThat(found.getComments()).hasSize(1);
     }
   }
 }
