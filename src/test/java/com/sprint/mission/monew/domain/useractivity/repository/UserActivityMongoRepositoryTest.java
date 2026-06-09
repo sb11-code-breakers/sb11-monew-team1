@@ -42,7 +42,6 @@ class UserActivityMongoRepositoryTest {
   @Nested
   @DisplayName("UserActivity 저장 및 단건 조회")
   class SaveAndFind {
-
     @Test
     @DisplayName("저장한 UserActivity를 id로 조회할 수 있다")
     void 저장한_UserActivity를_id로_조회할_수_있다() {
@@ -55,7 +54,6 @@ class UserActivityMongoRepositoryTest {
   @Nested
   @DisplayName("nickname 존재 여부로 활성 사용자 조회")
   class FindByIdAndNicknameIsNotNull {
-
     @Test
     @DisplayName("nickname이 있으면 UserActivity를 반환한다")
     void nickname이_있으면_UserActivity를_반환한다() {
@@ -77,7 +75,6 @@ class UserActivityMongoRepositoryTest {
   @Nested
   @DisplayName("pushComment()")
   class PushComment {
-
     @Test
     @DisplayName("댓글을 배열 첫 번째에 삽입한다")
     void 댓글을_배열_첫_번째에_삽입한다() {
@@ -115,7 +112,6 @@ class UserActivityMongoRepositoryTest {
   @Nested
   @DisplayName("pullComment()")
   class PullComment {
-
     @Test
     @DisplayName("해당 commentId의 댓글을 제거한다")
     void 해당_commentId의_댓글을_제거한다() {
@@ -143,7 +139,6 @@ class UserActivityMongoRepositoryTest {
   @Nested
   @DisplayName("updateNickname()")
   class UpdateNickname {
-
     @Test
     @DisplayName("nickname과 모든 comments의 userNickname을 동시에 변경한다")
     void nickname과_모든_comments의_userNickname을_동시에_변경한다() {
@@ -160,7 +155,6 @@ class UserActivityMongoRepositoryTest {
   @Nested
   @DisplayName("anonymize()")
   class Anonymize {
-
     @Test
     @DisplayName("nickname과 모든 comments의 userNickname을 알 수 없음으로 변경한다")
     void nickname과_모든_comments의_userNickname을_알수없음으로_변경한다() {
@@ -170,6 +164,31 @@ class UserActivityMongoRepositoryTest {
       UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
       assertThat(found.getNickname()).isEqualTo("알 수 없음");
       assertThat(found.getComments().get(0).getUserNickname()).isEqualTo("알 수 없음");
+    }
+  }
+
+  // 🔴 [커밋 29] 모든 유저 대상 기사 조회 기록 제거 Red 테스트 추가 단계
+  @Nested
+  @DisplayName("pullArticleViewsByArticleId()")
+  class PullArticleViewsByArticleId {
+    @Test
+    @DisplayName("모든 유저 도큐먼트에서 해당 articleId의 조회 기록을 제거한다")
+    void 모든_유저_도큐먼트에서_해당_articleId의_조회_기록을_제거한다() {
+      UUID articleId = UUID.randomUUID();
+      UUID user1 = UUID.randomUUID();
+      UUID user2 = UUID.randomUUID();
+      mongoTemplate.insert(UserActivity.of(user1, "a@b.com", "유저1", Instant.now()));
+      mongoTemplate.insert(UserActivity.of(user2, "c@d.com", "유저2", Instant.now()));
+
+      // 🔴 현재 pushArticleView 메서드가 구현체에 없으므로 컴파일 에러 발생 대상
+      userActivityMongoRepositoryImpl.pushArticleView(user1, articleId);
+      userActivityMongoRepositoryImpl.pushArticleView(user2, articleId);
+
+      // 🔴 현재 pullArticleViewsByArticleId 메서드가 구현체에 없으므로 컴파일 에러 발생 대상
+      userActivityMongoRepositoryImpl.pullArticleViewsByArticleId(articleId);
+
+      assertThat(mongoTemplate.findById(user1, UserActivity.class).getArticleViews()).isEmpty();
+      assertThat(mongoTemplate.findById(user2, UserActivity.class).getArticleViews()).isEmpty();
     }
   }
 }
