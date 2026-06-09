@@ -14,4 +14,5 @@ public interface UserActivityMongoRepository extends MongoRepository<UserActivit
   void anonymize(UUID userId);
   void anonymizeCommentLikesByCommentUserId(UUID userId);
   void pushSubscription(UUID userId, UUID targetId);
+  void pullSubscription(UUID userId, UUID targetId);
 }

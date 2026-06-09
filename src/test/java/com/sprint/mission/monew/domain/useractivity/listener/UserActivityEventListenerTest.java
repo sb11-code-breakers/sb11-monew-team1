@@ -78,7 +78,7 @@ class UserActivityEventListenerTest {
       UUID userId = UUID.randomUUID();
       UUID targetId = UUID.randomUUID();
 
-      listener.handle(nSubscriptionCancelledEvent(userId, targetId));
+      listener.handle(new SubscriptionCancelledEvent(userId, targetId));
 
       verify(userActivityMongoRepository).pullSubscription(userId, targetId);
     }
