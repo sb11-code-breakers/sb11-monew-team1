@@ -392,6 +392,7 @@ class ArticleControllerTest {
     @Test
     @DisplayName("유효하지 않은 형식의 articleId이면 400을 반환한다")
     void 유효하지_않은_형식의_articleId이면_400을_반환한다() throws Exception {
+      // when & then
       mockMvc
           .perform(
               delete(URL + "/{articleId}/hard", "not-a-uuid")
@@ -402,10 +403,12 @@ class ArticleControllerTest {
     @Test
     @DisplayName("존재하지 않는 articleId이면 404를 반환한다")
     void 존재하지_않는_articleId이면_404를_반환한다() throws Exception {
+      // given
       UUID articleId = UUID.randomUUID();
       willThrow(ArticleNotFoundException.withId(articleId))
           .given(articleService).hardDelete(eq(articleId));
 
+      // when & then
       mockMvc
           .perform(
               delete(URL + "/{articleId}/hard", articleId)
@@ -416,6 +419,7 @@ class ArticleControllerTest {
     @Test
     @DisplayName("정상 요청이면 204를 반환한다")
     void 정상_요청이면_204를_반환한다() throws Exception {
+      // when & then
       mockMvc
           .perform(
               delete(URL + "/{articleId}/hard", UUID.randomUUID())

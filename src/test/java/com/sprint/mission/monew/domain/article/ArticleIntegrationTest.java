@@ -440,6 +440,7 @@ class ArticleIntegrationTest {
     @Test
     @DisplayName("존재하지 않는 기사이면 404를 반환한다")
     void 존재하지_않는_기사이면_404를_반환한다() throws Exception {
+      // when & then
       mockMvc
           .perform(delete(URL + "/{articleId}/hard", UUID.randomUUID())
               .header(USER_ID_HEADER, ADMIN_TOKEN))
