@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.mongodb.core.MongoTemplate;
 
 @DataMongoTest
 @Import(MongoContainerConfig.class)
@@ -24,10 +25,14 @@ class UserActivityMongoRepositoryTest {
 
   private UUID userId;
   private UserActivity activity;
+  private MongoTemplate mongoTemplate;
+  private UserActivityCustomRepositoryImpl customRepository;
+
 
   @BeforeEach
   void setUp() {
     repository.deleteAll();
+    customRepository = new UserActivityCustomRepositoryImpl(mongoTemplate);
     userId = UUID.randomUUID();
     activity = UserActivity.of(userId, "test@example.com", "닉네임", Instant.now());
   }
@@ -82,6 +87,32 @@ class UserActivityMongoRepositoryTest {
 
       // then
       assertThat(found).isEmpty();
+    }
+    @Nested
+    @DisplayName("pushComment()")
+    class PushComment {
+
+      @Test
+      @DisplayName("댓글을 배열 첫 번째에 삽입한다")
+      void 댓글을_배열_첫_번째에_삽입한다() {
+        // given
+        mongoTemplate.insert(UserActivity.of(userId, "a@b.com", "닉네임", Instant.now()));
+
+        com.sprint.mission.monew.domain.useractivity.document.RecentComment comment =
+            com.sprint.mission.monew.domain.useractivity.document.RecentComment.of(
+                UUID.randomUUID(), UUID.randomUUID(), "기사 제목",
+                userId, "닉네임", "댓글 내용", 0L, Instant.now()
+            );
+
+        // when
+        customRepository.pushComment(userId, comment); // 🔴 컴파일 에러 발생 지점
+
+        // then
+        UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
+        assertThat(found).isNotNull();
+        assertThat(found.getComments()).hasSize(1);
+        assertThat(found.getComments().get(0).getId()).isEqualTo(comment.getId());
+      }
     }
   }
 }
