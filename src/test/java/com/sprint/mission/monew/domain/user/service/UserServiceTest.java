@@ -713,13 +713,13 @@ class UserServiceTest {
     void 낙관적락_충돌이_3회_초과하면_예외_발생() {
       // given
       UUID userId = UUID.randomUUID();
-      UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("currentPassword", "newPassword123");
+      UserUpdateRequest request = new UserUpdateRequest("새닉네임");
 
       given(userRepository.findByIdAndDeletedAtIsNull(userId))
           .willThrow(ObjectOptimisticLockingFailureException.class);
 
       // when & then
-      assertThatThrownBy(() -> userService.updatePassword(userId, request))
+      assertThatThrownBy(() -> userService.update(userId, userId, request))
           .isInstanceOf(ObjectOptimisticLockingFailureException.class);
       then(userRepository).should(times(3)).findByIdAndDeletedAtIsNull(userId);
     }
