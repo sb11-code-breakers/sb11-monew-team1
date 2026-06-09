@@ -69,4 +69,18 @@ class UserActivityEventListenerTest {
       verify(userActivityMongoRepository).pushSubscription(userId, targetId);
     }
   }
+  @Nested
+  @DisplayName("SubscriptionCancelledEvent")
+  class SubscriptionCancelled {
+    @Test
+    @DisplayName("SubscriptionCancelledEvent를 받으면 pullSubscription을 호출한다")
+    void SubscriptionCancelledEvent를_받으면_pullSubscription을_호출한다() {
+      UUID userId = UUID.randomUUID();
+      UUID targetId = UUID.randomUUID();
+
+      listener.handle(nSubscriptionCancelledEvent(userId, targetId));
+
+      verify(userActivityMongoRepository).pullSubscription(userId, targetId);
+    }
+  }
 }
