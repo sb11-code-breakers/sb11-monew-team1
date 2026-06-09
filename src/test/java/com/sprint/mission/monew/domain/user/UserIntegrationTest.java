@@ -227,7 +227,6 @@ class UserIntegrationTest {
     @DisplayName("admin token 없이 요청 시 403 반환")
     void admin_token_없이_요청_시_403_반환() throws Exception {
       // given — 헤더 없음
-
       // when & then
       mockMvc.perform(delete("/api/users/{userId}/hard", UUID.randomUUID()))
           .andExpect(status().isForbidden());
@@ -237,7 +236,6 @@ class UserIntegrationTest {
     @DisplayName("잘못된 admin token으로 요청 시 403 반환")
     void 잘못된_admin_token으로_요청_시_403_반환() throws Exception {
       // given — 잘못된 토큰
-
       // when & then
       mockMvc.perform(
               delete("/api/users/{userId}/hard", UUID.randomUUID())
@@ -272,8 +270,16 @@ class UserIntegrationTest {
   }
 
   @Nested
-  @DisplayName("DELETE /api/users/logout — 로그아웃")
+  @DisplayName("POST /api/auth/logout — 로그아웃")
   class Logout {
+
+    @Test
+    @DisplayName("세션 없이 요청 시 401 반환")
+    void 세션_없이_요청_시_401_반환() throws Exception {
+      // given & when & then
+      mockMvc.perform(post("/api/auth/logout"))
+          .andExpect(status().isUnauthorized());
+    }
 
     @Test
     @DisplayName("로그아웃 성공 시 전체 세션이 삭제되고 204 반환")
@@ -298,20 +304,12 @@ class UserIntegrationTest {
       String sessionToken = loginResult.getResponse().getHeader("Monew-Request-User-ID");
 
       // when
-      mockMvc.perform(delete("/api/users/logout")
+      mockMvc.perform(post("/api/auth/logout")
               .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNoContent());
 
       // then — 세션 전체 삭제 확인
       assertThat(userSessionRepository.findAll()).isEmpty();
-    }
-
-    @Test
-    @DisplayName("세션 없이 요청 시 401 반환")
-    void 세션_없이_요청_시_401_반환() throws Exception {
-      // given & when & then
-      mockMvc.perform(delete("/api/users/logout"))
-          .andExpect(status().isUnauthorized());
     }
   }
 }

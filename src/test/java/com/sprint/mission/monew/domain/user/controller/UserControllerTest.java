@@ -717,7 +717,7 @@ class UserControllerTest {
     }
   }
   @Nested
-  @DisplayName("DELETE /api/users/logout — 로그아웃")
+  @DisplayName("POST /api/auth/logout — 로그아웃")
   class Logout {
 
     @Test
@@ -727,7 +727,7 @@ class UserControllerTest {
       willDoNothing().given(userService).logout(userId);
 
       // when & then
-      mockMvc.perform(delete("/api/users/logout")
+      mockMvc.perform(post("/api/auth/logout")
               .header("Monew-Request-User-ID", sessionToken.toString()))
           .andExpect(status().isNoContent());
     }
@@ -736,8 +736,9 @@ class UserControllerTest {
     @DisplayName("Monew-Request-User-ID 헤더 없으면 401 반환")
     void 헤더_없으면_401_반환() throws Exception {
       // given & when & then
-      mockMvc.perform(delete("/api/users/logout"))
+      mockMvc.perform(post("/api/auth/logout"))
           .andExpect(status().isUnauthorized());
     }
   }
+
 }
