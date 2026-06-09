@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
+@Transactional(readOnly = true)
 @Component
 @RequiredArgsConstructor
 public class LoginFailureHandler {
@@ -26,7 +27,7 @@ public class LoginFailureHandler {
       maxAttempts = 3,
       backoff = @Backoff(delay = 50, multiplier = 2)
   )
-  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = false)
   public boolean handle(UUID userId) {
     User user = userRepository.findById(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));

@@ -200,7 +200,16 @@ public class UserService {
     User user = userRepository.findByIdAndDeletedAtIsNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
     user.softDelete();
-    userSessionRepository.deleteByUserId(userId);
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          userSessionRepository.deleteByUserId(userId);
+        }
+      });
+    } else {
+      userSessionRepository.deleteByUserId(userId);
+    }
     log.info("사용자 논리 삭제 완료 | userId={}", userId);
   }
 

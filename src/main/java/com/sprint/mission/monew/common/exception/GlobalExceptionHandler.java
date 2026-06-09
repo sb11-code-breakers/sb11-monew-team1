@@ -103,7 +103,11 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ErrorResponse> handleOptimisticLock(ObjectOptimisticLockingFailureException e) {
     UserErrorCode code = UserErrorCode.USER_OPTIMISTIC_LOCK_CONFLICT;
     log.warn("[{}] {}", code.getCode(), e.getMessage());
-    return errorResponse(HttpStatus.CONFLICT, code, null, e);
+    Map<String, Object> details = Map.of(
+        "entityType", e.getPersistentClassName() != null ? e.getPersistentClassName() : "unknown",
+        "identifier", e.getIdentifier() != null ? e.getIdentifier().toString() : "unknown"
+    );
+    return errorResponse(HttpStatus.CONFLICT, code, details, e);
   }
 
   @ExceptionHandler(MonewException.class)
