@@ -41,6 +41,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 @Slf4j
 @Transactional(readOnly = true)
@@ -141,11 +142,23 @@ public class UserService {
     if (!userId.equals(requestUserId)) {
       throw UserAccessDeniedException.forUser(requestUserId);
     }
-    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
-        .orElseThrow(() -> UserNotFoundException.withId(userId));
-    user.updateNickname(request.nickname());
-    log.info("닉네임 수정 완료 | userId={}", userId);
-    return userMapper.toResponse(user);
+    int maxRetry = 3;
+    for (int i = 0; i < maxRetry; i++) {
+      try {
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+            .orElseThrow(() -> UserNotFoundException.withId(userId));
+        user.updateNickname(request.nickname());
+        log.info("닉네임 수정 완료 | userId={}", userId);
+        return userMapper.toResponse(user);
+      } catch (ObjectOptimisticLockingFailureException e) {
+        if (i == maxRetry - 1) {
+          log.warn("닉네임 수정 낙관적락 최종 실패 | userId={}", userId);
+          throw e;
+        }
+        log.warn("닉네임 수정 낙관적락 충돌, 재시도 {}/{}  | userId={}", i + 1, maxRetry, userId);
+      }
+    }
+    throw new ObjectOptimisticLockingFailureException(User.class, userId);
   }
 
   @Transactional
