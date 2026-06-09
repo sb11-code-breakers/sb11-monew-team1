@@ -39,6 +39,6 @@ public class LoginFailureHandler {
         log.warn("로그인 실패 처리 낙관적락 충돌, 재시도 {}/{} | userId={}", i + 1, maxRetry, userId);
       }
     }
-    throw new ObjectOptimisticLockingFailureException(User.class, userId);
+    throw new IllegalStateException("unreachable");
   }
 }

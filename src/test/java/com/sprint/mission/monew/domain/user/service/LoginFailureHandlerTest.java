@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.domain.user.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -43,10 +44,11 @@ class LoginFailureHandlerTest {
           .willReturn(Optional.of(user));
 
       // when
-      loginFailureHandler.handle(userId);
+      boolean result = loginFailureHandler.handle(userId);
 
       // then
       then(userRepository).should(times(2)).findById(userId);
+      assertThat(result).isFalse();
     }
 
     @Test
@@ -61,6 +63,7 @@ class LoginFailureHandlerTest {
       // when & then
       assertThatThrownBy(() -> loginFailureHandler.handle(userId))
           .isInstanceOf(ObjectOptimisticLockingFailureException.class);
+      then(userRepository).should(times(3)).findById(userId);
     }
   }
 }
