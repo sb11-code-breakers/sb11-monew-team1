@@ -36,12 +36,12 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 @Slf4j
 @Transactional(readOnly = true)
@@ -155,10 +155,35 @@ public class UserService {
           log.warn("닉네임 수정 낙관적락 최종 실패 | userId={}", userId);
           throw e;
         }
-        log.warn("닉네임 수정 낙관적락 충돌, 재시도 {}/{}  | userId={}", i + 1, maxRetry, userId);
+        log.warn("닉네임 수정 낙관적락 충돌, 재시도 {}/{} | userId={}", i + 1, maxRetry, userId);
       }
     }
     throw new ObjectOptimisticLockingFailureException(User.class, userId);
+  }
+
+  @Transactional
+  public void updatePassword(UUID requestUserId, UserPasswordUpdateRequest request) {
+    log.debug("비밀번호 변경 시도");
+    int maxRetry = 3;
+    for (int i = 0; i < maxRetry; i++) {
+      try {
+        User user = userRepository.findByIdAndDeletedAtIsNull(requestUserId)
+            .orElseThrow(() -> UserNotFoundException.withId(requestUserId));
+        if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
+          throw UserInvalidPasswordException.withoutDetail();
+        }
+        user.updatePassword(passwordEncoder.encode(request.newPassword()));
+        log.info("비밀번호 변경 완료 | userId={}", requestUserId);
+        return;
+      } catch (ObjectOptimisticLockingFailureException e) {
+        if (i == maxRetry - 1) {
+          log.warn("비밀번호 변경 낙관적락 최종 실패 | userId={}", requestUserId);
+          throw e;
+        }
+        log.warn("비밀번호 변경 낙관적락 충돌, 재시도 {}/{} | userId={}", i + 1, maxRetry, requestUserId);
+      }
+    }
+    throw new ObjectOptimisticLockingFailureException(User.class, requestUserId);
   }
 
   @Transactional
@@ -167,11 +192,24 @@ public class UserService {
     if (!userId.equals(requestUserId)) {
       throw UserAccessDeniedException.forUser(requestUserId);
     }
-    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
-        .orElseThrow(() -> UserNotFoundException.withId(userId));
-    user.softDelete();
-    userSessionRepository.deleteByUserId(userId);
-    log.info("사용자 논리 삭제 완료 | userId={}", userId);
+    int maxRetry = 3;
+    for (int i = 0; i < maxRetry; i++) {
+      try {
+        User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+            .orElseThrow(() -> UserNotFoundException.withId(userId));
+        user.softDelete();
+        userSessionRepository.deleteByUserId(userId);
+        log.info("사용자 논리 삭제 완료 | userId={}", userId);
+        return;
+      } catch (ObjectOptimisticLockingFailureException e) {
+        if (i == maxRetry - 1) {
+          log.warn("논리 삭제 낙관적락 최종 실패 | userId={}", userId);
+          throw e;
+        }
+        log.warn("논리 삭제 낙관적락 충돌, 재시도 {}/{} | userId={}", i + 1, maxRetry, userId);
+      }
+    }
+    throw new ObjectOptimisticLockingFailureException(User.class, userId);
   }
 
   @Transactional
@@ -181,18 +219,6 @@ public class UserService {
         .orElseThrow(() -> UserNotFoundException.withId(userId));
     userRepository.delete(user);
     log.info("사용자 물리 삭제 완료 | userId={}", userId);
-  }
-
-  @Transactional
-  public void updatePassword(UUID requestUserId, UserPasswordUpdateRequest request) {
-    log.debug("비밀번호 변경 시도");
-    User user = userRepository.findByIdAndDeletedAtIsNull(requestUserId)
-        .orElseThrow(() -> UserNotFoundException.withId(requestUserId));
-    if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
-      throw UserInvalidPasswordException.withoutDetail();
-    }
-    user.updatePassword(passwordEncoder.encode(request.newPassword()));
-    log.info("비밀번호 변경 완료 | userId={}", requestUserId);
   }
 
   @Transactional
@@ -278,11 +304,10 @@ public class UserService {
     userUnlockTokenRepository.delete(unlockToken);
     log.info("계정 잠금 해제 완료 | userId={}", user.getId());
   }
-  @Transactional
+
   public void logout(UUID userId) {
     log.debug("로그아웃 시도");
     userSessionRepository.deleteByUserId(userId);
     log.info("로그아웃 완료 | userId={}", userId);
   }
-
 }
