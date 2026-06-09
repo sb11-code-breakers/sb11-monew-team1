@@ -46,4 +46,8 @@ public class UserActivityEventListener {
   public void handle(CommentLikedEvent event) {
     userActivityMongoRepository.pushCommentLike(event.userId(), event.commentId());
   }
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(CommentLikeRemovedEvent event) {
+    userActivityMongoRepository.pullCommentLike(event.userId(), event.commentId());
+  }
 }
