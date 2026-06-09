@@ -54,6 +54,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -456,6 +457,40 @@ class UserServiceTest {
       // then
       assertThat(result).isNotNull();
       assertThat(result.nickname()).isEqualTo("새닉네임");
+    }
+
+    @Test
+    @DisplayName("낙관적락 충돌 시 재시도 후 성공")
+    void 낙관적락_충돌_시_재시도_후_성공() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UserUpdateRequest request = new UserUpdateRequest("새닉네임");
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willThrow(ObjectOptimisticLockingFailureException.class)
+          .willReturn(Optional.of(user));
+
+      // when
+      userService.update(userId, userId, request);
+
+      // then
+      then(userRepository).should(times(2)).findByIdAndDeletedAtIsNull(userId);
+    }
+
+    @Test
+    @DisplayName("낙관적락 충돌이 3회 초과하면 예외 발생")
+    void 낙관적락_충돌이_3회_초과하면_예외_발생() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UserUpdateRequest request = new UserUpdateRequest("새닉네임");
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willThrow(ObjectOptimisticLockingFailureException.class);
+
+      // when & then
+      assertThatThrownBy(() -> userService.update(userId, userId, request))
+          .isInstanceOf(ObjectOptimisticLockingFailureException.class);
     }
   }
 
