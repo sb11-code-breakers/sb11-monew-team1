@@ -1,39 +1,29 @@
 package com.sprint.mission.monew.common.config;
 
 import javax.sql.DataSource;
-import org.springframework.batch.core.repository.JobRepository;
-import org.springframework.batch.core.repository.support.JobRepositoryFactoryBean;
+import org.springframework.batch.core.configuration.support.DefaultBatchConfiguration;
 import org.springframework.boot.autoconfigure.batch.BatchDataSourceScriptDatabaseInitializer;
 import org.springframework.boot.autoconfigure.batch.BatchProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Isolation;
 
+// Spring Batch JobRepository 기본값은 ISOLATION_SERIALIZABLE이지만,
+// log-upload와 news-collect가 매시 정각에 동시 실행되면서 PostgreSQL SSI 충돌 발생.
+// Spring Batch는 version 컬럼 낙관적 락을 사용하므로 READ_COMMITTED/REPEATABLE_READ도
+// 환경·동시성 요구사항에 따라 사용 가능하다 (Spring Batch 공식 문서 참고).
+// DefaultBatchConfiguration 상속 시 BatchAutoConfiguration이 백오프되어
+// BatchDataSourceScriptDatabaseInitializer도 꺼지므로 여기서 직접 등록한다.
 @Configuration
-@EnableConfigurationProperties(BatchProperties.class) // 배치 속성 활성화
-public class BatchConfig {
+@EnableConfigurationProperties(BatchProperties.class)
+public class BatchConfig extends DefaultBatchConfiguration {
 
-  /**
-   * PostgreSQL의 SERIALIZABLE 격리 수준에서 발생하는 동시 실행 트랜잭션 충돌 방지
-   * JobRepository를 직접 등록하며 격리 수준을 ISOLATION_READ_COMMITTED로 조정합니다.
-   */
-  @Bean
-  public JobRepository jobRepository(DataSource dataSource, PlatformTransactionManager transactionManager) throws Exception {
-    JobRepositoryFactoryBean factory = new JobRepositoryFactoryBean();
-    factory.setDataSource(dataSource);
-    factory.setTransactionManager(transactionManager);
-
-    factory.setIsolationLevelForCreate("ISOLATION_READ_COMMITTED");
-
-    factory.afterPropertiesSet();
-    return factory.getObject();
+  @Override
+  protected Isolation getIsolationLevelForCreate() {
+    return Isolation.READ_COMMITTED;
   }
 
-  /**
-   * JobRepository 수동 등록 시 배치가 자동 비활성화되어
-   * 스크립트가 실행되지 않는 현상을 방지하기 위해 이니셜라이저를 명시적으로 등록합니다.
-   */
   @Bean
   public BatchDataSourceScriptDatabaseInitializer batchDataSourceInitializer(
       DataSource dataSource, BatchProperties properties) {
