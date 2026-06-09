@@ -16,4 +16,5 @@ public interface UserActivityMongoRepository extends MongoRepository<UserActivit
   void pushSubscription(UUID userId, UUID targetId);
   void pullSubscription(UUID userId, UUID targetId);
   void pushComment(UUID userId, UUID articleId, UUID commentId);
+  void updateCommentContent(UUID userId, UUID commentId, String content);
 }
