@@ -7,7 +7,7 @@ import com.sprint.mission.monew.domain.useractivity.document.RecentSubscription;
 import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
 import java.util.UUID;
 
-public interface UserActivityMongoDirectRepository {
+public interface UserActivityCustomMongoRepository {
   void createUserActivity(UserActivity userActivity);
   void updateNickname(UUID userId, String newNickname);
   void anonymize(UUID userId);

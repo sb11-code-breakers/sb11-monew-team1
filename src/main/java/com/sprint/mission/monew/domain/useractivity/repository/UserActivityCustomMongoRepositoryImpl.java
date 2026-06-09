@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class UserActivityMongoRepositoryImpl implements UserActivityMongoDirectRepository {
+public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustomMongoRepository {
 
   private final MongoTemplate mongoTemplate;
 

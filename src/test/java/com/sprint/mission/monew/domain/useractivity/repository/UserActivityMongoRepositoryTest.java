@@ -32,7 +32,7 @@ class UserActivityMongoRepositoryTest {
   private MongoTemplate mongoTemplate;
 
   @Autowired
-  private UserActivityMongoRepositoryImpl impl;
+  private UserActivityCustomMongoRepositoryImpl impl;
 
   private UUID userId;
   private UserActivity activity;

@@ -5,10 +5,9 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-//extends 뒤에 몽고DB 기본 기능과 DirectRepository 명세서를 같이 적어서 상속받게 함
-public interface UserActivityMongoRepository extends MongoRepository<UserActivity, UUID>, UserActivityMongoDirectRepository {
+// 몽고디비 기본 기능과 우리가 만든 커스텀 명세를 상속받는 메인 인터페이스
+public interface UserActivityMongoRepository extends MongoRepository<UserActivity, UUID>, UserActivityCustomMongoRepository {
 
-  //쿼리 메소드만 남기기
+  // 기존에 선언되어 있던 쿼리 메서드가 있다면 여기에 둡니다.
   Optional<UserActivity> findByIdAndNicknameIsNotNull(UUID id);
-
 }
