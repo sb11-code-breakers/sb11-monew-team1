@@ -135,7 +135,8 @@ class UserActivityMongoRepositoryTest {
       userActivityMongoRepositoryImpl.pushComment(userId, RecentComment.of(existingId, UUID.randomUUID(), "기사", userId, "닉네임", "내용", 0L, Instant.now()));
       userActivityMongoRepositoryImpl.pullComment(userId, UUID.randomUUID());
       UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
-      assertThat(found).getComments().hasSize(1);
+      assertThat(found).isNotNull();
+      assertThat(found.getComments()).hasSize(1);
     }
   }
 
@@ -163,14 +164,9 @@ class UserActivityMongoRepositoryTest {
     @Test
     @DisplayName("nickname과 모든 comments의 userNickname을 알 수 없음으로 변경한다")
     void nickname과_모든_comments의_userNickname을_알수없음으로_변경한다() {
-      // given
       mongoTemplate.insert(UserActivity.of(userId, "a@b.com", "닉네임", Instant.now()));
       userActivityMongoRepositoryImpl.pushComment(userId, RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사", userId, "닉네임", "내용", 0L, Instant.now()));
-
-      // when
       userActivityMongoRepositoryImpl.anonymize(userId);
-
-      // then
       UserActivity found = mongoTemplate.findById(userId, UserActivity.class);
       assertThat(found.getNickname()).isEqualTo("알 수 없음");
       assertThat(found.getComments().get(0).getUserNickname()).isEqualTo("알 수 없음");
