@@ -34,4 +34,8 @@ public class UserActivityEventListener {
   public void handle(SubscriptionCancelledEvent event) {
     userActivityMongoRepository.pullSubscription(event.userId(), event.targetId());
   }
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(CommentCreatedEvent event) {
+    userActivityMongoRepository.pushComment(event.userId(), event.articleId(), event.commentId());
+  }
 }
