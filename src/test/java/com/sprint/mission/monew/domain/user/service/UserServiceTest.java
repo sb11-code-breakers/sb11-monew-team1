@@ -556,6 +556,24 @@ class UserServiceTest {
       // then
       then(userSessionRepository).should().deleteByUserId(userId);
     }
+
+    @Test
+    @DisplayName("낙관적락 충돌 시 재시도 후 성공")
+    void 낙관적락_충돌_시_재시도_후_성공() {
+      // given
+      UUID userId = UUID.randomUUID();
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willThrow(ObjectOptimisticLockingFailureException.class)
+          .willReturn(Optional.of(user));
+
+      // when
+      userService.delete(userId, userId);
+
+      // then
+      then(userRepository).should(times(2)).findByIdAndDeletedAtIsNull(userId);
+    }
   }
 
   @Nested
@@ -648,6 +666,27 @@ class UserServiceTest {
 
       // then
       assertThat(user.getPassword()).isEqualTo("newEncodedPassword");
+    }
+
+    @Test
+    @DisplayName("낙관적락 충돌 시 재시도 후 성공")
+    void 낙관적락_충돌_시_재시도_후_성공() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("currentPassword", "newPassword123");
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willThrow(ObjectOptimisticLockingFailureException.class)
+          .willReturn(Optional.of(user));
+      given(passwordEncoder.matches(request.currentPassword(), user.getPassword()))
+          .willReturn(true);
+
+      // when
+      userService.updatePassword(userId, request);
+
+      // then
+      then(userRepository).should(times(2)).findByIdAndDeletedAtIsNull(userId);
     }
   }
 
