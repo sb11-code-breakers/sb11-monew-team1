@@ -270,14 +270,14 @@ class UserIntegrationTest {
   }
 
   @Nested
-  @DisplayName("POST /api/auth/logout — 로그아웃")
+  @DisplayName("DELETE /api/users/logout — 로그아웃")
   class Logout {
 
     @Test
     @DisplayName("세션 없이 요청 시 401 반환")
     void 세션_없이_요청_시_401_반환() throws Exception {
       // given & when & then
-      mockMvc.perform(post("/api/auth/logout"))
+      mockMvc.perform(delete("/api/users/logout"))
           .andExpect(status().isUnauthorized());
     }
 
@@ -316,7 +316,7 @@ class UserIntegrationTest {
       assertThat(userSessionRepository.findAll()).hasSize(2);
 
       // when
-      mockMvc.perform(post("/api/auth/logout")
+      mockMvc.perform(delete("/api/users/logout")
               .header("Monew-Request-User-ID", sessionToken1))
           .andExpect(status().isNoContent());
 

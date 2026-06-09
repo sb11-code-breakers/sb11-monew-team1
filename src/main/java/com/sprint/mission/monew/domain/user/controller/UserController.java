@@ -33,10 +33,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMethod;
 
 @Validated
-@RequestMapping({"/api/users", "/api/auth"})
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 @RestController
 public class UserController implements UserApi {
@@ -147,7 +146,7 @@ public class UserController implements UserApi {
     return ResponseEntity.ok().build();
   }
 
-  @PostMapping("/logout")
+  @DeleteMapping("/logout")
   @Override
   public ResponseEntity<Void> logout(
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId) {
