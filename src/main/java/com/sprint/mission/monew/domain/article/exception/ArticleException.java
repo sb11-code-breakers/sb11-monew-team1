@@ -1,12 +1,16 @@
 package com.sprint.mission.monew.domain.article.exception;
 
-import com.sprint.mission.monew.common.exception.ErrorCode;
 import com.sprint.mission.monew.common.exception.MonewException;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
 
 public abstract class ArticleException extends MonewException {
 
-  protected ArticleException(ErrorCode errorCode, Map<String, Object> details) {
-    super(errorCode, details);
+  protected ArticleException(
+      HttpStatus status,
+      ArticleErrorCode errorCode,
+      Map<String, Object> details
+  ) {
+    super(status, errorCode, details);
   }
 }

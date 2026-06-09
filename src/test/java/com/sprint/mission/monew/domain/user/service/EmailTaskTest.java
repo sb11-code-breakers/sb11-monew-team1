@@ -2,6 +2,8 @@ package com.sprint.mission.monew.domain.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.sprint.mission.monew.domain.user.dto.EmailTask;
+import com.sprint.mission.monew.domain.user.dto.EmailTaskType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.common.config;
 
-import com.sprint.mission.monew.common.exception.MonewInternalExceptionHandler;
+import com.sprint.mission.monew.batch.exception.BatchExceptionHandler;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -15,7 +15,7 @@ import org.springframework.web.client.RestClient;
 @RequiredArgsConstructor
 public class SchedulingConfig {
 
-  private final MonewInternalExceptionHandler exceptionHandler;
+  private final BatchExceptionHandler exceptionHandler;
 
   @Bean
   public ThreadPoolTaskScheduler taskScheduler() {

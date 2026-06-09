@@ -24,17 +24,17 @@ class UserEmailDuplicateExceptionTest {
     }
 
     @Test
-    @DisplayName("로컬파트가 1자 이하면 도메인만 반환")
-    void 로컬파트가_1자_이하면_도메인만_반환() {
+    @DisplayName("로컬파트가 없거나 골뱅이가 존재하지 않으면 도메인만 반환")
+    void 로컬파트가_없거나_골뱅이가_존재하지_않으면_도메인만_반환() {
       // given & when
       UserEmailDuplicateException ex1 = UserEmailDuplicateException
-          .withEmail("a@example.com");
-      UserEmailDuplicateException ex2 = UserEmailDuplicateException
           .withEmail("@example.com");
+      UserEmailDuplicateException ex2 = UserEmailDuplicateException
+          .withEmail("example.com");
 
       // then
-      assertThat(ex1.getDetails()).containsEntry("email", "@example.com");
-      assertThat(ex2.getDetails()).containsEntry("email", "@example.com");
+      assertThat(ex1.getDetails()).containsEntry("email", "REDACTED");
+      assertThat(ex2.getDetails()).containsEntry("email", "REDACTED");
     }
   }
 }

@@ -1,7 +1,7 @@
 package com.sprint.mission.monew.domain.notification.listener;
 
 import com.sprint.mission.monew.domain.comment.event.CommentLikedNotificationEvent;
-import com.sprint.mission.monew.domain.notification.service.NotificationMetrics;
+import com.sprint.mission.monew.domain.notification.metrics.NotificationMetrics;
 import com.sprint.mission.monew.domain.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,6 +1,8 @@
 package com.sprint.mission.monew.domain.user.service;
 
 import com.sprint.mission.monew.common.util.MonewUtil;
+import com.sprint.mission.monew.domain.user.dto.EmailTask;
+import com.sprint.mission.monew.domain.user.dto.EmailTaskType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;

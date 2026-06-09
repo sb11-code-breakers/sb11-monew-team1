@@ -2,6 +2,7 @@ package com.sprint.mission.monew.domain.user.scheduler;
 
 import static org.mockito.BDDMockito.then;
 
+import com.sprint.mission.monew.batch.scheduler.UserCleanupScheduler;
 import com.sprint.mission.monew.batch.service.UserCleanupService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

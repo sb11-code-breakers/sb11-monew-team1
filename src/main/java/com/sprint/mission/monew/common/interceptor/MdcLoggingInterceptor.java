@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.common.interceptor;
 
+import com.sprint.mission.monew.common.util.RequestUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.UUID;
@@ -13,13 +14,14 @@ public class MdcLoggingInterceptor implements HandlerInterceptor {
   @Override
   public boolean preHandle(HttpServletRequest request, HttpServletResponse response,
       Object handler) {
-    String requestId = UUID.randomUUID().toString().substring(0, 8);
-    MDC.put("requestId", requestId);
-    MDC.put("method", request.getMethod());
-    MDC.put("url", request.getRequestURI());
-    MDC.put("clientIp", resolveClientIp(request));
-
-    response.setHeader("Monew-Request-ID", requestId);
+    if (MDC.get("requestId") == null) {
+      String requestId = UUID.randomUUID().toString().substring(0, 8);
+      MDC.put("requestId", requestId);
+      MDC.put("method", request.getMethod());
+      MDC.put("url", request.getRequestURI());
+      MDC.put("clientIp", RequestUtils.resolveClientIp(request));
+    }
+    response.setHeader("Monew-Request-ID", MDC.get("requestId"));
     return true;
   }
 
@@ -29,11 +31,5 @@ public class MdcLoggingInterceptor implements HandlerInterceptor {
     MDC.clear();
   }
 
-  private String resolveClientIp(HttpServletRequest request) {
-    String forwarded = request.getHeader("X-Forwarded-For");
-    if (forwarded != null && !forwarded.isBlank()) {
-      return forwarded.split(",")[0].trim();
-    }
-    return request.getRemoteAddr();
-  }
+
 }

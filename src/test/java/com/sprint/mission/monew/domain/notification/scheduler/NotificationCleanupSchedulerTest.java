@@ -2,6 +2,7 @@ package com.sprint.mission.monew.domain.notification.scheduler;
 
 import static org.mockito.BDDMockito.then;
 
+import com.sprint.mission.monew.batch.scheduler.NotificationCleanupScheduler;
 import com.sprint.mission.monew.batch.service.NotificationCleanupService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

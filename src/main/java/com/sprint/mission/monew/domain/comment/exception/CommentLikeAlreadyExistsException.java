@@ -1,13 +1,13 @@
 package com.sprint.mission.monew.domain.comment.exception;
 
-import com.sprint.mission.monew.common.exception.ErrorCode;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 
 public class CommentLikeAlreadyExistsException extends CommentException {
 
   private CommentLikeAlreadyExistsException(Map<String, Object> details) {
-    super(ErrorCode.COMMENT_LIKE_ALREADY_EXISTS, details);
+    super(HttpStatus.CONFLICT, CommentErrorCode.COMMENT_LIKE_ALREADY_EXISTS, details);
   }
 
   public static CommentLikeAlreadyExistsException withId(UUID userId, UUID commentId) {

@@ -1,13 +1,13 @@
 package com.sprint.mission.monew.domain.user.exception;
 
-import com.sprint.mission.monew.common.exception.ErrorCode;
 import com.sprint.mission.monew.common.util.MonewUtil;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
 
 public class UserAccountLockedException extends UserException {
 
   private UserAccountLockedException(Map<String, Object> details) {
-    super(ErrorCode.USER_ACCOUNT_LOCKED, details);
+    super(HttpStatus.LOCKED, UserErrorCode.USER_ACCOUNT_LOCKED, details);
   }
 
   public static UserAccountLockedException withEmail(String email) {

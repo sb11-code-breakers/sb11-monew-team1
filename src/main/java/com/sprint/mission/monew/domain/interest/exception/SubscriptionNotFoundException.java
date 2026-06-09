@@ -1,14 +1,13 @@
 package com.sprint.mission.monew.domain.interest.exception;
 
-import com.sprint.mission.monew.common.exception.ErrorCode;
-import com.sprint.mission.monew.common.exception.MonewException;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 
-public class SubscriptionNotFoundException extends MonewException {
+public class SubscriptionNotFoundException extends InterestException {
 
   private SubscriptionNotFoundException(Map<String, Object> details) {
-    super(ErrorCode.SUBSCRIPTION_NOT_FOUND, details);
+    super(HttpStatus.NOT_FOUND, InterestErrorCode.SUBSCRIPTION_NOT_FOUND, details);
   }
 
   public static SubscriptionNotFoundException withIds(UUID interestId, UUID userId) {

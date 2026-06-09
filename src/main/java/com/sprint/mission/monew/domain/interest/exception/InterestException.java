@@ -1,12 +1,16 @@
 package com.sprint.mission.monew.domain.interest.exception;
 
-import com.sprint.mission.monew.common.exception.ErrorCode;
 import com.sprint.mission.monew.common.exception.MonewException;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
 
 public abstract class InterestException extends MonewException {
 
-  protected InterestException(ErrorCode errorCode, Map<String, Object> details) {
-    super(errorCode, details);
+  protected InterestException(
+      HttpStatus status,
+      InterestErrorCode errorCode,
+      Map<String, Object> details
+  ) {
+    super(status, errorCode, details);
   }
 }

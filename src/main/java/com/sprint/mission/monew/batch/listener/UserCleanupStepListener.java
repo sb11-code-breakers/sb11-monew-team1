@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.batch.listener;
 
-import com.sprint.mission.monew.domain.user.service.UserMetrics;
+import com.sprint.mission.monew.domain.user.metrics.UserMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.ExitStatus;

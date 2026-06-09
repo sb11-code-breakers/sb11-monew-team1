@@ -8,14 +8,19 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.sprint.mission.monew.common.config.MongoContainerConfig;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
+import com.sprint.mission.monew.domain.comment.entity.CommentLike;
+import com.sprint.mission.monew.domain.comment.repository.CommentLikeRepository;
 import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
 import com.sprint.mission.monew.domain.comment.service.CommentService;
+import com.sprint.mission.monew.domain.user.document.UserSession;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
+@Import(MongoContainerConfig.class)
 public class CommentIntegrationTest {
 
   @Autowired
@@ -43,10 +50,16 @@ public class CommentIntegrationTest {
   private CommentRepository commentRepository;
 
   @Autowired
+  private CommentLikeRepository commentLikeRepository;
+
+  @Autowired
   private ArticleRepository articleRepository;
 
   @Autowired
   private UserRepository userRepository;
+
+  @Autowired
+  private UserSessionRepository userSessionRepository;
 
   @Autowired
   private CommentService commentService;
@@ -55,6 +68,8 @@ public class CommentIntegrationTest {
   private User user;
   private String content;
   private Comment comment;
+  private UUID sessionToken;
+  private UUID anotherSessionToken;
 
   @BeforeEach
   void setUp() {
@@ -74,6 +89,15 @@ public class CommentIntegrationTest {
         ));
     content = "댓글 내용";
     comment = commentRepository.save(Comment.create(article, user, content));
+
+    UserSession session = UserSession.create(user.getId(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    userSessionRepository.save(session);
+    sessionToken = session.getId();
+
+    User anotherUser = userRepository.save(User.create("another@naver.com", "another", "12345678"));
+    UserSession anotherSession = UserSession.create(anotherUser.getId(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    userSessionRepository.save(anotherSession);
+    anotherSessionToken = anotherSession.getId();
   }
 
   @Nested
@@ -93,7 +117,7 @@ public class CommentIntegrationTest {
 
       // when & then
       mockMvc.perform(post("/api/comments")
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .contentType(MediaType.APPLICATION_JSON)
               .content(requestBody))
           .andExpect(status().isBadRequest());
@@ -112,7 +136,7 @@ public class CommentIntegrationTest {
 
       // when & then
       mockMvc.perform(post("/api/comments")
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .contentType(MediaType.APPLICATION_JSON)
               .content(requestBody))
           .andExpect(status().isBadRequest());
@@ -132,7 +156,7 @@ public class CommentIntegrationTest {
 
       // when & then
       mockMvc.perform(post("/api/comments")
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .contentType(MediaType.APPLICATION_JSON)
               .content(requestBody))
           .andExpect(status().isBadRequest());
@@ -152,7 +176,7 @@ public class CommentIntegrationTest {
 
       // when & then
       mockMvc.perform(post("/api/comments")
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .contentType(MediaType.APPLICATION_JSON)
               .content(requestBody))
           .andExpect(status().isCreated())
@@ -176,7 +200,7 @@ public class CommentIntegrationTest {
 
       // when & then
       mockMvc.perform(patch("/api/comments/{commentId}", UUID.randomUUID())
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .contentType(MediaType.APPLICATION_JSON)
               .content(requestBody))
           .andExpect(status().isNotFound());
@@ -195,7 +219,7 @@ public class CommentIntegrationTest {
 
       // when & then
       mockMvc.perform(patch("/api/comments/{commentId}", comment.getId())
-              .header("Monew-Request-User-ID", UUID.randomUUID())
+              .header("Monew-Request-User-ID", anotherSessionToken)
               .contentType(MediaType.APPLICATION_JSON)
               .content(requestBody))
           .andExpect(status().isForbidden());
@@ -214,7 +238,7 @@ public class CommentIntegrationTest {
 
       // when & then
       mockMvc.perform(patch("/api/comments/{commentId}", comment.getId())
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .contentType(MediaType.APPLICATION_JSON)
               .content(requestBody))
           .andExpect(status().isBadRequest());
@@ -233,7 +257,7 @@ public class CommentIntegrationTest {
 
       // when & then
       mockMvc.perform(patch("/api/comments/{commentId}", comment.getId())
-              .header("Monew-Request-User-ID", user.getId())
+              .header("Monew-Request-User-ID", sessionToken)
               .contentType(MediaType.APPLICATION_JSON)
               .content(requestBody))
           .andExpect(status().isOk())
@@ -253,19 +277,16 @@ public class CommentIntegrationTest {
 
       // when & then
       mockMvc.perform(delete("/api/comments/{commentId}", notExistCommentId)
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNotFound());
     }
 
     @Test
     @DisplayName("댓글 논리삭제 실패 - 삭제 권한 없음")
     void 댓글_논리삭제_실패_권한_없음() throws Exception {
-      // given
-      UUID unauthorizedUserId = UUID.randomUUID();
-
       // when & then
       mockMvc.perform(delete("/api/comments/{commentId}", comment.getId())
-              .header("Monew-Request-User-ID", unauthorizedUserId))
+              .header("Monew-Request-User-ID", anotherSessionToken))
           .andExpect(status().isForbidden());
     }
 
@@ -277,7 +298,7 @@ public class CommentIntegrationTest {
 
       // when & then
       mockMvc.perform(delete("/api/comments/{commentId}", comment.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNoContent());
 
       // DB 검증
@@ -292,6 +313,29 @@ public class CommentIntegrationTest {
   @DisplayName("댓글 물리 삭제하기")
   class HardDelete {
 
+    private static final String ADMIN_TOKEN = "test-admin-token";
+
+    @Test
+    @DisplayName("댓글 물리삭제 실패 - admin token 없음 403")
+    void 댓글_물리삭제_실패_admin_token_없음() throws Exception {
+      // given — 헤더 없음
+
+      // when & then
+      mockMvc.perform(delete("/api/comments/{commentId}/hard", comment.getId()))
+          .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("댓글 물리삭제 실패 - 잘못된 admin token 403")
+    void 댓글_물리삭제_실패_잘못된_admin_token() throws Exception {
+      // given — 잘못된 토큰
+
+      // when & then
+      mockMvc.perform(delete("/api/comments/{commentId}/hard", comment.getId())
+              .header("Monew-Request-User-ID", "wrong-token"))
+          .andExpect(status().isForbidden());
+    }
+
     @Test
     @DisplayName("댓글 물리삭제 실패 - 댓글이 존재하지 않음")
     void 댓글_물리삭제_실패_댓글_없음() throws Exception {
@@ -300,7 +344,7 @@ public class CommentIntegrationTest {
 
       // when & then
       mockMvc.perform(delete("/api/comments/{commentId}/hard", notExistCommentId)
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", ADMIN_TOKEN))
           .andExpect(status().isNotFound());
     }
 
@@ -312,10 +356,9 @@ public class CommentIntegrationTest {
 
       // when & then
       mockMvc.perform(delete("/api/comments/{commentId}/hard", comment.getId())
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", ADMIN_TOKEN))
           .andExpect(status().isNoContent());
 
-      // DB 검증
       assertThat(commentRepository.findById(comment.getId())).isEmpty();
     }
   }
@@ -335,7 +378,7 @@ public class CommentIntegrationTest {
               .param("articleId", article.getId().toString())
               .param("direction", "DESC")
               .param("limit", "5")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isBadRequest());
     }
 
@@ -350,7 +393,7 @@ public class CommentIntegrationTest {
               .param("articleId", article.getId().toString())
               .param("orderBy", "CREATED_AT")
               .param("limit", "5")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isBadRequest());
     }
 
@@ -365,7 +408,7 @@ public class CommentIntegrationTest {
               .param("articleId", article.getId().toString())
               .param("orderBy", "CREATED_AT")
               .param("direction", "DESC")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isBadRequest());
     }
 
@@ -381,20 +424,21 @@ public class CommentIntegrationTest {
               .param("orderBy", "CREATED_AT")
               .param("direction", "DESC")
               .param("limit", "0")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isBadRequest());
     }
 
     @Test
     @DisplayName("after만 있고 cursor가 없으면 400을 반환한다")
     void after만_있고_cursor가_없으면_400을_반환한다() throws Exception {
+      // when & then
       mockMvc.perform(get("/api/comments")
               .param("articleId", article.getId().toString())
               .param("orderBy", "CREATED_AT")
               .param("direction", "DESC")
               .param("after", Instant.now().toString())
               .param("limit", "5")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isBadRequest());
     }
 
@@ -412,7 +456,7 @@ public class CommentIntegrationTest {
                   .param("direction", "DESC")
                   .param("cursor", "notNumber")
                   .param("limit", "0")
-                  .header("Monew-Request-User-ID", user.getId().toString()))
+                  .header("Monew-Request-User-ID", sessionToken.toString()))
           .andExpect(status().isBadRequest());
     }
 
@@ -432,7 +476,7 @@ public class CommentIntegrationTest {
               .param("orderBy", "CREATED_AT")
               .param("direction", "DESC")
               .param("limit", "5")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content").isArray())
           .andExpect(jsonPath("$.content.length()").value(3))
@@ -453,7 +497,7 @@ public class CommentIntegrationTest {
               .param("after", comment.getCreatedAt().toString())
               .param("idAfter", comment.getId().toString())
               .param("limit", "5")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content.length()").value(0));
     }
@@ -479,11 +523,118 @@ public class CommentIntegrationTest {
               .param("after", secondComment.getCreatedAt().toString())
               .param("idAfter", secondComment.getId().toString())
               .param("limit", "5")
-              .header("Monew-Request-User-ID", user.getId()))
+              .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.content").isArray())
           .andExpect(jsonPath("$.content.length()").value(1))
           .andExpect(jsonPath("$.hasNext").value(false));
+    }
+  }
+
+  @Nested
+  @DisplayName("댓글 좋아요 등록하기")
+  class LikeCreate {
+
+    @Test
+    @DisplayName("댓글 좋아요 등록 실패 - 사용자가 존재하지 않음")
+    void 댓글_좋아요_등록_실패_사용자_없음() throws Exception {
+      // given
+      UUID ghostSessionToken;
+      UserSession ghostSession = UserSession.create(UUID.randomUUID(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+      userSessionRepository.save(ghostSession);
+      ghostSessionToken = ghostSession.getId();
+
+      // when & then
+      mockMvc.perform(post("/api/comments/{commentId}/comment-likes", comment.getId())
+              .header("Monew-Request-User-ID", ghostSessionToken))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("댓글 좋아요 등록 실패 - 댓글이 존재하지 않음")
+    void 댓글_좋아요_등록_실패_댓글_없음() throws Exception {
+      // given
+      UUID notExistCommentId = UUID.randomUUID();
+
+      // when & then
+      mockMvc.perform(post("/api/comments/{commentId}/comment-likes", notExistCommentId)
+              .header("Monew-Request-User-ID", sessionToken))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("댓글 좋아요 등록 실패 - 이미 좋아요가 등록되어 있음")
+    void 댓글_좋아요_등록_실패_좋아요_중복등록() throws Exception {
+      // given
+      // 미리 좋아요 생성
+      commentLikeRepository.save(CommentLike.create(user, comment));
+
+      // when & then
+      mockMvc.perform(post("/api/comments/{commentId}/comment-likes", comment.getId())
+              .header("Monew-Request-User-ID", sessionToken))
+          .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("댓글 좋아요 등록 성공")
+    void 댓글_좋아요_등록_성공() throws Exception {
+      // given
+      // comment(article, user)는 BeforeEach에서 초기화
+
+      // when & then
+      mockMvc.perform(post("/api/comments/{commentId}/comment-likes", comment.getId())
+              .header("Monew-Request-User-ID", sessionToken))
+          .andExpect(status().isCreated());
+
+      // DB 검증
+      boolean exists = commentLikeRepository.existsByUserIdAndCommentId(user.getId(),
+          comment.getId());
+
+      assertThat(exists).isTrue();
+
+      // LikeCount 증가 검증
+      Comment foundComment = commentRepository.findById(comment.getId()).orElseThrow();
+      assertThat(foundComment.getLikeCount()).isEqualTo(1);
+    }
+  }
+
+  @Nested
+  @DisplayName("댓글 좋아요 취소하기")
+  class LikeCancel {
+
+    @Test
+    @DisplayName("댓글 좋아요 취소 실패 - 좋아요가 존재하지 않음")
+    void 댓글_좋아요_취소_실패_좋아요_없음() throws Exception {
+      // given
+      UUID notExistCommentId = UUID.randomUUID();
+
+      // when & then
+      mockMvc.perform(delete("/api/comments/{commentId}/comment-likes", notExistCommentId)
+              .header("Monew-Request-User-ID", anotherSessionToken))
+          .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("댓글 좋아요 취소 성공")
+    void 댓글_좋아요_취소_성공() throws Exception {
+      // given
+      // comment(article, user)는 BeforeEach에서 초기화
+      commentLikeRepository.save(CommentLike.create(user, comment));
+      commentRepository.increaseLikeCount(comment.getId());
+
+      // when & then
+      mockMvc.perform(delete("/api/comments/{commentId}/comment-likes", comment.getId())
+              .header("Monew-Request-User-ID", sessionToken))
+          .andExpect(status().isNoContent());
+
+      // DB 검증
+      boolean exists = commentLikeRepository.existsByUserIdAndCommentId(user.getId(),
+          comment.getId());
+      assertThat(exists).isFalse();
+
+      // LikeCount 감소 검증
+      Comment foundComment = commentRepository.findById(comment.getId()).orElseThrow();
+      assertThat(foundComment.getLikeCount()).isEqualTo(0);
     }
   }
 }

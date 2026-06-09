@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verify;
 
 import com.sprint.mission.monew.batch.exception.LogBackupDeleteFailedException;
 import com.sprint.mission.monew.batch.exception.LogBackupFailedException;
-import com.sprint.mission.monew.batch.LogBackupMetrics;
+import com.sprint.mission.monew.batch.metrics.LogBackupMetrics;
 import com.sprint.mission.monew.batch.dto.UploadPayload;
 import java.io.IOException;
 import java.nio.file.Files;

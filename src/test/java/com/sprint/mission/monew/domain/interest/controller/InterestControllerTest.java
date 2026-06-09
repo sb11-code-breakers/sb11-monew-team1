@@ -19,8 +19,12 @@ import com.sprint.mission.monew.domain.interest.dto.InterestResponse;
 import com.sprint.mission.monew.domain.interest.dto.InterestUpdateRequest;
 import com.sprint.mission.monew.domain.interest.exception.InterestNotFoundException;
 import com.sprint.mission.monew.domain.interest.service.InterestService;
+import com.sprint.mission.monew.domain.user.document.UserSession;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,21 +46,36 @@ class InterestControllerTest {
   @MockitoBean
   InterestService interestService;
 
+  @MockitoBean
+  UserSessionRepository userSessionRepository;
+
+  private UUID userId;
+  private UUID sessionToken;
+
+  @BeforeEach
+  void setUpAuth() {
+    userId = UUID.randomUUID();
+    UserSession session = UserSession.create(userId, "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    sessionToken = session.getId();
+    given(userSessionRepository.findById(sessionToken)).willReturn(Optional.of(session));
+  }
+
   @Nested
   @DisplayName("GET /api/interests — 관심사 목록 조회")
   class FindAll {
 
     @Test
-    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
-    void Monew_Request_User_ID_헤더가_없으면_400을_반환한다() throws Exception {
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 401을 반환한다")
+    void Monew_Request_User_ID_헤더가_없으면_401을_반환한다() throws Exception {
       // when & then
       mockMvc
           .perform(
               get("/api/interests")
                   .param("orderBy", "name")
                   .param("direction", "ASC")
-                  .param("limit", "10"))
-          .andExpect(status().isBadRequest());
+                  .param("limit", "10")
+          )
+          .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -66,9 +85,10 @@ class InterestControllerTest {
       mockMvc
           .perform(
               get("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", sessionToken)
                   .param("direction", "ASC")
-                  .param("limit", "10"))
+                  .param("limit", "10")
+          )
           .andExpect(status().isBadRequest());
     }
 
@@ -79,9 +99,10 @@ class InterestControllerTest {
       mockMvc
           .perform(
               get("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", sessionToken)
                   .param("orderBy", "name")
-                  .param("limit", "10"))
+                  .param("limit", "10")
+          )
           .andExpect(status().isBadRequest());
     }
 
@@ -92,9 +113,10 @@ class InterestControllerTest {
       mockMvc
           .perform(
               get("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", sessionToken)
                   .param("orderBy", "name")
-                  .param("direction", "ASC"))
+                  .param("direction", "ASC")
+          )
           .andExpect(status().isBadRequest());
     }
 
@@ -105,10 +127,11 @@ class InterestControllerTest {
       mockMvc
           .perform(
               get("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", sessionToken)
                   .param("orderBy", "name")
                   .param("direction", "ASC")
-                  .param("limit", "0"))
+                  .param("limit", "0")
+          )
           .andExpect(status().isBadRequest());
     }
 
@@ -119,11 +142,12 @@ class InterestControllerTest {
       mockMvc
           .perform(
               get("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", sessionToken)
                   .param("orderBy", "name")
                   .param("direction", "ASC")
                   .param("limit", "10")
-                  .param("cursor", "Baseball"))
+                  .param("cursor", "Baseball")
+          )
           .andExpect(status().isBadRequest());
       verifyNoInteractions(interestService);
     }
@@ -135,11 +159,12 @@ class InterestControllerTest {
       mockMvc
           .perform(
               get("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", sessionToken)
                   .param("orderBy", "name")
                   .param("direction", "ASC")
                   .param("limit", "10")
-                  .param("after", java.time.Instant.now().toString()))
+                  .param("after", java.time.Instant.now().toString())
+          )
           .andExpect(status().isBadRequest());
       verifyNoInteractions(interestService);
     }
@@ -151,13 +176,14 @@ class InterestControllerTest {
       mockMvc
           .perform(
               get("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", sessionToken)
                   .param("orderBy", "subscriberCount")
                   .param("direction", "ASC")
                   .param("limit", "10")
                   .param("cursor", "invalid")
                   .param("after", java.time.Instant.now().toString())
-                  .param("idAfter", UUID.randomUUID().toString()))
+                  .param("idAfter", UUID.randomUUID().toString())
+          )
           .andExpect(status().isBadRequest());
       verifyNoInteractions(interestService);
     }
@@ -174,10 +200,11 @@ class InterestControllerTest {
       mockMvc
           .perform(
               get("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", sessionToken)
                   .param("orderBy", "name")
                   .param("direction", "ASC")
-                  .param("limit", "10"))
+                  .param("limit", "10")
+          )
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.hasNext").value(false))
           .andExpect(jsonPath("$.totalElements").value(0));
@@ -195,13 +222,14 @@ class InterestControllerTest {
       mockMvc
           .perform(
               get("/api/interests")
-                  .header("Monew-Request-User-ID", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", sessionToken)
                   .param("orderBy", "subscriberCount")
                   .param("direction", "ASC")
                   .param("limit", "10")
                   .param("cursor", "5")
                   .param("after", java.time.Instant.now().toString())
-                  .param("idAfter", UUID.randomUUID().toString()))
+                  .param("idAfter", UUID.randomUUID().toString())
+          )
           .andExpect(status().isOk());
     }
   }
@@ -220,8 +248,10 @@ class InterestControllerTest {
       mockMvc
           .perform(
               post("/api/interests")
+                  .header("Monew-Request-User-ID", sessionToken)
                   .contentType(MediaType.APPLICATION_JSON)
-                  .content(objectMapper.writeValueAsString(request)))
+                  .content(objectMapper.writeValueAsString(request))
+          )
           .andExpect(status().isBadRequest());
       verifyNoInteractions(interestService);
     }
@@ -240,8 +270,10 @@ class InterestControllerTest {
       mockMvc
           .perform(
               post("/api/interests")
+                  .header("Monew-Request-User-ID", sessionToken)
                   .contentType(MediaType.APPLICATION_JSON)
-                  .content(objectMapper.writeValueAsString(request)))
+                  .content(objectMapper.writeValueAsString(request))
+          )
           .andExpect(status().isCreated())
           .andExpect(jsonPath("$.name").value("인공지능"));
     }
@@ -261,8 +293,10 @@ class InterestControllerTest {
       mockMvc
           .perform(
               patch("/api/interests/{interestId}", UUID.randomUUID())
+                  .header("Monew-Request-User-ID", sessionToken)
                   .contentType(MediaType.APPLICATION_JSON)
-                  .content(objectMapper.writeValueAsString(request)))
+                  .content(objectMapper.writeValueAsString(request))
+          )
           .andExpect(status().isBadRequest());
       verifyNoInteractions(interestService);
     }
@@ -283,8 +317,10 @@ class InterestControllerTest {
       mockMvc
           .perform(
               patch("/api/interests/{interestId}", interestId)
+                  .header("Monew-Request-User-ID", sessionToken)
                   .contentType(MediaType.APPLICATION_JSON)
-                  .content(objectMapper.writeValueAsString(request)))
+                  .content(objectMapper.writeValueAsString(request))
+          )
           .andExpect(status().isOk())
           .andExpect(jsonPath("$.keywords[0]").value("자연어처리"));
     }
@@ -305,7 +341,9 @@ class InterestControllerTest {
       // when & then
       mockMvc
           .perform(
-              delete("/api/interests/{interestId}", interestId))
+              delete("/api/interests/{interestId}", interestId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isNotFound());
     }
 
@@ -317,7 +355,9 @@ class InterestControllerTest {
       // when & then
       mockMvc
           .perform(
-              delete("/api/interests/{interestId}", interestId))
+              delete("/api/interests/{interestId}", interestId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isNoContent());
 
       verify(interestService).hardDelete(interestId);

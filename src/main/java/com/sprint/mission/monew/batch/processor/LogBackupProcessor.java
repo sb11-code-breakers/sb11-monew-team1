@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.batch.processor;
 
-import com.sprint.mission.monew.batch.BatchGzipUtils;
+import com.sprint.mission.monew.batch.util.BatchGzipUtils;
 import com.sprint.mission.monew.batch.dto.UploadPayload;
 import java.nio.file.Files;
 import java.nio.file.Path;

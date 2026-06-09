@@ -4,10 +4,13 @@ import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.article.controller.api.ArticleApi;
 import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
+import com.sprint.mission.monew.domain.article.dto.ArticleRestoreResultDto;
 import com.sprint.mission.monew.domain.article.dto.ArticleViewResponse;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
+import com.sprint.mission.monew.domain.article.service.ArticleRestoreService;
 import com.sprint.mission.monew.domain.article.service.ArticleService;
 import jakarta.validation.Valid;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -29,6 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ArticleController implements ArticleApi {
 
   private final ArticleService articleService;
+  private final ArticleRestoreService articleRestoreService;
 
   @GetMapping
   @Override
@@ -72,5 +77,13 @@ public class ArticleController implements ArticleApi {
   public ResponseEntity<Void> softDelete(@PathVariable UUID articleId) {
     articleService.softDelete(articleId);
     return ResponseEntity.noContent().build();
+  }
+
+  @GetMapping("/restore")
+  @Override
+  public ResponseEntity<List<ArticleRestoreResultDto>> restore(
+      @RequestParam Instant from,
+      @RequestParam Instant to) {
+    return ResponseEntity.ok(articleRestoreService.restore(from, to));
   }
 }

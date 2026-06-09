@@ -196,7 +196,7 @@ public class CommentLikeServiceTest {
           .willReturn(savedCommentLike);
 
       doNothing().when(commentRepository).increaseLikeCount(commentId);
-      given(commentLikeMapper.toResponse(any(CommentLike.class))).willReturn(expectedResponse);
+      given(commentLikeMapper.toResponse(any(CommentLike.class), any(Long.class))).willReturn(expectedResponse);
 
       // when
       CommentLikeResponse response = commentLikeService.create(commentId, userId);
@@ -206,7 +206,7 @@ public class CommentLikeServiceTest {
       assertThat(response).isEqualTo(expectedResponse);
       verify(commentRepository).increaseLikeCount(commentId);
       verify(commentLikeRepository).saveAndFlush(any(CommentLike.class));
-      verify(commentLikeMapper).toResponse(any(CommentLike.class));
+      verify(commentLikeMapper).toResponse(any(CommentLike.class), any(Long.class));
     }
   }
 

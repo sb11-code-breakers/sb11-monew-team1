@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.batch.listener;
 
-import com.sprint.mission.monew.domain.notification.service.NotificationMetrics;
+import com.sprint.mission.monew.domain.notification.metrics.NotificationMetrics;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.ExitStatus;

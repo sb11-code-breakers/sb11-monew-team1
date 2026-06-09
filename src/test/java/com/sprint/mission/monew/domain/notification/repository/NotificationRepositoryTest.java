@@ -127,6 +127,52 @@ class NotificationRepositoryTest {
       assertThat(result.hasNext()).isTrue();
       assertThat(result.content()).hasSize(2);
     }
+
+    @Test
+    @DisplayName("최신순(createdAt DESC)으로 정렬되며 커서로 다음 페이지가 누락·중복 없이 이어진다")
+    void 최신순으로_정렬되며_커서로_다음_페이지가_이어진다() {
+      // given - createdAt이 오래된→최신 순인 알림 3건
+      Instant base = Instant.now();
+      Notification oldest =
+          Notification.create(userId, "알림1", ResourceType.INTEREST, UUID.randomUUID());
+      Notification middle =
+          Notification.create(userId, "알림2", ResourceType.INTEREST, UUID.randomUUID());
+      Notification newest =
+          Notification.create(userId, "알림3", ResourceType.INTEREST, UUID.randomUUID());
+      ReflectionTestUtils.setField(oldest, "createdAt", base.minusSeconds(20));
+      ReflectionTestUtils.setField(middle, "createdAt", base.minusSeconds(10));
+      ReflectionTestUtils.setField(newest, "createdAt", base);
+      notificationRepository.save(oldest);
+      notificationRepository.save(middle);
+      notificationRepository.save(newest);
+
+      // when - 1페이지(limit 2)
+      CursorPageResponse<NotificationResponse> first =
+          notificationRepository.findUnconfirmed(
+              userId, new NotificationQueryCondition(null, null, null, 2));
+
+      // then - 최신순(newest, middle)으로 반환되고 다음 페이지가 있다
+      // 첫 페이지(커서 없음)에서만 전체 미확인 개수를 집계한다
+      assertThat(first.content())
+          .extracting(NotificationResponse::id)
+          .containsExactly(newest.getId(), middle.getId());
+      assertThat(first.hasNext()).isTrue();
+      assertThat(first.totalElements()).isEqualTo(3L);
+
+      // when - 1페이지의 커서로 2페이지 조회
+      CursorPageResponse<NotificationResponse> second =
+          notificationRepository.findUnconfirmed(
+              userId,
+              new NotificationQueryCondition(
+                  first.nextCursor(), first.nextAfter(), first.nextIdAfter(), 2));
+
+      // then - 남은 1건(oldest)만 누락·중복 없이 이어지고, 커서 페이지는 count를 생략한다
+      assertThat(second.content())
+          .extracting(NotificationResponse::id)
+          .containsExactly(oldest.getId());
+      assertThat(second.hasNext()).isFalse();
+      assertThat(second.totalElements()).isNull();
+    }
   }
 
   @Nested

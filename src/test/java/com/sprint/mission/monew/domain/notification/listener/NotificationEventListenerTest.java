@@ -6,7 +6,7 @@ import static org.mockito.BDDMockito.willThrow;
 
 import com.sprint.mission.monew.domain.comment.event.CommentLikedNotificationEvent;
 import com.sprint.mission.monew.domain.notification.entity.ResourceType;
-import com.sprint.mission.monew.domain.notification.service.NotificationMetrics;
+import com.sprint.mission.monew.domain.notification.metrics.NotificationMetrics;
 import com.sprint.mission.monew.domain.notification.service.NotificationService;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;

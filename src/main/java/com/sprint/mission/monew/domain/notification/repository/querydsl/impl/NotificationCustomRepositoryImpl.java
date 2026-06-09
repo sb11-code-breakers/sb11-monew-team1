@@ -60,14 +60,9 @@ public class NotificationCustomRepositoryImpl implements NotificationCustomRepos
       nextIdAfter = last.id();
     }
 
-    Long totalElements = queryFactory
-        .select(notification.count())
-        .from(notification)
-        .where(
-            eqUserId(userId),
-            isNullConfirmedAt()
-        )
-        .fetchOne();
+    // 미확인 개수는 페이지마다 동일하므로 첫 페이지(커서 없음)에서만 집계하고
+    // 이후 페이지는 null로 반환해 불필요한 count(*) 쿼리를 줄인다.
+    Long totalElements = condition.cursor() == null ? countUnconfirmed(userId) : null;
 
     return CursorPageResponse.of(
         content,
@@ -80,6 +75,17 @@ public class NotificationCustomRepositoryImpl implements NotificationCustomRepos
     );
   }
 
+  private Long countUnconfirmed(UUID userId) {
+    return queryFactory
+        .select(notification.count())
+        .from(notification)
+        .where(
+            eqUserId(userId),
+            isNullConfirmedAt()
+        )
+        .fetchOne();
+  }
+
   private BooleanExpression eqUserId(UUID userId) {
     return notification.userId.eq(userId);
   }
@@ -89,20 +95,21 @@ public class NotificationCustomRepositoryImpl implements NotificationCustomRepos
   }
 
   private BooleanExpression cursorCondition(NotificationQueryCondition condition) {
-    Instant cursor = condition.cursor();
+    String cursor = condition.cursor();
     UUID idAfter = condition.idAfter();
     if (cursor == null) {
       return null;
     }
-    return notification.createdAt.gt(cursor)
-        .or(notification.createdAt.eq(cursor).and(notification.id.gt(idAfter)));
+    Instant createdAtCursor = Instant.parse(cursor);
+    return notification.createdAt.lt(createdAtCursor)
+        .or(notification.createdAt.eq(createdAtCursor).and(notification.id.lt(idAfter)));
   }
 
   private OrderSpecifier<?> buildCreatedAtOrderSpecifier() {
-    return new OrderSpecifier<>(Order.ASC, notification.createdAt);
+    return new OrderSpecifier<>(Order.DESC, notification.createdAt);
   }
 
   private OrderSpecifier<?> buildIdOrderSpecifier() {
-    return new OrderSpecifier<>(Order.ASC, notification.id);
+    return new OrderSpecifier<>(Order.DESC, notification.id);
   }
 }

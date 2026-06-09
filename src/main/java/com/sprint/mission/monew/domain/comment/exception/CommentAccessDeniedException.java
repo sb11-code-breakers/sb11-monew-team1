@@ -1,13 +1,13 @@
 package com.sprint.mission.monew.domain.comment.exception;
 
-import com.sprint.mission.monew.common.exception.ErrorCode;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 
 public class CommentAccessDeniedException extends CommentException {
 
   private CommentAccessDeniedException(Map<String, Object> details) {
-    super(ErrorCode.COMMENT_ACCESS_DENIED, details);
+    super(HttpStatus.FORBIDDEN, CommentErrorCode.COMMENT_ACCESS_DENIED, details);
   }
 
   public static CommentAccessDeniedException withId(UUID commentId) {

@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.batch.reader;
 
-import com.sprint.mission.monew.batch.NewsCollectMetrics;
+import com.sprint.mission.monew.batch.metrics.NewsCollectMetrics;
 import com.sprint.mission.monew.batch.dto.NewsCollectItem;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.external.naver.NaverNewsClient;

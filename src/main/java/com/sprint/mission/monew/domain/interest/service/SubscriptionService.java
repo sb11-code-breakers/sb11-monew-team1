@@ -42,9 +42,10 @@ public class SubscriptionService {
     }
     try {
       Subscription saved = subscriptionRepository.saveAndFlush(Subscription.create(interest, user));
+      SubscriptionResponse response = subscriptionMapper.toResponse(saved, interest.getSubscriberCount() + 1);
       interestRepository.increaseSubscriberCount(interestId);
       log.info("관심사 구독 완료 | interestId={}, userId={}", interestId, userId);
-      return subscriptionMapper.toResponse(saved, interest.getSubscriberCount() + 1);
+      return response;
     } catch (DataIntegrityViolationException e) {
       throw SubscriptionAlreadyExistsException.withIds(interestId, userId);
     }

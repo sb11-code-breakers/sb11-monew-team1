@@ -1,12 +1,9 @@
 package com.sprint.mission.monew.batch.exception;
 
-import com.sprint.mission.monew.common.exception.InternalErrorCode;
-import com.sprint.mission.monew.common.exception.MonewInternalException;
-
-public class UserCleanupJobFailedException extends MonewInternalException {
+public class UserCleanupJobFailedException extends BatchException {
 
   private UserCleanupJobFailedException(Throwable cause) {
-    super(InternalErrorCode.USER_CLEANUP_JOB_FAILED, null, cause);
+    super(BatchErrorCode.USER_CLEANUP_JOB_FAILED, null, cause);
   }
 
   public static UserCleanupJobFailedException wrap(Throwable cause) {

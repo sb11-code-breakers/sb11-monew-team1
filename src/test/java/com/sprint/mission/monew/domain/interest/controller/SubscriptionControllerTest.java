@@ -13,7 +13,10 @@ import com.sprint.mission.monew.domain.interest.exception.InterestNotFoundExcept
 import com.sprint.mission.monew.domain.interest.exception.SubscriptionAlreadyExistsException;
 import com.sprint.mission.monew.domain.interest.exception.SubscriptionNotFoundException;
 import com.sprint.mission.monew.domain.interest.service.SubscriptionService;
+import com.sprint.mission.monew.domain.user.document.UserSession;
+import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,67 +36,18 @@ class SubscriptionControllerTest {
   @MockitoBean
   SubscriptionService subscriptionService;
 
-  @Nested
-  @DisplayName("DELETE /api/interests/{interestId}/subscriptions — 관심사 구독 취소")
-  class Unsubscribe {
+  @MockitoBean
+  UserSessionRepository userSessionRepository;
 
-    UUID interestId;
-    UUID userId;
+  private UUID userId;
+  private UUID sessionToken;
 
-    @BeforeEach
-    void setUp() {
-      interestId = UUID.randomUUID();
-      userId = UUID.randomUUID();
-    }
-
-    @Test
-    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
-    void Monew_Request_User_ID_헤더가_없으면_400을_반환한다() throws Exception {
-      // when & then
-      mockMvc
-          .perform(delete("/api/interests/{interestId}/subscriptions", interestId))
-          .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 관심사 구독 취소 시 404를 반환한다")
-    void 존재하지_않는_관심사_구독_취소_시_404를_반환한다() throws Exception {
-      // given
-      willThrow(InterestNotFoundException.withId(interestId))
-          .given(subscriptionService).unsubscribe(any(UUID.class), any(UUID.class));
-
-      // when & then
-      mockMvc
-          .perform(delete("/api/interests/{interestId}/subscriptions", interestId)
-              .header("Monew-Request-User-ID", userId))
-          .andExpect(status().isNotFound())
-          .andExpect(jsonPath("$.code").value("INTEREST_NOT_FOUND"));
-    }
-
-    @Test
-    @DisplayName("구독하지 않은 관심사 취소 시 404를 반환한다")
-    void 구독하지_않은_관심사_취소_시_404를_반환한다() throws Exception {
-      // given
-      willThrow(SubscriptionNotFoundException.withIds(interestId, userId))
-          .given(subscriptionService).unsubscribe(any(UUID.class), any(UUID.class));
-
-      // when & then
-      mockMvc
-          .perform(delete("/api/interests/{interestId}/subscriptions", interestId)
-              .header("Monew-Request-User-ID", userId))
-          .andExpect(status().isNotFound())
-          .andExpect(jsonPath("$.code").value("SUBSCRIPTION_NOT_FOUND"));
-    }
-
-    @Test
-    @DisplayName("정상 취소 시 204를 반환한다")
-    void 정상_취소_시_204를_반환한다() throws Exception {
-      // when & then
-      mockMvc
-          .perform(delete("/api/interests/{interestId}/subscriptions", interestId)
-              .header("Monew-Request-User-ID", userId))
-          .andExpect(status().isNoContent());
-    }
+  @BeforeEach
+  void setUpAuth() {
+    userId = UUID.randomUUID();
+    UserSession session = UserSession.create(userId, "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
+    sessionToken = session.getId();
+    given(userSessionRepository.findById(sessionToken)).willReturn(Optional.of(session));
   }
 
   @Nested
@@ -101,21 +55,21 @@ class SubscriptionControllerTest {
   class Subscribe {
 
     UUID interestId;
-    UUID userId;
 
     @BeforeEach
     void setUp() {
       interestId = UUID.randomUUID();
-      userId = UUID.randomUUID();
     }
 
     @Test
-    @DisplayName("Monew-Request-User-ID 헤더가 없으면 400을 반환한다")
-    void Monew_Request_User_ID_헤더가_없으면_400을_반환한다() throws Exception {
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 401을 반환한다")
+    void Monew_Request_User_ID_헤더가_없으면_401을_반환한다() throws Exception {
       // when & then
       mockMvc
-          .perform(post("/api/interests/{interestId}/subscriptions", interestId))
-          .andExpect(status().isBadRequest());
+          .perform(
+              post("/api/interests/{interestId}/subscriptions", interestId)
+          )
+          .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -127,8 +81,10 @@ class SubscriptionControllerTest {
 
       // when & then
       mockMvc
-          .perform(post("/api/interests/{interestId}/subscriptions", interestId)
-              .header("Monew-Request-User-ID", userId))
+          .perform(
+              post("/api/interests/{interestId}/subscriptions", interestId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isNotFound())
           .andExpect(jsonPath("$.code").value("INTEREST_NOT_FOUND"));
     }
@@ -142,8 +98,10 @@ class SubscriptionControllerTest {
 
       // when & then
       mockMvc
-          .perform(post("/api/interests/{interestId}/subscriptions", interestId)
-              .header("Monew-Request-User-ID", userId))
+          .perform(
+              post("/api/interests/{interestId}/subscriptions", interestId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isConflict())
           .andExpect(jsonPath("$.code").value("SUBSCRIPTION_ALREADY_EXISTS"));
     }
@@ -159,11 +117,82 @@ class SubscriptionControllerTest {
 
       // when & then
       mockMvc
-          .perform(post("/api/interests/{interestId}/subscriptions", interestId)
-              .header("Monew-Request-User-ID", userId))
+          .perform(
+              post("/api/interests/{interestId}/subscriptions", interestId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
           .andExpect(status().isCreated())
           .andExpect(jsonPath("$.interestName").value("인공지능"))
           .andExpect(jsonPath("$.interestSubscriberCount").value(1));
+    }
+  }
+
+  @Nested
+  @DisplayName("DELETE /api/interests/{interestId}/subscriptions — 관심사 구독 취소")
+  class Unsubscribe {
+
+    UUID interestId;
+
+    @BeforeEach
+    void setUp() {
+      interestId = UUID.randomUUID();
+    }
+
+    @Test
+    @DisplayName("Monew-Request-User-ID 헤더가 없으면 401을 반환한다")
+    void Monew_Request_User_ID_헤더가_없으면_401을_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(
+              delete("/api/interests/{interestId}/subscriptions", interestId)
+          )
+          .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 관심사 구독 취소 시 404를 반환한다")
+    void 존재하지_않는_관심사_구독_취소_시_404를_반환한다() throws Exception {
+      // given
+      willThrow(InterestNotFoundException.withId(interestId))
+          .given(subscriptionService).unsubscribe(any(UUID.class), any(UUID.class));
+
+      // when & then
+      mockMvc
+          .perform(
+              delete("/api/interests/{interestId}/subscriptions", interestId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.code").value("INTEREST_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("구독하지 않은 관심사 취소 시 404를 반환한다")
+    void 구독하지_않은_관심사_취소_시_404를_반환한다() throws Exception {
+      // given
+      willThrow(SubscriptionNotFoundException.withIds(interestId, userId))
+          .given(subscriptionService).unsubscribe(any(UUID.class), any(UUID.class));
+
+      // when & then
+      mockMvc
+          .perform(
+              delete("/api/interests/{interestId}/subscriptions", interestId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
+          .andExpect(status().isNotFound())
+          .andExpect(jsonPath("$.code").value("SUBSCRIPTION_NOT_FOUND"));
+    }
+
+    @Test
+    @DisplayName("정상 취소 시 204를 반환한다")
+    void 정상_취소_시_204를_반환한다() throws Exception {
+      // when & then
+      mockMvc
+          .perform(
+              delete("/api/interests/{interestId}/subscriptions", interestId)
+                  .header("Monew-Request-User-ID", sessionToken)
+          )
+          .andExpect(status().isNoContent());
     }
   }
 }

@@ -1,13 +1,13 @@
 package com.sprint.mission.monew.domain.interest.exception;
 
-import com.sprint.mission.monew.common.exception.ErrorCode;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
 
 public class SubscriptionAlreadyExistsException extends InterestException {
 
   private SubscriptionAlreadyExistsException(Map<String, Object> details) {
-    super(ErrorCode.SUBSCRIPTION_ALREADY_EXISTS, details);
+    super(HttpStatus.CONFLICT, InterestErrorCode.SUBSCRIPTION_ALREADY_EXISTS, details);
   }
 
   public static SubscriptionAlreadyExistsException withIds(UUID interestId, UUID userId) {

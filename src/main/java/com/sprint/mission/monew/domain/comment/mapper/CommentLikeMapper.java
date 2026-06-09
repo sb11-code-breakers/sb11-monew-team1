@@ -14,8 +14,8 @@ public interface CommentLikeMapper {
   @Mapping(target = "commentUserId", expression = "java(commentLike.getComment().getUser() != null ? commentLike.getComment().getUser().getId() : null)")
   @Mapping(target = "commentUserNickname", expression = "java(commentLike.getComment().getUser() != null ? commentLike.getComment().getUser().getNickname() : \"알 수 없음\")")
   @Mapping(target = "commentContent", expression = "java(commentLike.getComment().getContent())")
-  @Mapping(target = "commentLikeCount", expression = "java(commentLike.getComment().getLikeCount())")
+  @Mapping(target = "commentLikeCount", source = "likeCount")
   @Mapping(target = "commentCreatedAt", expression = "java(commentLike.getComment().getCreatedAt())")
-  CommentLikeResponse toResponse(CommentLike commentLike);
+  CommentLikeResponse toResponse(CommentLike commentLike, long likeCount);
 
 }
