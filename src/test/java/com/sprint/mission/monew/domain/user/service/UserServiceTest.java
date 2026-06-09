@@ -574,6 +574,20 @@ class UserServiceTest {
       // then
       then(userRepository).should(times(2)).findByIdAndDeletedAtIsNull(userId);
     }
+
+    @Test
+    @DisplayName("낙관적락 충돌이 3회 초과하면 예외 발생")
+    void 낙관적락_충돌이_3회_초과하면_예외_발생() {
+      // given
+      UUID userId = UUID.randomUUID();
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willThrow(ObjectOptimisticLockingFailureException.class);
+
+      // when & then
+      assertThatThrownBy(() -> userService.delete(userId, userId))
+          .isInstanceOf(ObjectOptimisticLockingFailureException.class);
+    }
   }
 
   @Nested
@@ -687,6 +701,21 @@ class UserServiceTest {
 
       // then
       then(userRepository).should(times(2)).findByIdAndDeletedAtIsNull(userId);
+    }
+
+    @Test
+    @DisplayName("낙관적락 충돌이 3회 초과하면 예외 발생")
+    void 낙관적락_충돌이_3회_초과하면_예외_발생() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("currentPassword", "newPassword123");
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willThrow(ObjectOptimisticLockingFailureException.class);
+
+      // when & then
+      assertThatThrownBy(() -> userService.updatePassword(userId, request))
+          .isInstanceOf(ObjectOptimisticLockingFailureException.class);
     }
   }
 
