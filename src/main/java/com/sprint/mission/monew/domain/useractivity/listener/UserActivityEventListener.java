@@ -26,4 +26,8 @@ public class UserActivityEventListener {
     userActivityMongoRepository.anonymize(event.userId());
     userActivityMongoRepository.anonymizeCommentLikesByCommentUserId(event.userId());
   }
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(SubscriptionCreatedEvent event) {
+    userActivityMongoRepository.pushSubscription(event.userId(), event.targetId());
+  }
 }
