@@ -56,4 +56,17 @@ class UserActivityEventListenerTest {
       verify(userActivityMongoRepository).anonymizeCommentLikesByCommentUserId(userId);
     }
   }
+  @Nested
+  @DisplayName("SubscriptionCreatedEvent")
+  class SubscriptionCreated {
+    @Test
+    @DisplayName("SubscriptionCreatedEvent를 받으면 pushSubscription을 호출한다")
+    void SubscriptionCreatedEvent를_받으면_pushSubscription을_호출한다() {
+      UUID userId = UUID.randomUUID();
+      UUID targetId = UUID.randomUUID(); // 구독 대상 ID
+
+      listener.handle(new SubscriptionCreatedEvent(userId, targetId));
+      verify(userActivityMongoRepository).pushSubscription(userId, targetId);
+    }
+  }
 }
