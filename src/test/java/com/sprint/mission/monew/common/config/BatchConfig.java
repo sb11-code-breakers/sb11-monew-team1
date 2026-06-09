@@ -21,7 +21,6 @@ public class BatchConfig {
     factory.setDataSource(dataSource);
     factory.setTransactionManager(transactionManager);
 
-    // 🟢 팀장님이 지시하신 PostgreSQL 데드락 방지 격리 수준 설정을 주입합니다.
     factory.setIsolationLevelForCreate("ISOLATION_READ_COMMITTED");
 
     factory.afterPropertiesSet();
