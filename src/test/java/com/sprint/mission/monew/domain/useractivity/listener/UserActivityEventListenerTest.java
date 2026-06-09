@@ -127,4 +127,18 @@ class UserActivityEventListenerTest {
       verify(userActivityMongoRepository).pushCommentLike(userId, commentId);
     }
   }
+  @Nested
+  @DisplayName("CommentLikeRemovedEvent")
+  class CommentLikeRemoved {
+    @Test
+    @DisplayName("CommentLikeRemovedEvent를 받으면 pullCommentLike를 호출한다")
+    void CommentLikeRemovedEvent를_받으면_pullCommentLike를_호출한다() {
+      UUID userId = UUID.randomUUID();
+      UUID commentId = UUID.randomUUID();
+
+      listener.handle(new CommentLikeRemovedEvent(userId, commentId));
+
+      verify(userActivityMongoRepository).pullCommentLike(userId, commentId);
+    }
+  }
 }
