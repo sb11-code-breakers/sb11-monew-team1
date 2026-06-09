@@ -15,16 +15,18 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class UserActivityMongoRepositoryImpl {
+public class UserActivityMongoRepositoryImpl implements UserActivityMongoDirectRepository {
 
   private final MongoTemplate mongoTemplate;
 
+  @Override
   public void pushComment(UUID userId, RecentComment comment) {
     Query query = Query.query(Criteria.where("_id").is(userId));
     Update update = new Update().push("comments").atPosition(0).slice(10).each(comment);
     mongoTemplate.upsert(query, update, UserActivity.class);
   }
 
+  @Override
   public void pullComment(UUID userId, UUID commentId) {
     Query query = Query.query(Criteria.where("_id").is(userId));
     Update update = new Update().pull("comments",
@@ -32,6 +34,7 @@ public class UserActivityMongoRepositoryImpl {
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }
 
+  @Override
   public void updateNickname(UUID userId, String newNickname) {
     Query query = Query.query(Criteria.where("_id").is(userId));
     Update update = new Update()
@@ -40,6 +43,7 @@ public class UserActivityMongoRepositoryImpl {
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }
 
+  @Override
   public void anonymize(UUID userId) {
     Query query = Query.query(Criteria.where("_id").is(userId));
     Update update = new Update()
@@ -48,12 +52,14 @@ public class UserActivityMongoRepositoryImpl {
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }
 
+  @Override
   public void pushArticleView(UUID userId, RecentArticleView articleView) {
     Query query = Query.query(Criteria.where("_id").is(userId));
     Update update = new Update().push("articleViews").atPosition(0).slice(10).each(articleView);
     mongoTemplate.upsert(query, update, UserActivity.class);
   }
 
+  @Override
   public void pullArticleViewsByArticleId(UUID articleId) {
     Query query = new Query();
     Update update = new Update().pull("articleViews",
@@ -61,6 +67,7 @@ public class UserActivityMongoRepositoryImpl {
     mongoTemplate.updateMulti(query, update, UserActivity.class);
   }
 
+  @Override
   public void pullCommentsByArticleId(UUID articleId) {
     Query query = new Query();
     Update update = new Update().pull("comments",
@@ -68,12 +75,14 @@ public class UserActivityMongoRepositoryImpl {
     mongoTemplate.updateMulti(query, update, UserActivity.class);
   }
 
+  @Override
   public void pushCommentLike(UUID userId, RecentCommentLike commentLike) {
     Query query = Query.query(Criteria.where("_id").is(userId));
     Update update = new Update().push("commentLikes").atPosition(0).slice(10).each(commentLike);
     mongoTemplate.upsert(query, update, UserActivity.class);
   }
 
+  @Override
   public void pullCommentLikesByArticleId(UUID articleId) {
     Query query = new Query();
     Update update = new Update().pull("commentLikes",
@@ -81,16 +90,32 @@ public class UserActivityMongoRepositoryImpl {
     mongoTemplate.updateMulti(query, update, UserActivity.class);
   }
 
+  @Override
   public void pushSubscription(UUID userId, RecentSubscription subscription) {
     Query query = Query.query(Criteria.where("_id").is(userId));
     Update update = new Update().push("subscriptions").atPosition(0).slice(10).each(subscription);
     mongoTemplate.upsert(query, update, UserActivity.class);
   }
 
+  @Override
   public void pullSubscriptionsByInterestId(UUID interestId) {
     Query query = new Query();
     Update update = new Update().pull("subscriptions",
         Query.query(Criteria.where("interestId").is(interestId)));
     mongoTemplate.updateMulti(query, update, UserActivity.class);
   }
+
+
+  @Override
+  public void createUserActivity(UserActivity userActivity) {
+    mongoTemplate.save(userActivity);
+  }
+
+  @Override public void anonymizeCommentLikesByCommentUserId(UUID userId) {}
+  @Override public void pullSubscription(UUID userId, UUID targetId) {}
+  @Override public void updateCommentContent(UUID userId, UUID commentId, String content) {}
+  @Override public void pullCommentLike(UUID userId, UUID commentId) {}
+  @Override public void pullArticle(UUID userId, UUID articleId) {}
+  @Override public void pullArticleLike(UUID userId, UUID articleId) {}
+  @Override public void pullArticleView(UUID userId, UUID articleId) {}
 }

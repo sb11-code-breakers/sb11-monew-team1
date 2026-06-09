@@ -5,24 +5,10 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-public interface UserActivityMongoRepository extends MongoRepository<UserActivity, UUID> {
+//extends 뒤에 몽고DB 기본 기능과 DirectRepository 명세서를 같이 적어서 상속받게 함
+public interface UserActivityMongoRepository extends MongoRepository<UserActivity, UUID>, UserActivityMongoDirectRepository {
 
-  //자바 컴파일러와 Mockito가 메서드의 규격을 인식할 수 있도록 껍데기 명세만 선언
-  void createUserActivity(UserActivity userActivity);
+  //쿼리 메소드만 남기기
   Optional<UserActivity> findByIdAndNicknameIsNotNull(UUID id);
-  void updateNickname(UUID userId, String nickname);
-  void anonymize(UUID userId);
-  void anonymizeCommentLikesByCommentUserId(UUID userId);
-  void pushSubscription(UUID userId, UUID targetId);
-  void pullSubscription(UUID userId, UUID targetId);
-  void pushComment(UUID userId, UUID articleId, UUID commentId);
-  void updateCommentContent(UUID userId, UUID commentId, String content);
-  void pushCommentLike(UUID userId, UUID commentId);
-  void pullCommentLike(UUID userId, UUID commentId);
-  void pushArticleView(UUID userId, UUID articleId);
-  void pullArticle(UUID userId, UUID articleId);
-  void pullArticleLike(UUID userId, UUID articleId);
-  void pullArticleView(UUID userId, UUID articleId);
-  void pullSubscriptionsByInterestId(UUID interestId);
 
 }
