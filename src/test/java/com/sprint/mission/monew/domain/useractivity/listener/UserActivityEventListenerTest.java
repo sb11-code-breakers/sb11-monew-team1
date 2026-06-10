@@ -144,8 +144,13 @@ class UserActivityEventListenerTest {
       Instant likedAt = Instant.now();
 
       CommentLikedEvent event = new CommentLikedEvent(
-          userId, commentId, commentCreatedAt,
-          articleId, UUID.randomUUID(), articleTitle, likedAt
+          userId,                   // 1. userId
+          UUID.randomUUID(),        // 2. likeId
+          likedAt,                  // 3. createdAt (좋아요 누른 시간)
+          commentId,                // 4. commentId
+          articleId,                // 5. articleId
+          articleTitle,             // 6. articleTitle
+          commentCreatedAt          // 7. commentCreatedAt
       );
 
       listener.handle(event);
