@@ -20,20 +20,24 @@ class RecentCommentTest {
       // given
       UUID commentId = UUID.randomUUID();
       UUID articleId = UUID.randomUUID();
-      String articleTitle = "자바 백엔드 개발자의 길";
+      String articleTitle = "기사 제목";
       Instant now = Instant.now();
 
       // when
-      // 💡 다이어트 파라미터 적용
       RecentComment comment = RecentComment.of(commentId, articleId, articleTitle, now);
 
       // then
       assertThat(comment.getCommentId()).isEqualTo(commentId);
       assertThat(comment.getArticleId()).isEqualTo(articleId);
       assertThat(comment.getArticleTitle()).isEqualTo(articleTitle);
-
-      // ⚠️ 만약 엔티티 변수명이 writtenAt 등이라면 getWrittenAt()으로 변경하세요.
       assertThat(comment.getCreatedAt()).isEqualTo(now);
     }
+  }
+
+  @Test
+  @DisplayName("RecentComment는 변동 필드를 포함하지 않아야 한다 (정확히 4개 필드)")
+  void shouldOnlyContainImmutableFields() {
+    // 필드 개수가 정확히 4개(commentId, articleId, articleTitle, createdAt)인지 확인
+    assertThat(RecentComment.class.getDeclaredFields()).hasSize(4);
   }
 }
