@@ -1,5 +1,9 @@
 package com.sprint.mission.monew.domain.useractivity.listener;
 
+import com.sprint.mission.monew.domain.useractivity.document.RecentArticleView;
+import com.sprint.mission.monew.domain.useractivity.document.RecentComment;
+import com.sprint.mission.monew.domain.useractivity.document.RecentCommentLike;
+import com.sprint.mission.monew.domain.useractivity.document.RecentSubscription;
 import com.sprint.mission.monew.domain.useractivity.repository.UserActivityMongoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -25,10 +29,9 @@ public class UserActivityEventListener {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(SubscriptionCreatedEvent event) {
-    com.sprint.mission.monew.domain.useractivity.document.RecentSubscription subscription =
-        com.sprint.mission.monew.domain.useractivity.document.RecentSubscription.of(
-            event.interestId(), event.interestName(), event.createdAt() // 구독일
-        );
+    RecentSubscription subscription = RecentSubscription.of(
+        event.interestId(), event.interestName(), event.createdAt()
+    );
     userActivityMongoRepository.pushSubscription(event.userId(), subscription);
   }
 
@@ -39,20 +42,22 @@ public class UserActivityEventListener {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(CommentCreatedEvent event) {
-    com.sprint.mission.monew.domain.useractivity.document.RecentComment comment =
-        com.sprint.mission.monew.domain.useractivity.document.RecentComment.of(
-            event.commentId(), event.articleId(), event.articleTitle(), event.createdAt()
-        );
+    RecentComment comment = RecentComment.of(
+        event.commentId(), event.articleId(), event.articleTitle(), event.createdAt()
+    );
     userActivityMongoRepository.pushComment(event.userId(), comment);
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(CommentLikedEvent event) {
-    com.sprint.mission.monew.domain.useractivity.document.RecentCommentLike commentLike =
-        com.sprint.mission.monew.domain.useractivity.document.RecentCommentLike.of(
-            event.commentId(), event.articleId(), event.commentUserId(),
-            event.articleTitle(), event.commentCreatedAt(), event.createdAt() // 좋아요 누른 시간
-        );
+    // RecentCommentLike.of에 commentCreatedAt을 추가로 전달
+    RecentCommentLike commentLike = RecentCommentLike.of(
+        event.commentId(),
+        event.articleId(),
+        event.articleTitle(),
+        event.commentCreatedAt(), // 💡 이벤트에서 받은 시간 전달
+        event.createdAt()
+    );
     userActivityMongoRepository.pushCommentLike(event.userId(), commentLike);
   }
 
@@ -63,11 +68,10 @@ public class UserActivityEventListener {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(ArticleViewedEvent event) {
-    com.sprint.mission.monew.domain.useractivity.document.RecentArticleView articleView =
-        com.sprint.mission.monew.domain.useractivity.document.RecentArticleView.of(
-            event.articleId(), event.source(), event.sourceUrl(), event.articleTitle(),
-            event.articlePublishedDate(), event.articleSummary(), event.createdAt() // 조회한 시간
-        );
+    RecentArticleView articleView = RecentArticleView.of(
+        event.articleId(), event.source(), event.sourceUrl(), event.articleTitle(),
+        event.articlePublishedDate(), event.articleSummary(), event.createdAt()
+    );
     userActivityMongoRepository.pushArticleView(event.userId(), articleView);
   }
 
