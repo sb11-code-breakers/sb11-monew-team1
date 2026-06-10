@@ -18,23 +18,21 @@ class RecentCommentTest {
     @DisplayName("전달한 값으로 RecentComment를 생성한다")
     void 전달한_값으로_RecentComment를_생성한다() {
       // given
-      UUID id = UUID.randomUUID();
+      UUID commentId = UUID.randomUUID();
       UUID articleId = UUID.randomUUID();
-      UUID userId = UUID.randomUUID();
+      String articleTitle = "자바 백엔드 개발자의 길";
       Instant now = Instant.now();
 
       // when
-      RecentComment comment = RecentComment.of(
-          id, articleId, "기사 제목", userId, "작성자닉네임", "댓글 내용", 5L, now);
+      // 💡 다이어트 파라미터 적용
+      RecentComment comment = RecentComment.of(commentId, articleId, articleTitle, now);
 
       // then
-      assertThat(comment.getId()).isEqualTo(id);
+      assertThat(comment.getCommentId()).isEqualTo(commentId);
       assertThat(comment.getArticleId()).isEqualTo(articleId);
-      assertThat(comment.getArticleTitle()).isEqualTo("기사 제목");
-      assertThat(comment.getUserId()).isEqualTo(userId);
-      assertThat(comment.getUserNickname()).isEqualTo("작성자닉네임");
-      assertThat(comment.getContent()).isEqualTo("댓글 내용");
-      assertThat(comment.getLikeCount()).isEqualTo(5L);
+      assertThat(comment.getArticleTitle()).isEqualTo(articleTitle);
+
+      // ⚠️ 만약 엔티티 변수명이 writtenAt 등이라면 getWrittenAt()으로 변경하세요.
       assertThat(comment.getCreatedAt()).isEqualTo(now);
     }
   }
