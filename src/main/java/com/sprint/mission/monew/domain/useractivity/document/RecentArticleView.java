@@ -10,35 +10,26 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RecentArticleView {
 
-  private UUID id;
-  private UUID viewedBy;
-  private Instant createdAt;
   private UUID articleId;
   private String source;
   private String sourceUrl;
   private String articleTitle;
   private Instant articlePublishedDate;
   private String articleSummary;
-  private long articleCommentCount;
-  private long articleViewCount;
+  private Instant viewedAt; // 유저가 기사를 조회한 시점
 
   public static RecentArticleView of(
-      UUID id, UUID viewedBy, Instant createdAt, UUID articleId,
-      String source, String sourceUrl, String articleTitle,
-      Instant articlePublishedDate, String articleSummary,
-      long articleCommentCount, long articleViewCount) {
+      UUID articleId, String source, String sourceUrl, String articleTitle,
+      Instant articlePublishedDate, String articleSummary, Instant viewedAt) {
+
     RecentArticleView doc = new RecentArticleView();
-    doc.id = id;
-    doc.viewedBy = viewedBy;
-    doc.createdAt = createdAt;
     doc.articleId = articleId;
     doc.source = source;
     doc.sourceUrl = sourceUrl;
     doc.articleTitle = articleTitle;
     doc.articlePublishedDate = articlePublishedDate;
     doc.articleSummary = articleSummary;
-    doc.articleCommentCount = articleCommentCount;
-    doc.articleViewCount = articleViewCount;
+    doc.viewedAt = viewedAt;
     return doc;
   }
 }

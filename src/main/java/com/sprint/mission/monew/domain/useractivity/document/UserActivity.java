@@ -20,19 +20,15 @@ public class UserActivity {
 
   @Id
   private UUID id;
-  private String email;
-  private String nickname;
   private Instant createdAt;
   private List<RecentSubscription> subscriptions = new ArrayList<>();
   private List<RecentComment> comments = new ArrayList<>();
   private List<RecentCommentLike> commentLikes = new ArrayList<>();
   private List<RecentArticleView> articleViews = new ArrayList<>();
 
-  public static UserActivity of(UUID id, String email, String nickname, Instant createdAt) {
+  public static UserActivity of(UUID id, Instant createdAt) {
     UserActivity doc = new UserActivity();
     doc.id = id;
-    doc.email = email;
-    doc.nickname = nickname;
     doc.createdAt = createdAt;
     return doc;
 

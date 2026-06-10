@@ -10,32 +10,25 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RecentCommentLike {
 
-  private UUID id;
-  private Instant createdAt;
+  // 1. 식별자 (PostgreSQL 매핑용)
   private UUID commentId;
   private UUID articleId;
+  private UUID commentUserId; // 댓글 작성자 ID (필요한 경우 유지)
   private String articleTitle;
-  private UUID commentUserId;
-  private String commentUserNickname;
-  private String commentContent;
-  private long commentLikeCount;
-  private Instant commentCreatedAt;
+  private Instant commentCreatedAt; // 원본 댓글 작성 시간
+  private Instant likedAt;          // (필수) 이 유저가 좋아요를 누른 시점
 
   public static RecentCommentLike of(
-      UUID id, Instant createdAt, UUID commentId, UUID articleId,
-      String articleTitle, UUID commentUserId, String commentUserNickname,
-      String commentContent, long commentLikeCount, Instant commentCreatedAt) {
+      UUID commentId, UUID articleId, UUID commentUserId,
+      String articleTitle, Instant commentCreatedAt, Instant likedAt) {
+
     RecentCommentLike doc = new RecentCommentLike();
-    doc.id = id;
-    doc.createdAt = createdAt;
     doc.commentId = commentId;
     doc.articleId = articleId;
-    doc.articleTitle = articleTitle;
     doc.commentUserId = commentUserId;
-    doc.commentUserNickname = commentUserNickname;
-    doc.commentContent = commentContent;
-    doc.commentLikeCount = commentLikeCount;
+    doc.articleTitle = articleTitle;
     doc.commentCreatedAt = commentCreatedAt;
+    doc.likedAt = likedAt;
     return doc;
   }
 }
