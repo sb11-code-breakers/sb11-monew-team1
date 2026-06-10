@@ -13,12 +13,12 @@ public class RecentCommentLike {
   private UUID commentId;
   private UUID articleId;
   private String articleTitle;
-  private Instant commentCreatedAt; // 원본 댓글 작성 시간
-  private Instant likedAt;          // 이 유저가 좋아요를 누른 시점
+  private Instant commentCreatedAt;
+  private Instant likedAt;
 
   public static RecentCommentLike of(
       UUID commentId, UUID articleId, String articleTitle,
-      Instant commentCreatedAt, Instant likedAt) { // 💡 commentUserId 제거
+      Instant commentCreatedAt, Instant likedAt) {
 
     RecentCommentLike doc = new RecentCommentLike();
     doc.commentId = commentId;

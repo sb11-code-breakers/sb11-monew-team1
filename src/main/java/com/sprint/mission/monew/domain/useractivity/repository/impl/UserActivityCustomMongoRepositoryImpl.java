@@ -1,10 +1,12 @@
-package com.sprint.mission.monew.domain.useractivity.repository;
+package com.sprint.mission.monew.domain.useractivity.repository.impl;
 
 import com.sprint.mission.monew.domain.useractivity.document.RecentArticleView;
 import com.sprint.mission.monew.domain.useractivity.document.RecentComment;
 import com.sprint.mission.monew.domain.useractivity.document.RecentCommentLike;
 import com.sprint.mission.monew.domain.useractivity.document.RecentSubscription;
 import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
+import com.sprint.mission.monew.domain.useractivity.repository.UserActivityCustomMongoRepository;
+import java.util.ArrayList;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -33,10 +35,10 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
     Query query = Query.query(Criteria.where("_id").is(userId));
     // 텍스트 변경 대신 활동 내역 자체를 완전히 파기(초기화)
     Update update = new Update()
-        .set("subscriptions", new java.util.ArrayList<>())
-        .set("comments", new java.util.ArrayList<>())
-        .set("commentLikes", new java.util.ArrayList<>())
-        .set("articleViews", new java.util.ArrayList<>());
+        .set("subscriptions", new ArrayList<>())
+        .set("comments", new ArrayList<>())
+        .set("commentLikes", new ArrayList<>())
+        .set("articleViews", new ArrayList<>());
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }
 
