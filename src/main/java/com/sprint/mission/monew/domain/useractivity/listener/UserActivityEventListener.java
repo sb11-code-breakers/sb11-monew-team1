@@ -57,7 +57,7 @@ public class UserActivityEventListener {
         event.commentId(),
         event.articleId(),
         event.articleTitle(),
-        event.commentCreatedAt(), // 💡 이벤트에서 받은 시간 전달
+        event.commentCreatedAt(),
         event.createdAt()
     );
     userActivityMongoRepository.pushCommentLike(event.userId(), commentLike);
