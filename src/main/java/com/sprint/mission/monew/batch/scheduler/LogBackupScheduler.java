@@ -17,7 +17,7 @@ public class LogBackupScheduler {
   private final LogBackupService logBackupService;
 
   @Timed(value = "monew.log.upload.job.duration", description = "로그 백업 배치 Job 전체 소요 시간")
-  @Scheduled(cron = "${scheduler.log-upload.cron}")
+  @Scheduled(cron = "${scheduler.log-upload.cron}", zone = "${scheduler.timezone}")
   public void upload() throws Exception {
     log.info("로그 백업 배치 시작");
     logBackupService.executeBackup();

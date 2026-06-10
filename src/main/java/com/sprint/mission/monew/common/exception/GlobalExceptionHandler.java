@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.common.exception;
 
 import com.sprint.mission.monew.common.dto.ErrorResponse;
+import com.sprint.mission.monew.domain.user.exception.UserErrorCode;
 import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -11,6 +12,7 @@ import org.springframework.core.NestedExceptionUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -86,7 +88,6 @@ public class GlobalExceptionHandler {
     return errorResponse(HttpStatus.BAD_REQUEST, code, details, e);
   }
 
-  // GenericConversionService가 컨버터 예외를 ConversionFailedException으로 래핑하므로 root cause까지 탐색한다.
   private String resolveFieldErrorMessage(FieldError fe) {
     if (fe.contains(TypeMismatchException.class)) {
       Throwable root = NestedExceptionUtils.getMostSpecificCause(
@@ -96,6 +97,17 @@ public class GlobalExceptionHandler {
       }
     }
     return fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "invalid";
+  }
+
+  @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+  public ResponseEntity<ErrorResponse> handleOptimisticLock(ObjectOptimisticLockingFailureException e) {
+    UserErrorCode code = UserErrorCode.USER_OPTIMISTIC_LOCK_CONFLICT;
+    log.warn("[{}] {}", code.getCode(), e.getMessage());
+    Map<String, Object> details = Map.of(
+        "entityType", e.getPersistentClassName() != null ? e.getPersistentClassName() : "unknown",
+        "identifier", e.getIdentifier() != null ? e.getIdentifier().toString() : "unknown"
+    );
+    return errorResponse(HttpStatus.CONFLICT, code, details, e);
   }
 
   @ExceptionHandler(MonewException.class)
@@ -121,7 +133,7 @@ public class GlobalExceptionHandler {
   private ResponseEntity<ErrorResponse> errorResponse(
       HttpStatus status,
       ErrorCode code,
-      Map<String,Object> details,
+      Map<String, Object> details,
       Exception e
   ) {
     return ResponseEntity

@@ -17,7 +17,7 @@ public class CommentCleanupScheduler {
   private final CommentCleanupService commentCleanupService;
 
   @Timed(value = "monew.comment.cleanup.job.duration", description = "만료 댓글 물리 삭제 배치 Job 전체 소요 시간")
-  @Scheduled(cron = "${scheduler.comment-cleanup.cron}")
+  @Scheduled(cron = "${scheduler.comment-cleanup.cron}", zone = "${scheduler.timezone}")
   public void cleanUpDeletedComments() throws Exception {
     log.debug("물리 삭제 스케줄러 실행");
     commentCleanupService.executeCleanup();

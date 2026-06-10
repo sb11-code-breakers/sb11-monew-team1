@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.mission.monew.common.filter.AuthFilter;
+import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -24,6 +25,7 @@ import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.http.MediaType;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -84,6 +86,16 @@ class GlobalExceptionHandlerTest {
 
     @GetMapping("/converter-mismatch")
     void converterMismatch(@Valid @ModelAttribute FakeModelRequest req) {}
+
+    @GetMapping("/optimistic-lock")
+    void optimisticLock() {
+      throw new ObjectOptimisticLockingFailureException(User.class, UUID.randomUUID());
+    }
+
+    @GetMapping("/optimistic-lock-null")
+    void optimisticLockNull() {
+      throw new ObjectOptimisticLockingFailureException("null entity", null);
+    }
   }
 
   record BodyRequest(String name) {}
@@ -121,7 +133,6 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("존재하지 않는 경로 요청 시 404 반환")
     void 존재하지_않는_경로_404_반환() throws Exception {
-      // given & when & then
       mockMvc
           .perform(get("/not-exist"))
           .andExpect(status().isNotFound())
@@ -138,7 +149,6 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("지원하지 않는 HTTP 메서드로 요청 시 405 반환")
     void 지원하지_않는_HTTP_메서드_405_반환() throws Exception {
-      // given & when & then
       mockMvc
           .perform(delete("/test/ok"))
           .andExpect(status().isMethodNotAllowed())
@@ -155,7 +165,6 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("잘못된 JSON 본문 전달 시 400 반환")
     void 잘못된_JSON_본문_400_반환() throws Exception {
-      // given & when & then
       mockMvc
           .perform(post("/test/body")
               .contentType(MediaType.APPLICATION_JSON)
@@ -174,7 +183,6 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("UUID 경로 변수에 잘못된 값 전달 시 400 + details 반환")
     void UUID_경로_변수에_잘못된_값_400_반환() throws Exception {
-      // given & when & then
       mockMvc
           .perform(get("/test/type-mismatch/not-a-uuid"))
           .andExpect(status().isBadRequest())
@@ -192,10 +200,7 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("@Valid 검증 실패 시 400 + details(필드명) 반환")
     void Valid_검증_실패_400_반환() throws Exception {
-      // given
       String body = objectMapper.writeValueAsString(new ValidRequest(""));
-
-      // when & then
       mockMvc
           .perform(post("/test/valid")
               .contentType(MediaType.APPLICATION_JSON)
@@ -215,7 +220,6 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("MonewException 발생 시 ErrorCode 기반 상태코드와 응답 반환")
     void MonewException_ErrorCode_기반_응답_반환() throws Exception {
-      // given & when & then
       mockMvc
           .perform(get("/test/monew-exception"))
           .andExpect(status().isNotFound())
@@ -234,7 +238,6 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("클라이언트 연결 끊김 시 응답 바디 없이 조용히 처리")
     void 클라이언트_연결_끊김_응답_없이_처리() throws Exception {
-      // given & when & then
       mockMvc
           .perform(get("/test/client-abort"))
           .andExpect(status().isOk())
@@ -279,7 +282,6 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("컨버터에서 InvalidOrderByException 발생 시 root cause 메시지를 details에 노출")
     void 컨버터_InvalidOrderByException_root_cause_메시지_노출() throws Exception {
-      // given & when & then
       mockMvc
           .perform(get("/test/converter-mismatch")
               .param("orderBy", "invalid"))
@@ -296,13 +298,40 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("처리되지 않은 예외 발생 시 500 반환")
     void 처리되지_않은_예외_500_반환() throws Exception {
-      // given & when & then
       mockMvc
           .perform(get("/test/server-error"))
           .andExpect(status().isInternalServerError())
           .andExpect(jsonPath("$.status").value(500))
           .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"))
           .andExpect(jsonPath("$.exceptionType").value("RuntimeException"));
+    }
+  }
+
+  @Nested
+  @DisplayName("409 — 낙관적락 충돌")
+  class OptimisticLock {
+
+    @Test
+    @DisplayName("낙관적락 충돌 시 409 반환")
+    void 낙관적락_충돌_시_409_반환() throws Exception {
+      mockMvc
+          .perform(get("/test/optimistic-lock"))
+          .andExpect(status().isConflict())
+          .andExpect(jsonPath("$.status").value(409))
+          .andExpect(jsonPath("$.code").value("USER_OPTIMISTIC_LOCK_CONFLICT"))
+          .andExpect(jsonPath("$.details.entityType").exists())
+          .andExpect(jsonPath("$.details.identifier").exists())
+          .andExpect(jsonPath("$.exceptionType").value("ObjectOptimisticLockingFailureException"));
+    }
+
+    @Test
+    @DisplayName("낙관적락 충돌 시 entityType과 identifier가 null이면 unknown 반환")
+    void 낙관적락_충돌_시_null_정보_unknown_반환() throws Exception {
+      mockMvc
+          .perform(get("/test/optimistic-lock-null"))
+          .andExpect(status().isConflict())
+          .andExpect(jsonPath("$.details.entityType").value("unknown"))
+          .andExpect(jsonPath("$.details.identifier").value("unknown"));
     }
   }
 }

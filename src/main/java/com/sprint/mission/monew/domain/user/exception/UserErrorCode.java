@@ -16,7 +16,8 @@ public enum UserErrorCode implements ErrorCode {
   USER_INVALID_EMAIL_VERIFICATION_TOKEN("유효하지 않거나 만료된 인증 토큰입니다."),
   USER_INVALID_UNLOCK_TOKEN("유효하지 않거나 만료된 잠금 해제 토큰입니다."),
   USER_INVALID_PASSWORD_RESET_CODE("유효하지 않거나 만료된 비밀번호 재설정 코드입니다."),
-  USER_ACCOUNT_LOCKED("계정이 잠겼습니다. 이메일 인증을 통해 잠금을 해제해주세요.");
+  USER_ACCOUNT_LOCKED("계정이 잠겼습니다. 이메일 인증을 통해 잠금을 해제해주세요."),
+  USER_OPTIMISTIC_LOCK_CONFLICT("다른 작업과 충돌하여 처리할 수 없습니다. 잠시 후 다시 시도해 주세요.");
 
   private final String message;
 

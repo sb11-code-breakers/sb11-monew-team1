@@ -172,4 +172,16 @@ class UserTest {
     // then
     assertThat(user.hasExceededLoginFailLimit()).isFalse();
   }
+
+  @Nested
+  @DisplayName("낙관적락")
+  class OptimisticLock {
+
+    @Test
+    @DisplayName("생성 시 version은 null이다")
+    void 생성_시_version은_null이다() {
+      // then
+      assertThat(user.getVersion()).isNull();
+    }
+  }
 }

@@ -54,6 +54,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -457,6 +458,41 @@ class UserServiceTest {
       assertThat(result).isNotNull();
       assertThat(result.nickname()).isEqualTo("새닉네임");
     }
+
+    @Test
+    @DisplayName("낙관적락 충돌 시 재시도 후 성공")
+    void 낙관적락_충돌_시_재시도_후_성공() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UserUpdateRequest request = new UserUpdateRequest("새닉네임");
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willReturn(Optional.of(user));
+      given(userMapper.toResponse(user)).willReturn(
+          new UserResponse(userId, "test@test.com", "새닉네임", user.getCreatedAt()));
+
+      // when
+      UserResponse response = userService.update(userId, userId, request);
+
+      // then
+      assertThat(response).isNotNull();
+    }
+
+    @Test
+    @DisplayName("낙관적락 충돌이 3회 초과하면 예외 발생")
+    void 낙관적락_충돌이_3회_초과하면_예외_발생() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UserUpdateRequest request = new UserUpdateRequest("새닉네임");
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willThrow(ObjectOptimisticLockingFailureException.class);
+
+      // when & then
+      assertThatThrownBy(() -> userService.update(userId, userId, request))
+          .isInstanceOf(ObjectOptimisticLockingFailureException.class);
+    }
   }
 
   @Nested
@@ -520,6 +556,37 @@ class UserServiceTest {
 
       // then
       then(userSessionRepository).should().deleteByUserId(userId);
+    }
+
+    @Test
+    @DisplayName("낙관적락 충돌 시 재시도 후 성공")
+    void 낙관적락_충돌_시_재시도_후_성공() {
+      // given
+      UUID userId = UUID.randomUUID();
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willReturn(Optional.of(user));
+
+      // when
+      userService.delete(userId, userId);
+
+      // then
+      then(userRepository).should(times(1)).findByIdAndDeletedAtIsNull(userId);
+    }
+
+    @Test
+    @DisplayName("낙관적락 충돌이 3회 초과하면 예외 발생")
+    void 낙관적락_충돌이_3회_초과하면_예외_발생() {
+      // given
+      UUID userId = UUID.randomUUID();
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willThrow(ObjectOptimisticLockingFailureException.class);
+
+      // when & then
+      assertThatThrownBy(() -> userService.delete(userId, userId))
+          .isInstanceOf(ObjectOptimisticLockingFailureException.class);
     }
   }
 
@@ -613,6 +680,41 @@ class UserServiceTest {
 
       // then
       assertThat(user.getPassword()).isEqualTo("newEncodedPassword");
+    }
+
+    @Test
+    @DisplayName("낙관적락 충돌 시 재시도 후 성공")
+    void 낙관적락_충돌_시_재시도_후_성공() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("currentPassword", "newPassword123");
+      User user = User.create("test@test.com", "테스터", "encodedPassword");
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willReturn(Optional.of(user));
+      given(passwordEncoder.matches(request.currentPassword(), user.getPassword()))
+          .willReturn(true);
+
+      // when
+      userService.updatePassword(userId, request);
+
+      // then
+      then(userRepository).should(times(1)).findByIdAndDeletedAtIsNull(userId);
+    }
+
+    @Test
+    @DisplayName("낙관적락 충돌이 3회 초과하면 예외 발생")
+    void 낙관적락_충돌이_3회_초과하면_예외_발생() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UserPasswordUpdateRequest request = new UserPasswordUpdateRequest("currentPassword", "newPassword123");
+
+      given(userRepository.findByIdAndDeletedAtIsNull(userId))
+          .willThrow(ObjectOptimisticLockingFailureException.class);
+
+      // when & then
+      assertThatThrownBy(() -> userService.updatePassword(userId, request))
+          .isInstanceOf(ObjectOptimisticLockingFailureException.class);
     }
   }
 

@@ -17,7 +17,7 @@ public class NewsCollectScheduler {
   private final NewsCollectService newsCollectService;
 
   @Timed(value = "monew.news.collect.job.duration", description = "뉴스 수집 배치 Job 전체 소요 시간")
-  @Scheduled(cron = "${scheduler.news-collect.cron}")
+  @Scheduled(cron = "${scheduler.news-collect.cron}", zone = "${scheduler.timezone}")
   public void collect() throws Exception {
     log.info("뉴스 수집 배치 시작");
     newsCollectService.executeCollect();

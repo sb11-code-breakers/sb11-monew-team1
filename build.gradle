@@ -42,6 +42,7 @@ dependencies {
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:ses'
     implementation 'software.amazon.awssdk:cloudwatchlogs'
+    implementation 'org.springframework.retry:spring-retry'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'

@@ -4,6 +4,7 @@ import com.sprint.mission.monew.common.entity.BaseSoftDeletableEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -16,6 +17,9 @@ import lombok.NoArgsConstructor;
 public class User extends BaseSoftDeletableEntity {
 
   private static final int MAX_LOGIN_FAIL_COUNT = 5;
+
+  @Version
+  private Long version;
 
   @Column(nullable = false, unique = true)
   private String email;

@@ -35,6 +35,10 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -133,6 +137,11 @@ public class UserService {
     log.info("이메일 인증 완료 | userId={}", user.getId());
   }
 
+  @Retryable(
+      retryFor = ObjectOptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 50, multiplier = 2)
+  )
   @Transactional
   public UserResponse update(UUID userId, UUID requestUserId, UserUpdateRequest request) {
     log.debug("닉네임 수정 시도");
@@ -146,28 +155,18 @@ public class UserService {
     return userMapper.toResponse(user);
   }
 
-  @Transactional
-  public void delete(UUID userId, UUID requestUserId) {
-    log.debug("논리 삭제 시도");
-    if (!userId.equals(requestUserId)) {
-      throw UserAccessDeniedException.forUser(requestUserId);
-    }
-    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
-        .orElseThrow(() -> UserNotFoundException.withId(userId));
-    user.softDelete();
-    userSessionRepository.deleteByUserId(userId);
-    log.info("사용자 논리 삭제 완료 | userId={}", userId);
+  @Recover
+  public UserResponse recoverUpdate(ObjectOptimisticLockingFailureException e,
+      UUID userId, UUID requestUserId, UserUpdateRequest request) {
+    log.warn("닉네임 수정 낙관적락 최종 실패 | userId={}", userId);
+    throw e;
   }
 
-  @Transactional
-  public void hardDelete(UUID userId) {
-    log.debug("물리 삭제 시도");
-    User user = userRepository.findByIdAndDeletedAtIsNotNull(userId)
-        .orElseThrow(() -> UserNotFoundException.withId(userId));
-    userRepository.delete(user);
-    log.info("사용자 물리 삭제 완료 | userId={}", userId);
-  }
-
+  @Retryable(
+      retryFor = ObjectOptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 50, multiplier = 2)
+  )
   @Transactional
   public void updatePassword(UUID requestUserId, UserPasswordUpdateRequest request) {
     log.debug("비밀번호 변경 시도");
@@ -178,6 +177,56 @@ public class UserService {
     }
     user.updatePassword(passwordEncoder.encode(request.newPassword()));
     log.info("비밀번호 변경 완료 | userId={}", requestUserId);
+  }
+
+  @Recover
+  public void recoverUpdatePassword(ObjectOptimisticLockingFailureException e,
+      UUID requestUserId, UserPasswordUpdateRequest request) {
+    log.warn("비밀번호 변경 낙관적락 최종 실패 | userId={}", requestUserId);
+    throw e;
+  }
+
+  @Retryable(
+      retryFor = ObjectOptimisticLockingFailureException.class,
+      maxAttempts = 3,
+      backoff = @Backoff(delay = 50, multiplier = 2)
+  )
+  @Transactional
+  public void delete(UUID userId, UUID requestUserId) {
+    log.debug("논리 삭제 시도");
+    if (!userId.equals(requestUserId)) {
+      throw UserAccessDeniedException.forUser(requestUserId);
+    }
+    User user = userRepository.findByIdAndDeletedAtIsNull(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+    user.softDelete();
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+          userSessionRepository.deleteByUserId(userId);
+        }
+      });
+    } else {
+      userSessionRepository.deleteByUserId(userId);
+    }
+    log.info("사용자 논리 삭제 완료 | userId={}", userId);
+  }
+
+  @Recover
+  public void recoverDelete(ObjectOptimisticLockingFailureException e,
+      UUID userId, UUID requestUserId) {
+    log.warn("논리 삭제 낙관적락 최종 실패 | userId={}", userId);
+    throw e;
+  }
+
+  @Transactional
+  public void hardDelete(UUID userId) {
+    log.debug("물리 삭제 시도");
+    User user = userRepository.findByIdAndDeletedAtIsNotNull(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+    userRepository.delete(user);
+    log.info("사용자 물리 삭제 완료 | userId={}", userId);
   }
 
   @Transactional
@@ -263,11 +312,11 @@ public class UserService {
     userUnlockTokenRepository.delete(unlockToken);
     log.info("계정 잠금 해제 완료 | userId={}", user.getId());
   }
+
   @Transactional
   public void logout(UUID userId) {
     log.debug("로그아웃 시도");
     userSessionRepository.deleteByUserId(userId);
     log.info("로그아웃 완료 | userId={}", userId);
   }
-
 }
