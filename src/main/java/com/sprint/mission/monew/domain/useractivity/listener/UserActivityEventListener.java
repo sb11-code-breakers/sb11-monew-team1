@@ -39,7 +39,7 @@ public class UserActivityEventListener {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(SubscriptionCancelledEvent event) {
-    userActivityMongoRepository.pullSubscription(event.userId(), event.interestId());
+    userActivityMongoRepository.pullSubscription(event.userId(), UUID.randomUUID());///
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
