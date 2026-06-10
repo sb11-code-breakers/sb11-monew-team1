@@ -83,7 +83,7 @@ public class AuthFilter implements Filter {
     HttpServletRequest request = (HttpServletRequest) servletRequest;
     HttpServletResponse response = (HttpServletResponse) servletResponse;
 
-    String requestId = UUID.randomUUID().toString().substring(0, 8);
+    String requestId = UUID.randomUUID().toString();
     MDC.put("requestId", requestId);
     MDC.put("method", request.getMethod());
     MDC.put("url", request.getRequestURI());

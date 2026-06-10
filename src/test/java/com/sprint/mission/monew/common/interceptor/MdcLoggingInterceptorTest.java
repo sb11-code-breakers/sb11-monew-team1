@@ -26,13 +26,15 @@ class MdcLoggingInterceptorTest {
   class PreHandle {
 
     @Test
-    @DisplayName("MDC에 requestId가 8자리로 세팅된다")
-    void MDC에_requestId가_8자리로_세팅된다() {
+    @DisplayName("MDC에 requestId가 UUID 형식(36자)으로 세팅된다")
+    void MDC에_requestId가_UUID_형식으로_세팅된다() {
       // given & when
       interceptor.preHandle(request, response, new Object());
 
       // then
-      assertThat(MDC.get("requestId")).hasSize(8);
+      assertThat(MDC.get("requestId"))
+          .hasSize(36)
+          .matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
     }
 
     @Test
@@ -103,13 +105,16 @@ class MdcLoggingInterceptorTest {
     }
 
     @Test
-    @DisplayName("응답 헤더에 Monew-Request-ID가 세팅된다")
+    @DisplayName("응답 헤더에 Monew-Request-ID가 UUID 형식(36자)으로 세팅된다")
     void 응답_헤더에_Monew_Request_ID가_세팅된다() {
       // given & when
       interceptor.preHandle(request, response, new Object());
 
       // then
-      assertThat(response.getHeader("Monew-Request-ID")).isNotNull().hasSize(8);
+      assertThat(response.getHeader("Monew-Request-ID"))
+          .isNotNull()
+          .hasSize(36)
+          .matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
     }
 
     @Test

@@ -15,7 +15,7 @@ public class ArticleBackupScheduler {
 
   private final ArticleBackupService articleBackupService;
 
-  @Scheduled(cron = "${scheduler.article-backup.cron}")
+  @Scheduled(cron = "${scheduler.article-backup.cron}", zone = "${scheduler.timezone}")
   public void backup() {
     try {
       log.info("기사 S3 백업 배치 시작");
