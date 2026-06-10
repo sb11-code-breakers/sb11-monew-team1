@@ -64,7 +64,6 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
   @Override
   public void pushSubscription(UUID userId, RecentSubscription subscription) {
     Query query = Query.query(Criteria.where("_id").is(userId));
-    // 구독은 개수 제한을 두지 않거나 별도로 관리할 수 있으므로 slice 생략 (필요시 추가)
     Update update = new Update().push("subscriptions").atPosition(0).each(subscription);
     mongoTemplate.upsert(query, update, UserActivity.class);
   }
