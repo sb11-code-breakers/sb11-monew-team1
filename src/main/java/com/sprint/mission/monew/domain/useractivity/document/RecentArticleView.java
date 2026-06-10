@@ -24,7 +24,7 @@ public class RecentArticleView {
 
     RecentArticleView doc = new RecentArticleView();
     doc.articleId = articleId;
-    doc.source = "이상한데이터";
+    doc.source = source;
     doc.sourceUrl = sourceUrl;
     doc.articleTitle = articleTitle;
     doc.articlePublishedDate = articlePublishedDate;
