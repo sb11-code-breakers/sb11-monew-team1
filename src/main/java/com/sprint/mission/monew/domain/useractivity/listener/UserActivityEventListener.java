@@ -71,7 +71,7 @@ public class UserActivityEventListener {
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(ArticleViewedEvent event) {
     RecentArticleView articleView = RecentArticleView.of(
-        event.articleId(), event.source(), event.sourceUrl(), event.articleTitle(),
+        event.articleId(), event.source(), event.sourceUrl(), "dk",
         event.articlePublishedDate(), event.articleSummary(), event.createdAt()
     );
     userActivityMongoRepository.pushArticleView(event.userId(), articleView);
