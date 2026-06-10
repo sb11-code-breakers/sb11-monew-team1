@@ -1,8 +1,13 @@
 package com.sprint.mission.monew.domain.useractivity.listener;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
+import com.sprint.mission.monew.domain.useractivity.document.RecentArticleView;
+import com.sprint.mission.monew.domain.useractivity.document.RecentComment;
+import com.sprint.mission.monew.domain.useractivity.document.RecentCommentLike;
+import com.sprint.mission.monew.domain.useractivity.document.RecentSubscription;
 import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
 import com.sprint.mission.monew.domain.useractivity.repository.UserActivityMongoRepository;
 import java.time.Instant;
@@ -11,6 +16,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -24,15 +31,28 @@ class UserActivityEventListenerTest {
   @InjectMocks
   UserActivityEventListener listener;
 
+  // 💡 리스너가 리포지토리로 넘기는 객체를 낚아채서(Capture) 안의 내용물을 검증하기 위한 도구들
+  @Captor ArgumentCaptor<UserActivity> activityCaptor;
+  @Captor ArgumentCaptor<RecentSubscription> subscriptionCaptor;
+  @Captor ArgumentCaptor<RecentComment> commentCaptor;
+  @Captor ArgumentCaptor<RecentCommentLike> commentLikeCaptor;
+  @Captor ArgumentCaptor<RecentArticleView> articleViewCaptor;
+
   @Nested
   @DisplayName("UserCreatedEvent")
   class UserCreated {
     @Test
-    @DisplayName("UserCreatedEvent를 받으면 createUserActivity를 호출한다")
+    @DisplayName("UserCreatedEvent를 받으면 UserActivity 도큐먼트 신규 생성 (ID, Timestamp)")
     void handle_UserCreated() {
-      UserActivity activity = UserActivity.of(UUID.randomUUID(), Instant.now());
+      UUID userId = UUID.randomUUID();
+      Instant now = Instant.now();
+      UserActivity activity = UserActivity.of(userId, now);
+
       listener.handle(new UserCreatedEvent(activity));
-      verify(userActivityMongoRepository).createUserActivity(activity);
+
+      verify(userActivityMongoRepository).createUserActivity(activityCaptor.capture());
+      UserActivity captured = activityCaptor.getValue();
+      assertThat(captured.getId()).isEqualTo(userId);
     }
   }
 
@@ -53,14 +73,22 @@ class UserActivityEventListenerTest {
   @DisplayName("SubscriptionCreatedEvent")
   class SubscriptionCreated {
     @Test
-    @DisplayName("SubscriptionCreatedEvent를 받으면 pushSubscription을 호출한다")
+    @DisplayName("SubscriptionCreatedEvent를 받으면 {interestId, interestName, subscribedAt} 추출 및 push")
     void handle_SubscriptionCreated() {
-      // 이벤트 객체 스펙에 맞춰 더미 파라미터 모두 채움
-      SubscriptionCreatedEvent event = new SubscriptionCreatedEvent(
-          UUID.randomUUID(), UUID.randomUUID(), "IT", java.util.List.of("AI"), 42L, Instant.now()
-      );
+      UUID userId = UUID.randomUUID();
+      UUID interestId = UUID.randomUUID();
+      Instant subscribedAt = Instant.now();
+      String interestName = "IT 기술";
+
+      SubscriptionCreatedEvent event = new SubscriptionCreatedEvent(userId, interestId, interestName, subscribedAt);
       listener.handle(event);
-      verify(userActivityMongoRepository).pushSubscription(eq(event.userId()), org.mockito.ArgumentMatchers.any(com.sprint.mission.monew.domain.useractivity.document.RecentSubscription.class));
+
+      verify(userActivityMongoRepository).pushSubscription(eq(userId), subscriptionCaptor.capture());
+
+      RecentSubscription captured = subscriptionCaptor.getValue();
+      assertThat(captured.getInterestId()).isEqualTo(interestId);
+      assertThat(captured.getInterestName()).isEqualTo(interestName);
+      assertThat(captured.getSubscribedAt()).isNotNull();
     }
   }
 
@@ -81,17 +109,24 @@ class UserActivityEventListenerTest {
   @DisplayName("CommentCreatedEvent")
   class CommentCreated {
     @Test
-    @DisplayName("CommentCreatedEvent를 받으면 pushComment를 호출한다")
+    @DisplayName("CommentCreatedEvent를 받으면 {commentId, articleId, articleTitle, createdAt} 추출 및 push")
     void handle_CommentCreated() {
-      CommentCreatedEvent event = new CommentCreatedEvent(
-          UUID.randomUUID(),
-          UUID.randomUUID(),
-          UUID.randomUUID(),
-          "기사 제목",
-          Instant.now() // 파라미터 5개로 딱 맞춤!
-      );
+      UUID userId = UUID.randomUUID();
+      UUID commentId = UUID.randomUUID();
+      UUID articleId = UUID.randomUUID();
+      String articleTitle = "TDD 정석 가이드";
+      Instant createdAt = Instant.now();
+
+      CommentCreatedEvent event = new CommentCreatedEvent(userId, commentId, articleId, articleTitle, createdAt);
       listener.handle(event);
-      verify(userActivityMongoRepository).pushComment(eq(event.userId()), org.mockito.ArgumentMatchers.any(com.sprint.mission.monew.domain.useractivity.document.RecentComment.class));
+
+      verify(userActivityMongoRepository).pushComment(eq(userId), commentCaptor.capture());
+
+      RecentComment captured = commentCaptor.getValue();
+      assertThat(captured.getCommentId()).isEqualTo(commentId);
+      assertThat(captured.getArticleId()).isEqualTo(articleId);
+      assertThat(captured.getArticleTitle()).isEqualTo(articleTitle);
+      assertThat(captured.getCreatedAt()).isEqualTo(createdAt);
     }
   }
 
@@ -99,14 +134,30 @@ class UserActivityEventListenerTest {
   @DisplayName("CommentLikedEvent")
   class CommentLiked {
     @Test
-    @DisplayName("CommentLikedEvent를 받으면 pushCommentLike를 호출한다")
+    @DisplayName("CommentLikedEvent를 받으면 {commentId, articleId, articleTitle, commentCreatedAt, likedAt} 추출 및 push")
     void handle_CommentLiked() {
+      UUID userId = UUID.randomUUID();
+      UUID commentId = UUID.randomUUID();
+      UUID articleId = UUID.randomUUID();
+      String articleTitle = "클린 아키텍처";
+      Instant commentCreatedAt = Instant.now().minusSeconds(3600);
+      Instant likedAt = Instant.now();
+
       CommentLikedEvent event = new CommentLikedEvent(
-          UUID.randomUUID(), UUID.randomUUID(), Instant.now(), UUID.randomUUID(),
-          UUID.randomUUID(), "기사 제목", UUID.randomUUID(), "작성자", "내용", 3L, Instant.now()
+          userId, commentId, commentCreatedAt,
+          articleId, UUID.randomUUID(), articleTitle, likedAt
       );
+
       listener.handle(event);
-      verify(userActivityMongoRepository).pushCommentLike(eq(event.userId()), org.mockito.ArgumentMatchers.any(com.sprint.mission.monew.domain.useractivity.document.RecentCommentLike.class));
+
+      verify(userActivityMongoRepository).pushCommentLike(eq(userId), commentLikeCaptor.capture());
+
+      RecentCommentLike captured = commentLikeCaptor.getValue();
+      assertThat(captured.getCommentId()).isEqualTo(commentId);
+      assertThat(captured.getArticleId()).isEqualTo(articleId);
+      assertThat(captured.getArticleTitle()).isEqualTo(articleTitle);
+      assertThat(captured.getCommentCreatedAt()).isEqualTo(commentCreatedAt);
+      assertThat(captured.getLikedAt()).isEqualTo(likedAt);
     }
   }
 
@@ -127,14 +178,26 @@ class UserActivityEventListenerTest {
   @DisplayName("ArticleViewedEvent")
   class ArticleViewed {
     @Test
-    @DisplayName("ArticleViewedEvent를 받으면 pushArticleView를 호출한다")
+    @DisplayName("ArticleViewedEvent를 받으면 불변 필드 전체 추출 및 push")
     void handle_ArticleViewed() {
+      UUID userId = UUID.randomUUID();
+      UUID articleId = UUID.randomUUID();
+      Instant viewTime = Instant.now();
+
       ArticleViewedEvent event = new ArticleViewedEvent(
-          UUID.randomUUID(), UUID.randomUUID(), Instant.now(), UUID.randomUUID(),
-          "NAVER", "URL", "제목", Instant.now(), "요약", 10L, 20L
+          userId, UUID.randomUUID(), viewTime, articleId,
+          "NAVER", "https://url", "오늘의 뉴스", Instant.now(), "기사 요약"
       );
+
       listener.handle(event);
-      verify(userActivityMongoRepository).pushArticleView(eq(event.userId()), org.mockito.ArgumentMatchers.any(com.sprint.mission.monew.domain.useractivity.document.RecentArticleView.class));
+
+      verify(userActivityMongoRepository).pushArticleView(eq(userId), articleViewCaptor.capture());
+
+      RecentArticleView captured = articleViewCaptor.getValue();
+      assertThat(captured.getArticleId()).isEqualTo(articleId);
+      assertThat(captured.getArticleTitle()).isEqualTo("오늘의 뉴스");
+      assertThat(captured.getSource()).isEqualTo("NAVER");
+      assertThat(captured.getViewedAt()).isEqualTo(viewTime);
     }
   }
 
