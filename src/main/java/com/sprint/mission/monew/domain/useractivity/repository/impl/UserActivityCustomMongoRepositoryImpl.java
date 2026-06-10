@@ -169,4 +169,7 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
     Update update = new Update().pull("articleViews", Query.query(Criteria.where("articleId").is(articleId)));
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }
+
+
+
 }
