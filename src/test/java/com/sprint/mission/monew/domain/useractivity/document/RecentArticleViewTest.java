@@ -37,4 +37,11 @@ class RecentArticleViewTest {
       assertThat(view.getViewedAt()).isEqualTo(now);
     }
   }
+
+  @Test
+  @DisplayName("RecentArticleView는 변동 필드를 포함하지 않아야 한다 (정확히 7개 필드)")
+  void shouldOnlyContainImmutableFields() {
+    // 필드 개수가 정확히 7개인지 확인하여 누군가 실수로 필드를 추가하는 것을 방지
+    assertThat(RecentArticleView.class.getDeclaredFields()).hasSize(7);
+  }
 }
