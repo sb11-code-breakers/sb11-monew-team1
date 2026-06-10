@@ -30,7 +30,9 @@ public class UserActivityEventListener {
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(SubscriptionCreatedEvent event) {
     RecentSubscription subscription = RecentSubscription.of(
-        event.interestId(), event.interestName(), event.createdAt()
+        event.interestId(),
+        event.interestName(),
+        event.createdAt()
     );
     userActivityMongoRepository.pushSubscription(event.userId(), subscription);
   }
