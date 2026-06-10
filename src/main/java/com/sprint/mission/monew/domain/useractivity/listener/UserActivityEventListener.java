@@ -31,7 +31,7 @@ public class UserActivityEventListener {
   public void handle(SubscriptionCreatedEvent event) {
     RecentSubscription subscription = RecentSubscription.of(
         event.interestId(),
-        event.interestName(),
+        null,
         event.createdAt()
     );
     userActivityMongoRepository.pushSubscription(event.userId(), subscription);

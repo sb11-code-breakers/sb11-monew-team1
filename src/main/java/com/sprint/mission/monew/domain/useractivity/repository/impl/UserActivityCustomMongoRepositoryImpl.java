@@ -64,7 +64,7 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
   @Override
   public void pushSubscription(UUID userId, RecentSubscription subscription) {
     Query query = Query.query(Criteria.where("_id").is(userId));
-    Update update = new Update().push("subscriptions").atPosition(0).each(subscription);
+    Update update = new Update().push("subscriptions").atPosition(0).slice(10).each(subscription);
     mongoTemplate.upsert(query, update, UserActivity.class);
   }
 
