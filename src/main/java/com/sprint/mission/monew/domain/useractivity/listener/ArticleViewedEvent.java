@@ -12,5 +12,5 @@ public record ArticleViewedEvent(
     String sourceUrl,
     String articleTitle,
     Instant articlePublishedDate,
-    String articleSummary,
+    String articleSummary
 ) {}
