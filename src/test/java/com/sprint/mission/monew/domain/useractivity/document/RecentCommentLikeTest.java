@@ -21,24 +21,28 @@ import org.junit.jupiter.api.Test;
         // given
         UUID commentId = UUID.randomUUID();
         UUID articleId = UUID.randomUUID();
-        UUID commentUserId = UUID.randomUUID();
         String articleTitle = "기사 제목";
         Instant now = Instant.now();
         Instant commentCreatedAt = now.minusSeconds(60);
 
         // when
-        // 💡 다이어트된 파라미터 스펙 적용 (불변 데이터와 ID만 포함)
         RecentCommentLike like = RecentCommentLike.of(
-            commentId, articleId, commentUserId, articleTitle, commentCreatedAt, now
+            commentId, articleId, articleTitle, commentCreatedAt, now
         );
 
         // then
         assertThat(like.getCommentId()).isEqualTo(commentId);
         assertThat(like.getArticleId()).isEqualTo(articleId);
-        assertThat(like.getCommentUserId()).isEqualTo(commentUserId);
         assertThat(like.getArticleTitle()).isEqualTo(articleTitle);
         assertThat(like.getCommentCreatedAt()).isEqualTo(commentCreatedAt);
-        assertThat(like.getLikedAt()).isEqualTo(now); // 좋아요를 누른 시점
+        assertThat(like.getLikedAt()).isEqualTo(now);
       }
+    }
+    @Test
+    @DisplayName("RecentCommentLike는 변동 필드를 포함하지 않아야 한다")
+    void shouldOnlyContainImmutableFields() {
+      // 필드 개수가 5개인지 확인
+      assertThat(RecentCommentLike.class.getDeclaredFields())
+          .hasSize(5);
     }
   }
