@@ -13,6 +13,4 @@ public record ArticleViewedEvent(
     String articleTitle,
     Instant articlePublishedDate,
     String articleSummary,
-    long articleCommentCount,
-    long articleViewCount
 ) {}
