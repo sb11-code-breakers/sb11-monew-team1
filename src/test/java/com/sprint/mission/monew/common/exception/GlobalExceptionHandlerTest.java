@@ -91,6 +91,11 @@ class GlobalExceptionHandlerTest {
     void optimisticLock() {
       throw new ObjectOptimisticLockingFailureException(User.class, UUID.randomUUID());
     }
+
+    @GetMapping("/optimistic-lock-null")
+    void optimisticLockNull() {
+      throw new ObjectOptimisticLockingFailureException("null entity", null);
+    }
   }
 
   record BodyRequest(String name) {}
@@ -317,6 +322,16 @@ class GlobalExceptionHandlerTest {
           .andExpect(jsonPath("$.details.entityType").exists())
           .andExpect(jsonPath("$.details.identifier").exists())
           .andExpect(jsonPath("$.exceptionType").value("ObjectOptimisticLockingFailureException"));
+    }
+
+    @Test
+    @DisplayName("낙관적락 충돌 시 entityType과 identifier가 null이면 unknown 반환")
+    void 낙관적락_충돌_시_null_정보_unknown_반환() throws Exception {
+      mockMvc
+          .perform(get("/test/optimistic-lock-null"))
+          .andExpect(status().isConflict())
+          .andExpect(jsonPath("$.details.entityType").value("unknown"))
+          .andExpect(jsonPath("$.details.identifier").value("unknown"));
     }
   }
 }
