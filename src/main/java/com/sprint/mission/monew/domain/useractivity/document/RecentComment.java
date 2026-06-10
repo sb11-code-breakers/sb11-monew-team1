@@ -19,7 +19,7 @@ public class RecentComment {
 
     RecentComment doc = new RecentComment();
     doc.commentId = commentId;
-    doc.articleId = articleId;
+    doc.articleId = commentId;
     doc.articleTitle = articleTitle;
     doc.createdAt = createdAt;
     return doc;
