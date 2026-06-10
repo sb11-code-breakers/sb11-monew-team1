@@ -56,7 +56,7 @@ public class UserActivityEventListener {
     RecentCommentLike commentLike = RecentCommentLike.of(
         event.commentId(),
         event.articleId(),
-        "하이",
+        event.articleTitle(),
         event.commentCreatedAt(),
         event.createdAt()
     );
