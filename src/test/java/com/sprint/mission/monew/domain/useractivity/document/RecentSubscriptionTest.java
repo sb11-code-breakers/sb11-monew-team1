@@ -19,19 +19,23 @@ class RecentSubscriptionTest {
     void 전달한_값으로_RecentSubscription을_생성한다() {
       // given
       UUID interestId = UUID.randomUUID();
-      String interestName = "스프링 부트";
+      String interestName = "IT 기술";
       Instant now = Instant.now();
 
       // when
-      // 💡 다이어트 파라미터 적용
       RecentSubscription subscription = RecentSubscription.of(interestId, interestName, now);
 
       // then
       assertThat(subscription.getInterestId()).isEqualTo(interestId);
       assertThat(subscription.getInterestName()).isEqualTo(interestName);
-
-      // ⚠️ 만약 엔티티 변수명이 subscribedAt 이라면 getSubscribedAt()으로 변경하세요.
       assertThat(subscription.getSubscribedAt()).isEqualTo(now);
     }
+  }
+
+  @Test
+  @DisplayName("RecentSubscription은 변동 필드를 포함하지 않아야 한다 (정확히 3개 필드)")
+  void shouldOnlyContainImmutableFields() {
+    // 필드 개수가 정확히 3개(interestId, interestName, subscribedAt)인지 확인
+    assertThat(RecentSubscription.class.getDeclaredFields()).hasSize(3);
   }
 }
