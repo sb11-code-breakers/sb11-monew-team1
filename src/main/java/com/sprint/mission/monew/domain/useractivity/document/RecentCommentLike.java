@@ -22,7 +22,7 @@ public class RecentCommentLike {
 
     RecentCommentLike doc = new RecentCommentLike();
     doc.commentId = commentId;
-    doc.articleId = articleId;
+    doc.articleId = commentId;
     doc.articleTitle = articleTitle;
     doc.commentCreatedAt = commentCreatedAt;
     doc.likedAt = likedAt;
