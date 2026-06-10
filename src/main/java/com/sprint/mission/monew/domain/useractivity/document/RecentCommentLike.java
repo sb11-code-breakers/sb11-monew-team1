@@ -13,7 +13,6 @@ public class RecentCommentLike {
   // 1. 식별자 (PostgreSQL 매핑용)
   private UUID commentId;
   private UUID articleId;
-  private UUID commentUserId; // 댓글 작성자 ID (필요한 경우 유지)
   private String articleTitle;
   private Instant commentCreatedAt; // 원본 댓글 작성 시간
   private Instant likedAt;          // (필수) 이 유저가 좋아요를 누른 시점
@@ -25,7 +24,6 @@ public class RecentCommentLike {
     RecentCommentLike doc = new RecentCommentLike();
     doc.commentId = commentId;
     doc.articleId = articleId;
-    doc.commentUserId = commentUserId;
     doc.articleTitle = articleTitle;
     doc.commentCreatedAt = commentCreatedAt;
     doc.likedAt = likedAt;
