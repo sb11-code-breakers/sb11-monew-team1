@@ -35,7 +35,7 @@ import org.springframework.util.AntPathMatcher;
 @Order(Ordered.HIGHEST_PRECEDENCE + 1)
 public class RateLimitFilter implements Filter {
 
-  @Value("${monew.rate-limit.enabled:true}")
+  @Value("${monew.rate-limit.enabled}")
   private boolean enabled;
 
   private final AntPathMatcher pathMatcher = new AntPathMatcher();
@@ -75,6 +75,10 @@ public class RateLimitFilter implements Filter {
   public void clearBuckets() {
     ipBuckets.clear();
     userBuckets.clear();
+  }
+
+  public void setEnabled(boolean enabled) {
+    this.enabled = enabled;
   }
 
   @Override
@@ -126,33 +130,33 @@ public class RateLimitFilter implements Filter {
   }
 
   private Bucket resolveBucket(String path, String method, String ip, UUID userId) {
-    if ("POST".equals(method) && isLoginPath(path)) {
+    if ("POST".equals(method) && pathMatcher.match("/api/users/login", path)) {
       return ipBuckets.computeIfAbsent("login:" + ip,
           k -> Bucket.builder()
               .addLimit(Bandwidth.classic(3, Refill.greedy(3, Duration.ofMinutes(1))))
               .build());
     }
-    if ("POST".equals(method) && isSignupPath(path)) {
+    if ("POST".equals(method) && pathMatcher.match("/api/users", path)) {
       return ipBuckets.computeIfAbsent("signup:" + ip,
           k -> Bucket.builder()
               .addLimit(Bandwidth.classic(5, Refill.greedy(5, Duration.ofHours(1))))
               .build());
     }
-    if ("POST".equals(method) && isPasswordResetPath(path)) {
+    if ("POST".equals(method) && pathMatcher.match("/api/users/password-reset", path)) {
       String key = userId != null ? userId.toString() : ip;
       return ipBuckets.computeIfAbsent("pwreset:" + key,
           k -> Bucket.builder()
               .addLimit(Bandwidth.classic(3, Refill.greedy(3, Duration.ofHours(1))))
               .build());
     }
-    if ("POST".equals(method) && isUnlockPath(path)) {
+    if ("POST".equals(method) && pathMatcher.match("/api/users/unlock", path)) {
       String key = userId != null ? userId.toString() : ip;
       return ipBuckets.computeIfAbsent("unlock:" + key,
           k -> Bucket.builder()
               .addLimit(Bandwidth.classic(3, Refill.greedy(3, Duration.ofHours(1))))
               .build());
     }
-    if ("GET".equals(method) && isArticlesPath(path)) {
+    if ("GET".equals(method) && pathMatcher.match("/api/articles", path)) {
       if (userId == null) return null;
       return userBuckets.computeIfAbsent(userId,
           k -> Bucket.builder()
@@ -181,31 +185,6 @@ public class RateLimitFilter implements Filter {
               .build());
     }
     return null;
-  }
-
-  private boolean isLoginPath(String path) {
-    return pathMatcher.match("/api/users/login", path)
-        || pathMatcher.match("/test/rate/login", path);
-  }
-
-  private boolean isSignupPath(String path) {
-    return pathMatcher.match("/api/users", path)
-        || pathMatcher.match("/test/rate/signup", path);
-  }
-
-  private boolean isPasswordResetPath(String path) {
-    return pathMatcher.match("/api/users/password-reset", path)
-        || pathMatcher.match("/test/rate/password-reset", path);
-  }
-
-  private boolean isUnlockPath(String path) {
-    return pathMatcher.match("/api/users/unlock", path)
-        || pathMatcher.match("/test/rate/unlock", path);
-  }
-
-  private boolean isArticlesPath(String path) {
-    return pathMatcher.match("/api/articles", path)
-        || pathMatcher.match("/test/rate/articles", path);
   }
 
   private String getClientIp(HttpServletRequest request) {
