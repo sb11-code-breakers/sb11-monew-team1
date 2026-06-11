@@ -313,4 +313,14 @@ class RateLimitFilterTest {
           .andExpect(status().isOk());
     }
   }
+  @Nested
+  @DisplayName("필터 종료")
+  class Shutdown {
+
+    @Test
+    @DisplayName("shutdown 호출 시 스케줄러가 종료된다")
+    void shutdown_호출_시_스케줄러가_종료된다() {
+      rateLimitFilter.shutdown();
+    }
+  }
 }
