@@ -118,6 +118,15 @@ class RateLimitFilterTest {
           .perform(post("/api/users/login"))
           .andExpect(status().isOk());
     }
+
+    @Test
+    @DisplayName("X-Forwarded-For가 빈 문자열이면 RemoteAddr 사용")
+    void X_Forwarded_For가_빈_문자열이면_RemoteAddr_사용() throws Exception {
+      mockMvc
+          .perform(post("/api/users/login")
+              .header("X-Forwarded-For", ""))
+          .andExpect(status().isOk());
+    }
   }
 
   @Nested
@@ -215,6 +224,15 @@ class RateLimitFilterTest {
               .header("Monew-Request-User-ID", userId))
           .andExpect(status().isTooManyRequests());
     }
+
+    @Test
+    @DisplayName("userId null 시 IP fallback 적용")
+    void userId_null_시_IP_fallback_적용() throws Exception {
+      mockMvc
+          .perform(post("/api/users/unlock")
+              .header("X-Forwarded-For", "6.6.6.6"))
+          .andExpect(status().isOk());
+    }
   }
 
   @Nested
@@ -268,6 +286,21 @@ class RateLimitFilterTest {
           .perform(get("/api/notifications"))
           .andExpect(status().isOk());
     }
+
+    @Test
+    @DisplayName("알림 한도 초과 시 429 반환")
+    void 알림_한도_초과_시_429_반환() throws Exception {
+      String userId = UUID.randomUUID().toString();
+      for (int i = 0; i < 60; i++) {
+        mockMvc.perform(get("/api/notifications")
+                .header("Monew-Request-User-ID", userId))
+            .andExpect(status().isOk());
+      }
+      mockMvc
+          .perform(get("/api/notifications")
+              .header("Monew-Request-User-ID", userId))
+          .andExpect(status().isTooManyRequests());
+    }
   }
 
   @Nested
@@ -289,6 +322,21 @@ class RateLimitFilterTest {
       mockMvc
           .perform(post("/api/comments"))
           .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("댓글 한도 초과 시 429 반환")
+    void 댓글_한도_초과_시_429_반환() throws Exception {
+      String userId = UUID.randomUUID().toString();
+      for (int i = 0; i < 10; i++) {
+        mockMvc.perform(post("/api/comments")
+                .header("Monew-Request-User-ID", userId))
+            .andExpect(status().isOk());
+      }
+      mockMvc
+          .perform(post("/api/comments")
+              .header("Monew-Request-User-ID", userId))
+          .andExpect(status().isTooManyRequests());
     }
   }
 
@@ -312,10 +360,40 @@ class RateLimitFilterTest {
           .perform(post("/api/comments/" + UUID.randomUUID() + "/likes"))
           .andExpect(status().isOk());
     }
+
+    @Test
+    @DisplayName("댓글 좋아요 한도 초과 시 429 반환")
+    void 댓글_좋아요_한도_초과_시_429_반환() throws Exception {
+      String userId = UUID.randomUUID().toString();
+      for (int i = 0; i < 30; i++) {
+        mockMvc.perform(post("/api/comments/" + UUID.randomUUID() + "/likes")
+                .header("Monew-Request-User-ID", userId))
+            .andExpect(status().isOk());
+      }
+      mockMvc
+          .perform(post("/api/comments/" + UUID.randomUUID() + "/likes")
+              .header("Monew-Request-User-ID", userId))
+          .andExpect(status().isTooManyRequests());
+    }
   }
+
   @Nested
-  @DisplayName("필터 종료")
-  class Shutdown {
+  @DisplayName("필터 설정")
+  class FilterConfig {
+
+    @Test
+    @DisplayName("enabled false 시 Rate Limiting 비활성화")
+    void enabled_false_시_Rate_Limiting_비활성화() throws Exception {
+      rateLimitFilter.setEnabled(false);
+      mockMvc = MockMvcBuilders
+          .standaloneSetup(new FakeController())
+          .addFilter(rateLimitFilter)
+          .build();
+      mockMvc
+          .perform(post("/api/users/login")
+              .header("X-Forwarded-For", "1.2.3.4"))
+          .andExpect(status().isOk());
+    }
 
     @Test
     @DisplayName("shutdown 호출 시 스케줄러가 종료된다")
