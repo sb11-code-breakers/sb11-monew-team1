@@ -16,7 +16,6 @@ public class ArticleBackupScheduler {
 
   private final ArticleBackupService articleBackupService;
 
-  @Timed(value = "monew.article.backup.job.duration", description = "기사 백업 배치 Job 전체 소요 시간")
   @Scheduled(cron = "${scheduler.article-backup.cron}", zone = "${scheduler.timezone}")
   public void executeBackup() throws Exception {
     log.info("기사 S3 백업 배치 시작");

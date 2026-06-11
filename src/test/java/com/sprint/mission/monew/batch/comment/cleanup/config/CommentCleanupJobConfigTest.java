@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
+import com.sprint.mission.monew.batch.comment.cleanup.listener.CommentCleanupJobListener;
 import com.sprint.mission.monew.batch.comment.cleanup.listener.CommentCleanupStepListener;
 import com.sprint.mission.monew.batch.comment.cleanup.reader.CommentCleanupReader;
 import com.sprint.mission.monew.batch.comment.cleanup.writer.CommentCleanupWriter;
@@ -29,16 +30,18 @@ public class CommentCleanupJobConfigTest {
     @DisplayName("Job, Step 생성 성공")
     void job_step_생성_성공() throws Exception {
       // given
+      CommentCleanupJobListener jobListener = mock(CommentCleanupJobListener.class);
       CommentCleanupReader reader = mock(CommentCleanupReader.class);
       CommentCleanupWriter writer = mock(CommentCleanupWriter.class);
-      CommentCleanupStepListener listener = mock(CommentCleanupStepListener.class);
+      CommentCleanupStepListener stepListener = mock(CommentCleanupStepListener.class);
 
       CommentCleanupJobConfig config = new CommentCleanupJobConfig(
           jobRepository,
           transactionManager,
+          jobListener,
           reader,
           writer,
-          listener
+          stepListener
       );
 
       var field = CommentCleanupJobConfig.class.getDeclaredField("chunkSize");

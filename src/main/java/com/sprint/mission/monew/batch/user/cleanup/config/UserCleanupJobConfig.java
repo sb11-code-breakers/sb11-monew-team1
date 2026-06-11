@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.batch.user.cleanup.config;
 
 import com.sprint.mission.monew.batch.user.cleanup.dto.UserCleanupItem;
+import com.sprint.mission.monew.batch.user.cleanup.listener.UserCleanupJobListener;
 import com.sprint.mission.monew.batch.user.cleanup.reader.UserCleanupReader;
 import com.sprint.mission.monew.batch.user.cleanup.listener.UserCleanupStepListener;
 import com.sprint.mission.monew.batch.user.cleanup.writer.UserCleanupWriter;
@@ -22,6 +23,7 @@ public class UserCleanupJobConfig {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager transactionManager;
 
+  private final UserCleanupJobListener userCleanupJobListener;
   private final UserCleanupReader userCleanupReader;
   private final UserCleanupWriter userCleanupWriter;
   private final UserCleanupStepListener userCleanupStepListener;
@@ -32,6 +34,7 @@ public class UserCleanupJobConfig {
   @Bean(name = "userCleanupJob")
   public Job userCleanupJob() {
     return new JobBuilder("userCleanupJob", jobRepository)
+        .listener(userCleanupJobListener)
         .start(userCleanupStep()).build();
   }
 

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
+import com.sprint.mission.monew.batch.news.collect.listener.NewsCollectJobListener;
 import com.sprint.mission.monew.batch.news.collect.listener.NewsCollectStepListener;
 import com.sprint.mission.monew.batch.news.collect.reader.NewsCollectReader;
 import com.sprint.mission.monew.batch.news.collect.writer.NewsCollectWriter;
@@ -29,16 +30,18 @@ class NewsCollectJobConfigTest {
     @DisplayName("Job, Step 생성 성공")
     void job_step_생성_성공() throws Exception {
       // given
+      NewsCollectJobListener jobListener = mock(NewsCollectJobListener.class);
       NewsCollectReader reader = mock(NewsCollectReader.class);
       NewsCollectWriter writer = mock(NewsCollectWriter.class);
-      NewsCollectStepListener listener = mock(NewsCollectStepListener.class);
+      NewsCollectStepListener stepListener = mock(NewsCollectStepListener.class);
 
       NewsCollectJobConfig config = new NewsCollectJobConfig(
           jobRepository,
           transactionManager,
+          jobListener,
           reader,
           writer,
-          listener
+          stepListener
       );
 
       var field = NewsCollectJobConfig.class.getDeclaredField("chunkSize");

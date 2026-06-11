@@ -1,9 +1,12 @@
 package com.sprint.mission.monew.batch.article.backup.metrics;
 
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -13,13 +16,17 @@ public class ArticleBackupMetrics {
   private static final String SKIPPED = "monew.article.backup.skipped";
   private static final String FAILED = "monew.article.backup.failed";
   private static final String BYTES = "monew.article.backup.bytes";
-  private static final String DURATION = "monew.article.backup.duration";
+  private static final String JOB_DURATION = "monew.article.backup.job.duration";
+  private static final String STEP_DURATION = "monew.article.backup.step.duration";
+  private static final String LAST_SUCCESS = "monew.article.backup.last_success.timestamp";
 
   private final Counter uploadedCounter;
   private final Counter skippedCounter;
   private final Counter failedCounter;
   private final Counter bytesCounter;
-  private final Timer durationTimer;
+  private final Timer jobDurationTimer;
+  private final Timer stepDurationTimer;
+  private final AtomicLong lastSuccessEpochSeconds = new AtomicLong(0);
 
   public ArticleBackupMetrics(MeterRegistry registry) {
     this.uploadedCounter = Counter.builder(UPLOADED)
@@ -35,8 +42,15 @@ public class ArticleBackupMetrics {
         .baseUnit("bytes")
         .description("S3에 업로드된 압축 기사 백업 총 바이트")
         .register(registry);
-    this.durationTimer = Timer.builder(DURATION)
-        .description("기사 백업 1회 소요 시간")
+    this.jobDurationTimer = Timer.builder(JOB_DURATION)
+        .description("기사 백업 Job 전체 실행 시간")
+        .register(registry);
+    this.stepDurationTimer = Timer.builder(STEP_DURATION)
+        .description("기사 백업 Step 처리 시간")
+        .register(registry);
+    Gauge.builder(LAST_SUCCESS, lastSuccessEpochSeconds, AtomicLong::get)
+        .baseUnit("seconds")
+        .description("기사 백업 배치가 마지막으로 정상 완료된 시각(epoch seconds)")
         .register(registry);
   }
 
@@ -56,7 +70,15 @@ public class ArticleBackupMetrics {
     bytesCounter.increment(bytes);
   }
 
-  public void recordDuration(Duration duration) {
-    durationTimer.record(duration);
+  public void recordJobDuration(Duration duration) {
+    jobDurationTimer.record(duration);
+  }
+
+  public void recordStepDuration(Duration duration) {
+    stepDurationTimer.record(duration);
+  }
+
+  public void markSuccess() {
+    lastSuccessEpochSeconds.set(Instant.now().getEpochSecond());
   }
 }

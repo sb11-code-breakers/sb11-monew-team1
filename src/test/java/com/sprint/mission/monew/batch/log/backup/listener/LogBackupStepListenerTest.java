@@ -30,6 +30,42 @@ public class LogBackupStepListenerTest {
   StepExecution stepExecution;
 
   @Test
+  @DisplayName("시작 시간 정보 없으면 metrics 호출 없이 종료한다")
+  void 시간_null이면_metrics_미호출() {
+    // given
+    LocalDateTime end = LocalDateTime.of(2026, 6, 10, 10, 0, 5);
+
+    given(stepExecution.getStartTime()).willReturn(null);
+    given(stepExecution.getEndTime()).willReturn(end);
+    given(stepExecution.getExitStatus()).willReturn(ExitStatus.COMPLETED);
+
+    // when
+    ExitStatus result = listener.afterStep(stepExecution);
+
+    // then
+    then(logBackupMetrics).shouldHaveNoInteractions();
+    assertThat(result).isEqualTo(ExitStatus.COMPLETED);
+  }
+
+  @Test
+  @DisplayName("완료 시간 정보 없으면 metrics 호출 없이 종료한다")
+  void 완료_시간_null이면_metrics_미호출() {
+    // given
+    LocalDateTime start = LocalDateTime.of(2026, 6, 10, 10, 0, 0);
+
+    given(stepExecution.getStartTime()).willReturn(start);
+    given(stepExecution.getEndTime()).willReturn(null);
+    given(stepExecution.getExitStatus()).willReturn(ExitStatus.COMPLETED);
+
+    // when
+    ExitStatus result = listener.afterStep(stepExecution);
+
+    // then
+    then(logBackupMetrics).shouldHaveNoInteractions();
+    assertThat(result).isEqualTo(ExitStatus.COMPLETED);
+  }
+
+  @Test
   @DisplayName("Step이 실패해도 metrics는 기록되고 ExitStatus는 그대로 반환된다")
   void 실패해도_메트릭은_기록된다() {
 
@@ -47,7 +83,7 @@ public class LogBackupStepListenerTest {
     // then
     then(logBackupMetrics)
         .should()
-        .recordDuration(Duration.ofSeconds(5));
+        .recordStepDuration(Duration.ofSeconds(5));
 
     assertThat(result).isEqualTo(ExitStatus.FAILED);
   }
@@ -66,13 +102,13 @@ public class LogBackupStepListenerTest {
 
     doThrow(new RuntimeException("metrics fail"))
         .when(logBackupMetrics)
-        .recordDuration(Duration.ofSeconds(5));
+        .recordStepDuration(Duration.ofSeconds(5));
 
     // when
     ExitStatus result = listener.afterStep(stepExecution);
 
     // then
-    then(logBackupMetrics).should().recordDuration(Duration.ofSeconds(5));
+    then(logBackupMetrics).should().recordStepDuration(Duration.ofSeconds(5));
     assertThat(result).isEqualTo(ExitStatus.COMPLETED);
   }
 
@@ -92,7 +128,7 @@ public class LogBackupStepListenerTest {
     ExitStatus result = listener.afterStep(stepExecution);
 
     // then
-    then(logBackupMetrics).should().recordDuration(Duration.ofSeconds(5));
+    then(logBackupMetrics).should().recordStepDuration(Duration.ofSeconds(5));
     assertThat(result).isEqualTo(ExitStatus.COMPLETED);
   }
 }

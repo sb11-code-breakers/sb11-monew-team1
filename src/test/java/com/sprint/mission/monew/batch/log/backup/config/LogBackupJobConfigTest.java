@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
+import com.sprint.mission.monew.batch.log.backup.listener.LogBackupJobListener;
 import com.sprint.mission.monew.batch.log.backup.listener.LogBackupStepListener;
 import com.sprint.mission.monew.batch.log.backup.processor.LogBackupProcessor;
 import com.sprint.mission.monew.batch.log.backup.reader.LogBackupReader;
@@ -30,18 +31,20 @@ class LogBackupJobConfigTest {
     @DisplayName("Job, Step 생성 성공")
     void job_step_생성_성공() throws Exception {
       // given
+      LogBackupJobListener jobListener = mock(LogBackupJobListener.class);
       LogBackupReader reader = mock(LogBackupReader.class);
       LogBackupProcessor processor = mock(LogBackupProcessor.class);
       LogBackupWriter writer = mock(LogBackupWriter.class);
-      LogBackupStepListener listener = mock(LogBackupStepListener.class);
+      LogBackupStepListener stepListener = mock(LogBackupStepListener.class);
 
       LogBackupJobConfig config = new LogBackupJobConfig(
           jobRepository,
           transactionManager,
+          jobListener,
           reader,
           processor,
           writer,
-          listener
+          stepListener
       );
 
       // when

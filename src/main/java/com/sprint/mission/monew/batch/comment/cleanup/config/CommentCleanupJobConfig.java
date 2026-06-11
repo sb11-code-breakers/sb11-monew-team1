@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.batch.comment.cleanup.config;
 
+import com.sprint.mission.monew.batch.comment.cleanup.listener.CommentCleanupJobListener;
 import com.sprint.mission.monew.batch.comment.cleanup.reader.CommentCleanupReader;
 import com.sprint.mission.monew.batch.comment.cleanup.listener.CommentCleanupStepListener;
 import com.sprint.mission.monew.batch.comment.cleanup.writer.CommentCleanupWriter;
@@ -22,6 +23,7 @@ public class CommentCleanupJobConfig {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager transactionManager;
 
+  private final CommentCleanupJobListener commentCleanupJobListener;
   private final CommentCleanupReader commentCleanupReader;
   private final CommentCleanupWriter commentCleanupWriter;
   private final CommentCleanupStepListener commentCleanupStepListener;
@@ -32,6 +34,7 @@ public class CommentCleanupJobConfig {
   @Bean(name = "commentCleanupJob")
   public Job commentCleanupJob() {
     return new JobBuilder("commentCleanupJob", jobRepository)
+        .listener(commentCleanupJobListener)
         .start(commentCleanupStep()).build();
   }
 

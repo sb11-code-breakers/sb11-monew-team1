@@ -16,7 +16,6 @@ public class NotificationCleanupScheduler {
 
   private final NotificationCleanupService notificationCleanupService;
 
-  @Timed(value = "monew.notification.cleanup.job.duration", description = "만료 알림 정리 배치 Job 전체 소요 시간")
   @Scheduled(cron = "${scheduler.notification-cleanup.cron}", zone = "${scheduler.timezone}")
   public void cleanUpExpiredNotifications() throws Exception {
     log.debug("만료 알림 삭제 스케줄러 실행");

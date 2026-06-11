@@ -33,7 +33,7 @@ public class ArticleBackupStepListener implements StepExecutionListener {
     );
 
     try {
-      articleBackupMetrics.recordDuration(duration);
+      articleBackupMetrics.recordStepDuration(duration);
     } catch (Exception e) {
       log.warn("메트릭 기록 실패 (배치는 계속 진행)", e);
     }

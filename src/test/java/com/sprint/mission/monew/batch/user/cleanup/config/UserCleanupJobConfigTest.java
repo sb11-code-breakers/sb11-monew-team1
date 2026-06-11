@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
+import com.sprint.mission.monew.batch.user.cleanup.listener.UserCleanupJobListener;
 import com.sprint.mission.monew.batch.user.cleanup.listener.UserCleanupStepListener;
 import com.sprint.mission.monew.batch.user.cleanup.reader.UserCleanupReader;
 import com.sprint.mission.monew.batch.user.cleanup.writer.UserCleanupWriter;
@@ -29,16 +30,18 @@ class UserCleanupJobConfigTest {
     @DisplayName("Job, Step 생성 성공")
     void job_step_생성_성공() throws Exception {
       // given
+      UserCleanupJobListener jobListener = mock(UserCleanupJobListener.class);
       UserCleanupReader reader = mock(UserCleanupReader.class);
       UserCleanupWriter writer = mock(UserCleanupWriter.class);
-      UserCleanupStepListener listener = mock(UserCleanupStepListener.class);
+      UserCleanupStepListener stepListener = mock(UserCleanupStepListener.class);
 
       UserCleanupJobConfig config = new UserCleanupJobConfig(
           jobRepository,
           transactionManager,
+          jobListener,
           reader,
           writer,
-          listener
+          stepListener
       );
 
       var field = UserCleanupJobConfig.class.getDeclaredField("chunkSize");

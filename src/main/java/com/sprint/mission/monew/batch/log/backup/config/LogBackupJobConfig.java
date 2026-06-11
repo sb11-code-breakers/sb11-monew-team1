@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.batch.log.backup.config;
 
+import com.sprint.mission.monew.batch.log.backup.listener.LogBackupJobListener;
 import com.sprint.mission.monew.batch.log.backup.listener.LogBackupStepListener;
 import com.sprint.mission.monew.batch.log.backup.processor.LogBackupProcessor;
 import com.sprint.mission.monew.batch.log.backup.reader.LogBackupReader;
@@ -24,6 +25,7 @@ public class LogBackupJobConfig {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager transactionManager;
 
+  private final LogBackupJobListener logBackupJobListener;
   private final LogBackupReader logBackupReader;
   private final LogBackupProcessor logBackupProcessor;
   private final LogBackupWriter logBackupWriter;
@@ -35,6 +37,7 @@ public class LogBackupJobConfig {
   @Bean(name = "logBackupJob")
   public Job logBackupJob() {
     return new JobBuilder("logBackupJob", jobRepository)
+        .listener(logBackupJobListener)
         .start(logBackupStep())
         .build();
   }

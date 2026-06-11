@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.batch.article.backup.config;
 
 import com.sprint.mission.monew.batch.article.backup.dto.ArticleBackupItem;
+import com.sprint.mission.monew.batch.article.backup.listener.ArticleBackupJobListener;
 import com.sprint.mission.monew.batch.article.backup.listener.ArticleBackupStepListener;
 import com.sprint.mission.monew.batch.article.backup.reader.ArticleBackupReader;
 import com.sprint.mission.monew.batch.article.backup.writer.ArticleBackupWriter;
@@ -22,6 +23,7 @@ public class ArticleBackupJobConfig {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager transactionManager;
 
+  private final ArticleBackupJobListener articleBackupJobListener;
   private final ArticleBackupReader articleBackupReader;
   private final ArticleBackupWriter articleBackupWriter;
   private final ArticleBackupStepListener articleBackupStepListener;
@@ -32,6 +34,7 @@ public class ArticleBackupJobConfig {
   @Bean(name = "articleBackupJob")
   public Job articleBackupJob() {
     return new JobBuilder("articleBackupJob", jobRepository)
+        .listener(articleBackupJobListener)
         .start(articleBackupStep())
         .build();
   }

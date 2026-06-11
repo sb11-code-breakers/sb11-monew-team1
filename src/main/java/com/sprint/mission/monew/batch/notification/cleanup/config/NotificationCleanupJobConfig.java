@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.batch.notification.cleanup.config;
 
+import com.sprint.mission.monew.batch.notification.cleanup.listener.NotificationCleanupJobListener;
 import com.sprint.mission.monew.batch.notification.cleanup.reader.NotificationCleanupReader;
 import com.sprint.mission.monew.batch.notification.cleanup.listener.NotificationCleanupStepListener;
 import com.sprint.mission.monew.batch.notification.cleanup.writer.NotificationCleanupWriter;
@@ -22,6 +23,7 @@ public class NotificationCleanupJobConfig {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager transactionManager;
 
+  private final NotificationCleanupJobListener notificationCleanupJobListener;
   private final NotificationCleanupReader notificationCleanupReader;
   private final NotificationCleanupWriter notificationCleanupWriter;
   private final NotificationCleanupStepListener notificationCleanupStepListener;
@@ -32,6 +34,7 @@ public class NotificationCleanupJobConfig {
   @Bean(name = "notificationCleanupJob")
   public Job notificationCleanupJob() {
     return new JobBuilder("notificationCleanupJob", jobRepository)
+        .listener(notificationCleanupJobListener)
         .start(notificationCleanupStep()).build();
   }
 

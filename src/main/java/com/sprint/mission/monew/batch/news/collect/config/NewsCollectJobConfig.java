@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.batch.news.collect.config;
 
 import com.sprint.mission.monew.batch.news.collect.dto.NewsCollectItem;
+import com.sprint.mission.monew.batch.news.collect.listener.NewsCollectJobListener;
 import com.sprint.mission.monew.batch.news.collect.listener.NewsCollectStepListener;
 import com.sprint.mission.monew.batch.news.collect.reader.NewsCollectReader;
 import com.sprint.mission.monew.batch.news.collect.writer.NewsCollectWriter;
@@ -22,6 +23,7 @@ public class NewsCollectJobConfig {
   private final JobRepository jobRepository;
   private final PlatformTransactionManager transactionManager;
 
+  private final NewsCollectJobListener newsCollectJobListener;
   private final NewsCollectReader newsCollectReader;
   private final NewsCollectWriter newsCollectWriter;
   private final NewsCollectStepListener newsCollectStepListener;
@@ -32,6 +34,7 @@ public class NewsCollectJobConfig {
   @Bean(name = "newsCollectJob")
   public Job newsCollectJob() {
     return new JobBuilder("newsCollectJob", jobRepository)
+        .listener(newsCollectJobListener)
         .start(newsCollectStep()).build();
   }
 
