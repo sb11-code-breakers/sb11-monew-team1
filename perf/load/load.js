@@ -1,5 +1,4 @@
 // k6 부하 시나리오 — 한 파일에서 PATTERN(부하 모양) × TARGET(트래픽 대상)을 골라 실행.
-// 시나리오/합격선: docs/perf-scenario-load.md · 측정 방법: docs/perf-scenario-load-howto.md
 // speed/ 의 read·write 함수를 그대로 재사용한다(태그·계약 동일). ID 풀은 perf/extract-ids.sh 산출 사용.
 //
 // 실행 예:
@@ -20,7 +19,7 @@ import {
 } from '../speed/read.js';
 import { createComment, like, articleView } from '../speed/write.js';
 
-// 복합(현실 트래픽 믹스) — 읽기 80% : 쓰기 20% (load.md §4-3)
+// 복합(현실 트래픽 믹스) — 읽기 80% : 쓰기 20%
 export function mix() {
   const r = Math.random();
   if (r < 0.40) articleSearch();        // 기사 목록/검색 40%
@@ -109,7 +108,7 @@ function buildScenario() {
 
 export const options = {
   scenarios: { [PATTERN]: buildScenario() },
-  // load.md §6 합격선. abortOnFail 미설정(기본 false) → stress에서 포화로 FAIL이 떠도 끝까지 돌려
+  // 합격선. abortOnFail 미설정(기본 false) → stress에서 포화로 FAIL이 떠도 끝까지 돌려
   // 단계별 출력에서 "어느 VU/RPS부터 무너지는지" 포화점을 읽는다(stress는 FAIL이 정상 관측).
   thresholds: {
     http_req_failed: ['rate<0.01'],

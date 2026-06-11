@@ -1,4 +1,4 @@
-// 읽기 엔드포인트 R1~R7 (+ 깊은 페이지). 시나리오 정의: docs/perf-scenario-speed.md §3-1.
+// 읽기 엔드포인트 R1~R7 (+ 깊은 페이지).
 // orderBy는 WebMvcConfig 커스텀 컨버터 통과값(publishDate/createdAt/name 등), direction은 ASC|DESC.
 import http from 'k6/http';
 import {

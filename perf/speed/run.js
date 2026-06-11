@@ -1,4 +1,4 @@
-// 속도 측정 실행 — 엔드포인트별 격리 + 합격선 자동 판정. docs/perf-scenario-speed.md §4~5.
+// 속도 측정 실행 — 엔드포인트별 격리 + 합격선 자동 판정.
 //
 // 실행:
 //   cd perf/speed
@@ -50,7 +50,7 @@ targets.forEach((exec, i) => {
 
 export const options = {
   scenarios,
-  // 합격선(speed.md §5) — phase:measure만, 워밍업 제외. 분류별 p95/p99.
+  // 합격선 — phase:measure만, 워밍업 제외. 분류별 p95/p99.
   thresholds: {
     'http_req_failed{phase:measure}': ['rate<0.01'],
     'http_req_duration{phase:measure,category:single}': ['p(95)<100', 'p(99)<250'],

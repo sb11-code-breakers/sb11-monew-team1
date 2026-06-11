@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# 시드된 DB에서 k6 측정용 ID 풀을 추출한다 (docs/perf-scenario-speed-howto.md §3).
+# 시드된 DB에서 k6 측정용 ID 풀을 추출한다.
 #
 # 왜 필요한가:
 #   - 요청에 **실재하는 id**를 써야 한다. 없는 id는 서버가 DB 조회도 없이 404 → "엄청 빠름"이라는 가짜 수치.

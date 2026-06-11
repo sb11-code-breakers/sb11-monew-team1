@@ -1,8 +1,7 @@
 // k6 동시성(정합성) 보조 스크립트 — 같은 자원에 동시 버스트를 쏴 409/500 분포를 관측한다.
-// 시나리오/판정: docs/perf-scenario-concurrency.md · 측정 방법·검증 SQL: docs/perf-scenario-concurrency-howto.md
 //
 // ⚠️ 정합성 "단언"의 1차 도구는 JUnit + CountDownLatch(결정적). 이 스크립트는 **보조 폭격**이고,
-//    데이터 불변식(행 수·카운터)은 실행 후 howto의 검증 SQL로 확인해야 한다(k6는 HTTP 상태 분포만 본다).
+//    데이터 불변식(행 수·카운터)은 실행 후 검증 SQL로 확인해야 한다(k6는 HTTP 상태 분포만 본다).
 //
 // 핵심: http.batch() 로 같은 (user, 자원)에 BURST개 요청을 한 VU에서 병렬 발사 → 서버측 동시성 재현.
 //

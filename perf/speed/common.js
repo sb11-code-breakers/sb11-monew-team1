@@ -1,5 +1,4 @@
 // k6 속도 시나리오 공통 모듈 — ID 풀 로드 · 헤더 · 헬퍼.
-// 측정 방법 전체: docs/perf-scenario-speed-howto.md
 //
 // 환경변수:
 //   BASE_URL   대상(기본 http://localhost:8080 — perf/docker-compose.yml)

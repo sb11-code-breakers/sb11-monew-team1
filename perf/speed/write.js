@@ -1,4 +1,4 @@
-// 쓰기 엔드포인트 W1~W3 (단건 latency). 시나리오: docs/perf-scenario-speed.md §3-2.
+// 쓰기 엔드포인트 W1~W3 (단건 latency).
 // 입력을 매 반복 분산해 유니크 충돌·중복으로 흐름이 끊기지 않게 한다.
 import http from 'k6/http';
 import { BASE, headers, tags, randomUserId, pick, articleIds, comments, expect2xx } from './common.js';

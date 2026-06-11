@@ -1,5 +1,5 @@
 -- 성능 측정용 중간 규모 시드 (유저 1만 · 기사 10만 · 댓글 50만 · 좋아요 100만)
--- 전제: docs/perf-scenario-speed-howto.md §2 — 단건 INSERT 금지, set-based 대량 적재 + 끝에 ANALYZE.
+-- 전제: 단건 INSERT 금지, set-based 대량 적재 + 끝에 ANALYZE.
 --
 -- ⚠️ 운영 DB가 아니라 **성능 측정 전용 DB**(perf/docker-compose.yml의 postgres)에만 실행한다.
 --    운영 DB에 가짜 데이터를 넣으면 안 된다.
@@ -79,7 +79,7 @@ FROM generate_series(1, 1000000) AS s(i),
      (SELECT array_agg(id) AS ids FROM comments) AS c
 ON CONFLICT (user_id, comment_id) DO NOTHING;
 
--- ── 5. 비정규화 카운터 정합화 (howto §2-4) ───────────────────
+-- ── 5. 비정규화 카운터 정합화 ───────────────────────────────
 -- like_count / comment_count를 실제 연결 수와 맞춰 목록 응답이 현실적이게 한다.
 \echo '[seed] 카운터 정합화 + ANALYZE...'
 UPDATE comments c
