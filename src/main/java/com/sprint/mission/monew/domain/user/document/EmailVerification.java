@@ -1,33 +1,31 @@
-package com.sprint.mission.monew.domain.user.entity;
+package com.sprint.mission.monew.domain.user.document;
 
-import com.sprint.mission.monew.common.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "email_verifications")
-@Entity
-public class EmailVerification extends BaseEntity {
+@Document(collection = "email_verifications")
+public class EmailVerification {
 
-  @Column(nullable = false, unique = true)
+  @Id
+  private UUID id;
   private String token;
-
-  @Column(nullable = false)
   private UUID userId;
 
-  @Column(nullable = false)
+  @Indexed(expireAfter = "0s")
   private Instant expiredAt;
 
   public static EmailVerification create(UUID userId) {
     EmailVerification ev = new EmailVerification();
+    ev.id = UUID.randomUUID();
     ev.token = UUID.randomUUID().toString();
     ev.userId = userId;
     ev.expiredAt = Instant.now().plus(24, ChronoUnit.HOURS);

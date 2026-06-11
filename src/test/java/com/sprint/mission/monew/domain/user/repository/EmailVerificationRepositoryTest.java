@@ -2,6 +2,7 @@ package com.sprint.mission.monew.domain.user.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.sprint.mission.monew.common.config.MongoContainerConfig;
 import com.sprint.mission.monew.domain.user.document.EmailVerification;
 import java.time.Instant;
 import java.util.Optional;
@@ -12,10 +13,12 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataMongoTest
 @ActiveProfiles("test")
+@Import(MongoContainerConfig.class)
 class EmailVerificationRepositoryTest {
 
   @Autowired

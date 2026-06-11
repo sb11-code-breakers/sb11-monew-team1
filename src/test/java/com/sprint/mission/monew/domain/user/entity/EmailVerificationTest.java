@@ -1,5 +1,6 @@
 package com.sprint.mission.monew.domain.user.entity;
 
+import com.sprint.mission.monew.domain.user.document.EmailVerification;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.UUID;
