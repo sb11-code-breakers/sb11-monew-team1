@@ -22,14 +22,14 @@ class UserActivityDocumentTest {
       Instant now = Instant.now();
 
       // when
-      // 💡 다이어트 파라미터 적용 (이메일, 닉네임 제거하고 불변 데이터와 ID만 유지)
-      UserActivity activity = UserActivity.of(id, now);
+      UserActivity activity = UserActivity.of(id, "test@test.com", "테스트유저", now);
 
       // then
       assertThat(activity.getId()).isEqualTo(id);
+      assertThat(activity.getEmail()).isEqualTo("test@test.com");
+      assertThat(activity.getNickname()).isEqualTo("테스트유저");
       assertThat(activity.getCreatedAt()).isEqualTo(now);
 
-      // 내부 활동 배열들이 null이 아닌 빈 배열로 잘 초기화되었는지 검증
       assertThat(activity.getSubscriptions()).isEmpty();
       assertThat(activity.getComments()).isEmpty();
       assertThat(activity.getCommentLikes()).isEmpty();

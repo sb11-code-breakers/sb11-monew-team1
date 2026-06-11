@@ -20,24 +20,24 @@ class RecentCommentTest {
       // given
       UUID commentId = UUID.randomUUID();
       UUID articleId = UUID.randomUUID();
+      UUID userId = UUID.randomUUID();
       String articleTitle = "기사 제목";
+      String userNickname = "작성자";
+      String content = "댓글 내용";
       Instant now = Instant.now();
 
       // when
-      RecentComment comment = RecentComment.of(commentId, articleId, articleTitle, now);
+      RecentComment comment = RecentComment.of(commentId, articleId, articleTitle, userId, userNickname, content, 0L, now);
 
       // then
       assertThat(comment.getCommentId()).isEqualTo(commentId);
       assertThat(comment.getArticleId()).isEqualTo(articleId);
       assertThat(comment.getArticleTitle()).isEqualTo(articleTitle);
+      assertThat(comment.getUserId()).isEqualTo(userId);
+      assertThat(comment.getUserNickname()).isEqualTo(userNickname);
+      assertThat(comment.getContent()).isEqualTo(content);
+      assertThat(comment.getLikeCount()).isZero();
       assertThat(comment.getCreatedAt()).isEqualTo(now);
     }
-  }
-
-  @Test
-  @DisplayName("RecentComment는 변동 필드를 포함하지 않아야 한다 (정확히 4개 필드)")
-  void shouldOnlyContainImmutableFields() {
-    // 필드 개수가 정확히 4개(commentId, articleId, articleTitle, createdAt)인지 확인
-    assertThat(RecentComment.class.getDeclaredFields()).hasSize(4);
   }
 }

@@ -10,6 +10,7 @@ import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
 import com.sprint.mission.monew.common.config.MongoContainerConfig;
 import com.sprint.mission.monew.domain.useractivity.repository.impl.UserActivityCustomMongoRepositoryImpl;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +36,28 @@ class UserActivityMongoRepositoryTest {
     mongoTemplate.dropCollection(UserActivity.class);
   }
 
+  private UserActivity newActivity(UUID userId) {
+    return UserActivity.of(userId, "test@test.com", "테스트유저", Instant.now());
+  }
+
+  private RecentComment newComment(UUID commentId, UUID articleId, String title) {
+    return RecentComment.of(commentId, articleId, title, UUID.randomUUID(), "테스트유저", "내용", 0L, Instant.now());
+  }
+
+  private RecentSubscription newSubscription(UUID subscriptionId, UUID interestId, String name) {
+    return RecentSubscription.of(subscriptionId, interestId, name, List.of("키워드"), 1L, Instant.now());
+  }
+
+  private RecentCommentLike newCommentLike(UUID likeId, UUID commentId, UUID articleId, String title) {
+    return RecentCommentLike.of(likeId, Instant.now(), commentId, articleId, title,
+        UUID.randomUUID(), "댓글작성자", "댓글내용", 1L, Instant.now());
+  }
+
+  private RecentArticleView newArticleView(UUID articleViewId, UUID viewedBy, UUID articleId, String title) {
+    return RecentArticleView.of(articleViewId, viewedBy, Instant.now(), articleId,
+        "NAVER", "https://url", title, Instant.now(), "요약", 0L, 1L);
+  }
+
   // ==========================================
   // 1. 유저 라이프사이클 관리 테스트
   // ==========================================
@@ -46,9 +69,9 @@ class UserActivityMongoRepositoryTest {
     @DisplayName("익명화하면 모든 활동 배열이 빈 배열로 초기화된다")
     void 익명화하면_모든_활동_배열이_초기화된다() {
       UUID userId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
-      repository.pushComment(userId, RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사", Instant.now()));
-      repository.pushSubscription(userId, RecentSubscription.of(UUID.randomUUID(), "IT", Instant.now()));
+      repository.createUserActivity(newActivity(userId));
+      repository.pushComment(userId, newComment(UUID.randomUUID(), UUID.randomUUID(), "기사"));
+      repository.pushSubscription(userId, newSubscription(UUID.randomUUID(), UUID.randomUUID(), "IT"));
 
       repository.anonymize(userId);
 
@@ -71,10 +94,10 @@ class UserActivityMongoRepositoryTest {
     @DisplayName("댓글을 push 하면 배열 맨 앞에 추가되며 최대 10개만 유지된다")
     void push_및_최대_10개_유지_검증() {
       UUID userId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
+      repository.createUserActivity(newActivity(userId));
 
       for (int i = 1; i <= 11; i++) {
-        repository.pushComment(userId, RecentComment.of(UUID.randomUUID(), UUID.randomUUID(), "기사" + i, Instant.now()));
+        repository.pushComment(userId, newComment(UUID.randomUUID(), UUID.randomUUID(), "기사" + i));
       }
 
       UserActivity found = repository.findById(userId).orElseThrow();
@@ -87,8 +110,8 @@ class UserActivityMongoRepositoryTest {
     void findById_ID_및_불변필드_확보_검증() {
       UUID userId = UUID.randomUUID();
       UUID commentId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
-      repository.pushComment(userId, RecentComment.of(commentId, UUID.randomUUID(), "불변 기사 제목", Instant.now()));
+      repository.createUserActivity(newActivity(userId));
+      repository.pushComment(userId, newComment(commentId, UUID.randomUUID(), "불변 기사 제목"));
 
       UserActivity found = repository.findById(userId).orElseThrow();
 
@@ -102,8 +125,8 @@ class UserActivityMongoRepositoryTest {
     void 단건_pull_검증() {
       UUID userId = UUID.randomUUID();
       UUID commentId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
-      repository.pushComment(userId, RecentComment.of(commentId, UUID.randomUUID(), "기사", Instant.now()));
+      repository.createUserActivity(newActivity(userId));
+      repository.pushComment(userId, newComment(commentId, UUID.randomUUID(), "기사"));
 
       repository.pullComment(userId, commentId);
 
@@ -115,8 +138,8 @@ class UserActivityMongoRepositoryTest {
     void 연쇄_삭제_Cascade_검증() {
       UUID articleId = UUID.randomUUID();
       UUID userId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
-      repository.pushComment(userId, RecentComment.of(UUID.randomUUID(), articleId, "제목", Instant.now()));
+      repository.createUserActivity(newActivity(userId));
+      repository.pushComment(userId, newComment(UUID.randomUUID(), articleId, "제목"));
 
       repository.pullCommentsByArticleId(articleId);
 
@@ -135,10 +158,10 @@ class UserActivityMongoRepositoryTest {
     @DisplayName("좋아요를 push 하면 배열 맨 앞에 추가되며 최대 10개만 유지된다")
     void push_및_최대_10개_유지_검증() {
       UUID userId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
+      repository.createUserActivity(newActivity(userId));
 
       for (int i = 1; i <= 11; i++) {
-        repository.pushCommentLike(userId, RecentCommentLike.of(UUID.randomUUID(), UUID.randomUUID(), "제목" + i, Instant.now(), Instant.now()));
+        repository.pushCommentLike(userId, newCommentLike(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), "제목" + i));
       }
 
       UserActivity found = repository.findById(userId).orElseThrow();
@@ -151,8 +174,8 @@ class UserActivityMongoRepositoryTest {
     void findById_ID_및_불변필드_확보_검증() {
       UUID userId = UUID.randomUUID();
       UUID commentId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
-      repository.pushCommentLike(userId, RecentCommentLike.of(commentId, UUID.randomUUID(), "좋아요한 기사", Instant.now(), Instant.now()));
+      repository.createUserActivity(newActivity(userId));
+      repository.pushCommentLike(userId, newCommentLike(UUID.randomUUID(), commentId, UUID.randomUUID(), "좋아요한 기사"));
 
       UserActivity found = repository.findById(userId).orElseThrow();
 
@@ -166,8 +189,8 @@ class UserActivityMongoRepositoryTest {
     void 연쇄_삭제_Cascade_검증() {
       UUID articleId = UUID.randomUUID();
       UUID userId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
-      repository.pushCommentLike(userId, RecentCommentLike.of(UUID.randomUUID(), articleId, "제목", Instant.now(), Instant.now()));
+      repository.createUserActivity(newActivity(userId));
+      repository.pushCommentLike(userId, newCommentLike(UUID.randomUUID(), UUID.randomUUID(), articleId, "제목"));
 
       repository.pullCommentLikesByArticleId(articleId);
 
@@ -187,8 +210,8 @@ class UserActivityMongoRepositoryTest {
     void findById_ID_및_불변필드_확보_검증() {
       UUID userId = UUID.randomUUID();
       UUID interestId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
-      repository.pushSubscription(userId, RecentSubscription.of(interestId, "AI", Instant.now()));
+      repository.createUserActivity(newActivity(userId));
+      repository.pushSubscription(userId, newSubscription(UUID.randomUUID(), interestId, "AI"));
 
       UserActivity found = repository.findById(userId).orElseThrow();
 
@@ -202,8 +225,8 @@ class UserActivityMongoRepositoryTest {
     void 단건_pull_검증() {
       UUID userId = UUID.randomUUID();
       UUID interestId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
-      repository.pushSubscription(userId, RecentSubscription.of(interestId, "IT", Instant.now()));
+      repository.createUserActivity(newActivity(userId));
+      repository.pushSubscription(userId, newSubscription(UUID.randomUUID(), interestId, "IT"));
 
       repository.pullSubscription(userId, interestId);
 
@@ -215,8 +238,8 @@ class UserActivityMongoRepositoryTest {
     void 연쇄_삭제_Cascade_검증() {
       UUID interestId = UUID.randomUUID();
       UUID userId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
-      repository.pushSubscription(userId, RecentSubscription.of(interestId, "IT", Instant.now()));
+      repository.createUserActivity(newActivity(userId));
+      repository.pushSubscription(userId, newSubscription(UUID.randomUUID(), interestId, "IT"));
 
       repository.pullSubscriptionsByInterestId(interestId);
 
@@ -235,10 +258,10 @@ class UserActivityMongoRepositoryTest {
     @DisplayName("기사 조회를 push 하면 배열 맨 앞에 추가되며 최대 10개만 유지된다")
     void push_및_최대_10개_유지_검증() {
       UUID userId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
+      repository.createUserActivity(newActivity(userId));
 
       for (int i = 1; i <= 11; i++) {
-        repository.pushArticleView(userId, RecentArticleView.of(UUID.randomUUID(), "NAVER", "https://url", "제목" + i, Instant.now(), "요약", Instant.now()));
+        repository.pushArticleView(userId, newArticleView(UUID.randomUUID(), userId, UUID.randomUUID(), "제목" + i));
       }
 
       UserActivity found = repository.findById(userId).orElseThrow();
@@ -251,8 +274,8 @@ class UserActivityMongoRepositoryTest {
     void findById_ID_및_불변필드_확보_검증() {
       UUID userId = UUID.randomUUID();
       UUID articleId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
-      repository.pushArticleView(userId, RecentArticleView.of(articleId, "NAVER", "https://url", "불변 기사 제목", Instant.now(), "요약", Instant.now()));
+      repository.createUserActivity(newActivity(userId));
+      repository.pushArticleView(userId, newArticleView(UUID.randomUUID(), userId, articleId, "불변 기사 제목"));
 
       UserActivity found = repository.findById(userId).orElseThrow();
 
@@ -266,8 +289,8 @@ class UserActivityMongoRepositoryTest {
     void 연쇄_삭제_Cascade_검증() {
       UUID articleId = UUID.randomUUID();
       UUID userId = UUID.randomUUID();
-      repository.createUserActivity(UserActivity.of(userId, Instant.now()));
-      repository.pushArticleView(userId, RecentArticleView.of(articleId, "NAVER", "https://url", "제목", Instant.now(), "요약", Instant.now()));
+      repository.createUserActivity(newActivity(userId));
+      repository.pushArticleView(userId, newArticleView(UUID.randomUUID(), userId, articleId, "제목"));
 
       repository.pullArticleViewsByArticleId(articleId);
 
