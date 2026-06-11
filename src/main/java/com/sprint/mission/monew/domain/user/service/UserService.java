@@ -45,6 +45,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+// 💡 [수정] 스프링 이벤트 발행 기능 및 생성한 이벤트 클래스 import 추가
+import org.springframework.context.ApplicationEventPublisher;
+import com.sprint.mission.monew.domain.user.event.UserCreatedEvent;
+import com.sprint.mission.monew.domain.user.event.UserDeletedEvent;
+
 @Slf4j
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -61,6 +66,7 @@ public class UserService {
   private final EmailQueue emailQueue;
   private final LoginFailureHandler loginFailureHandler;
   private final LoginSuccessHandler loginSuccessHandler;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Value("${monew.session.timeout-minutes}")
   private int sessionTimeoutMinutes;
@@ -74,6 +80,9 @@ public class UserService {
     User user = User.create(request.email(), request.nickname(),
         passwordEncoder.encode(request.password()));
     User saved = userRepository.save(user);
+
+    // 💡 [수정] PostgreSQL 저장 성공 직후, MongoDB 활동 로그 초기 생성을 위한 이벤트 발행
+    eventPublisher.publishEvent(new UserCreatedEvent(saved.getId(), saved.getEmail()));
 
     EmailVerification verification = EmailVerification.create(saved.getId());
     EmailVerification savedVerification = emailVerificationRepository.save(verification);
@@ -200,6 +209,10 @@ public class UserService {
     User user = userRepository.findByIdAndDeletedAtIsNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
     user.softDelete();
+
+    // 💡 [수정] 유저 소프트딜리트 반영 직후, MongoDB 쪽 도큐먼트 정리를 위한 이벤트 발행
+    eventPublisher.publishEvent(new UserDeletedEvent(userId));
+
     if (TransactionSynchronizationManager.isSynchronizationActive()) {
       TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
         @Override

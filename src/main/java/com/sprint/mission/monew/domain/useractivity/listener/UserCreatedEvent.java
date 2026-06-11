@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.useractivity.listener;
 
-import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
+import java.time.Instant;
+import java.util.UUID;
 
-public record UserCreatedEvent(UserActivity userActivity) {
+public record UserCreatedEvent(UUID userId, Instant createdAt) {
 }

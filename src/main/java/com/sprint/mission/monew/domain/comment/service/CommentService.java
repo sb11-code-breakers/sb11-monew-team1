@@ -1,4 +1,4 @@
-package com.sprint.mission.monew.domain.comment.service;
+\package com.sprint.mission.monew.domain.comment.service;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.article.entity.Article;
@@ -26,6 +26,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// 💡 [수정] 스프링 이벤트 발행 및 댓글 작성 이벤트 클래스 import 추가
+import org.springframework.context.ApplicationEventPublisher;
+import com.sprint.mission.monew.domain.comment.event.CommentCreatedEvent;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -37,6 +41,7 @@ public class CommentService {
   private final UserRepository userRepository;
   private final CommentLikeRepository commentLikeRepository;
   private final CommentMapper commentMapper;
+  private final ApplicationEventPublisher eventPublisher; // 💡 [수정] 이벤트 퍼블리셔 주입 추가
 
   @Transactional
   public CommentResponse create(CommentCreateRequest request) {
@@ -53,6 +58,16 @@ public class CommentService {
     Comment comment = Comment.create(article, user, request.content());
     Comment savedComment = commentRepository.save(comment);
     articleRepository.increaseCommentCount(request.articleId());
+
+    // 💡 [수정] 댓글 작성 이벤트 발행 (MongoDB comments 배열에 10건 제한 저장 트리거)
+    // 리스너가 대상 유저의 도큐먼트를 찾을 수 있도록 10건 메타데이터 외에 userId를 함께 실어 보냅니다.
+    eventPublisher.publishEvent(new CommentCreatedEvent(
+        user.getId(),
+        savedComment.getId(),
+        article.getId(),
+        article.getTitle(),
+        savedComment.getCreatedAt()
+    ));
 
     log.info("댓글 생성 완료 | commentId={}, articleId={}, userId={}",
         savedComment.getId(), request.articleId(), request.userId());

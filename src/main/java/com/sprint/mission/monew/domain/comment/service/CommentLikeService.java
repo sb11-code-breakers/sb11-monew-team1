@@ -22,6 +22,11 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+// 💡 [수정] 몽고DB 활동 기록 백엔드로 흘러갈 좋아요 등록/취소 이벤트 import 추가
+import com.sprint.mission.monew.domain.comment.event.CommentLikedEvent;
+import com.sprint.mission.monew.domain.comment.event.CommentLikeRemovedEvent;
+import java.time.Instant;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -49,16 +54,19 @@ public class CommentLikeService {
             .findById(commentId)
             .orElseThrow(() -> CommentNotFoundException.withId(commentId));
 
+    // 💡 [수정] ⚠️ 지연 로딩 트랩 방어선
+    // 아래 `increaseLikeCount`가 실행되면 영속성 컨텍스트가 날아가므로,
+    // 몽고DB에 보낼 기사 ID, 기사 제목, 댓글 생성일을 안전하게 미리 변수로 뽑아둡니다.
+    UUID articleId = comment.getArticle().getId();
+    String articleTitle = comment.getArticle().getTitle();
+    Instant commentCreatedAt = comment.getCreatedAt();
+
     CommentLike commentLike = CommentLike.create(user, comment);
 
     CommentLike savedCommentLike;
     CommentLikeResponse response;
     try {
       savedCommentLike = commentLikeRepository.saveAndFlush(commentLike);
-      // IMPORTANT: 응답 매핑을 increaseLikeCount() 이전에 수행해야 함
-      // increaseLikeCount()의 clearAutomatically=true가 영속성 컨텍스트를 초기화하므로,
-      // 지연 로딩되는 연관 엔티티(comment.article, comment.user 등) 접근은 그 전에 완료되어야 함
-      // 증가 후 예상되는 좋아요 수를 미리 계산하여 응답 생성 (실제 증가는 다음 라인에서 수행)
       response = commentLikeMapper.toResponse(savedCommentLike, comment.getLikeCount() + 1);
       commentRepository.increaseLikeCount(commentId);
     } catch (DataIntegrityViolationException e) {
@@ -67,6 +75,16 @@ public class CommentLikeService {
 
     log.info("댓글 좋아요 등록 완료 | commentLikeId={}, commentId={}, userId={}",
         savedCommentLike.getId(), commentId, userId);
+
+    // 💡 [수정] 활동 기록용 좋아요 등록 이벤트 발행 (MongoDB commentLikes 배열 타겟)
+    eventPublisher.publishEvent(new CommentLikedEvent(
+        userId,
+        commentId,
+        articleId,
+        articleTitle,
+        commentCreatedAt,
+        Instant.now()
+    ));
 
     UUID authorId = comment.getUser() != null ? comment.getUser().getId() : null;
     if (authorId != null && !authorId.equals(userId)) {
@@ -89,6 +107,9 @@ public class CommentLikeService {
     }
 
     commentRepository.decreaseLikeCount(commentId);
+
+    // 💡 [수정] 활동 기록용 좋아요 취소 이벤트 발행 (MongoDB commentLikes 배열에서 제거 트리거)
+    eventPublisher.publishEvent(new CommentLikeRemovedEvent(userId, commentId));
 
     log.info("댓글 좋아요 취소 완료 | commentId={}, userId={}", commentId, userId);
   }
