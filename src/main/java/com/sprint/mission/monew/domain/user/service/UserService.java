@@ -49,6 +49,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.context.ApplicationEventPublisher;
 import com.sprint.mission.monew.domain.useractivity.listener.UserCreatedEvent;
 import com.sprint.mission.monew.domain.useractivity.listener.UserDeletedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.UserNicknameUpdatedEvent;
 
 @Slf4j
 @Transactional(readOnly = true)
@@ -81,8 +82,8 @@ public class UserService {
         passwordEncoder.encode(request.password()));
     User saved = userRepository.save(user);
 
-    // 💡 [수정] PostgreSQL 저장 성공 직후, MongoDB 활동 로그 초기 생성을 위한 이벤트 발행
-    eventPublisher.publishEvent(new UserCreatedEvent(saved.getId(), Instant.now()));
+    log.debug("UserCreatedEvent 발행 | userId={}, nickname={}", saved.getId(), saved.getNickname());
+    eventPublisher.publishEvent(new UserCreatedEvent(saved.getId(), saved.getEmail(), saved.getNickname(), Instant.now()));
 
     EmailVerification verification = EmailVerification.create(saved.getId());
     EmailVerification savedVerification = emailVerificationRepository.save(verification);
@@ -160,6 +161,8 @@ public class UserService {
     User user = userRepository.findByIdAndDeletedAtIsNull(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
     user.updateNickname(request.nickname());
+    log.debug("UserNicknameUpdatedEvent 발행 | userId={}, nickname={}", userId, request.nickname());
+    eventPublisher.publishEvent(new UserNicknameUpdatedEvent(userId, request.nickname()));
     log.info("닉네임 수정 완료 | userId={}", userId);
     return userMapper.toResponse(user);
   }
@@ -210,7 +213,7 @@ public class UserService {
         .orElseThrow(() -> UserNotFoundException.withId(userId));
     user.softDelete();
 
-    // 💡 [수정] 유저 소프트딜리트 반영 직후, MongoDB 쪽 도큐먼트 정리를 위한 이벤트 발행
+    log.debug("UserDeletedEvent 발행 | userId={}", userId);
     eventPublisher.publishEvent(new UserDeletedEvent(userId));
 
     if (TransactionSynchronizationManager.isSynchronizationActive()) {
