@@ -2,7 +2,7 @@ package com.sprint.mission.monew.domain.notification.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sprint.mission.monew.batch.dto.NotificationCleanupItem;
+import com.sprint.mission.monew.batch.notification.cleanup.dto.NotificationCleanupItem;
 import com.sprint.mission.monew.common.config.JpaConfig;
 import com.sprint.mission.monew.common.config.QuerydslConfig;
 import com.sprint.mission.monew.common.dto.CursorPageResponse;

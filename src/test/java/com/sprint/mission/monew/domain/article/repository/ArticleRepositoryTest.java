@@ -3,7 +3,7 @@ package com.sprint.mission.monew.domain.article.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import com.sprint.mission.monew.batch.dto.ArticleBackupItem;
+import com.sprint.mission.monew.batch.article.backup.dto.ArticleBackupItem;
 import com.sprint.mission.monew.common.config.JpaConfig;
 import com.sprint.mission.monew.common.config.QuerydslConfig;
 import com.sprint.mission.monew.common.dto.SortDirection;

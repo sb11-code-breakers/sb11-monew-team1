@@ -2,7 +2,7 @@ package com.sprint.mission.monew.domain.comment.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sprint.mission.monew.batch.dto.CommentCleanupItem;
+import com.sprint.mission.monew.batch.comment.cleanup.dto.CommentCleanupItem;
 import com.sprint.mission.monew.common.config.JpaConfig;
 import com.sprint.mission.monew.common.config.QuerydslConfig;
 import com.sprint.mission.monew.common.dto.CursorPageResponse;

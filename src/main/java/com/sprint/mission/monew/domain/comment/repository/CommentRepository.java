@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.domain.comment.repository;
 
-import com.sprint.mission.monew.batch.dto.CommentCleanupItem;
+import com.sprint.mission.monew.batch.comment.cleanup.dto.CommentCleanupItem;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.repository.querydsl.CommentCustomRepository;
 import java.time.Instant;
@@ -38,7 +38,7 @@ public interface CommentRepository extends JpaRepository<Comment, UUID>, Comment
   void decreaseLikeCount(UUID commentId);
 
   @Query("""
-      SELECT new com.sprint.mission.monew.batch.dto.CommentCleanupItem(
+      SELECT new com.sprint.mission.monew.batch.comment.cleanup.dto.CommentCleanupItem(
           c.id,
           c.deletedAt
       )
