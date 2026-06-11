@@ -3,6 +3,7 @@ package com.sprint.mission.monew.common.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sprint.mission.monew.common.dto.ErrorResponse;
 import com.sprint.mission.monew.common.exception.CommonErrorCode;
+import com.sprint.mission.monew.common.util.RequestUtils;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
@@ -19,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -41,6 +43,23 @@ public class RateLimitFilter implements Filter {
 
   private final AntPathMatcher pathMatcher = new AntPathMatcher();
   private final ObjectMapper objectMapper;
+
+  // IP 기반 Rate Limit 규칙
+  private static final List<RateLimitRule> IP_RULES = List.of(
+      new RateLimitRule("POST", "/api/users/login", "login", 3, Duration.ofMinutes(1)),
+      new RateLimitRule("POST", "/api/users", "signup", 5, Duration.ofHours(1)),
+      new RateLimitRule("POST", "/api/users/password-reset", "pwreset", 3, Duration.ofHours(1)),
+      new RateLimitRule("POST", "/api/users/password/reset", "pwreset", 3, Duration.ofHours(1)),
+      new RateLimitRule("POST", "/api/users/unlock", "unlock", 3, Duration.ofHours(1))
+  );
+
+  // userId 기반 Rate Limit 규칙
+  private static final List<RateLimitRule> USER_RULES = List.of(
+      new RateLimitRule("GET", "/api/articles", "articles", 120, Duration.ofMinutes(1)),
+      new RateLimitRule("GET", "/api/notifications", "notifications", 60, Duration.ofMinutes(1)),
+      new RateLimitRule("POST", "/api/comments", "comments", 10, Duration.ofMinutes(1)),
+      new RateLimitRule("POST", "/api/comments/*/likes", "comment-likes", 30, Duration.ofMinutes(1))
+  );
 
   private final Map<String, Bucket> ipBuckets = Collections.synchronizedMap(
       new LinkedHashMap<>(1000, 0.75f, true) {
@@ -114,7 +133,7 @@ public class RateLimitFilter implements Filter {
 
     String path = request.getRequestURI();
     String method = request.getMethod();
-    String ip = getClientIp(request);
+    String ip = RequestUtils.resolveClientIp(request);
     String userIdHeader = request.getHeader("Monew-Request-User-ID");
 
     UUID userId = parseUserId(userIdHeader);
@@ -150,70 +169,36 @@ public class RateLimitFilter implements Filter {
   }
 
   private Bucket resolveBucket(String path, String method, String ip, UUID userId) {
-    if ("POST".equals(method) && pathMatcher.match("/api/users/login", path)) {
-      return ipBuckets.computeIfAbsent("login:" + ip,
-          k -> Bucket.builder()
-              .addLimit(Bandwidth.classic(3, Refill.greedy(3, Duration.ofMinutes(1))))
-              .build());
+    // IP 기반 규칙 매칭
+    for (RateLimitRule rule : IP_RULES) {
+      if (rule.method().equals(method) && pathMatcher.match(rule.path(), path)) {
+        String key = userId != null ? userId.toString() : ip;
+        return ipBuckets.computeIfAbsent(rule.prefix() + ":" + key,
+            k -> Bucket.builder()
+                .addLimit(Bandwidth.classic(rule.limit(),
+                    Refill.greedy(rule.limit(), rule.duration())))
+                .build());
+      }
     }
-    if ("POST".equals(method) && pathMatcher.match("/api/users", path)) {
-      return ipBuckets.computeIfAbsent("signup:" + ip,
-          k -> Bucket.builder()
-              .addLimit(Bandwidth.classic(5, Refill.greedy(5, Duration.ofHours(1))))
-              .build());
-    }
-    if ("POST".equals(method) && (
-        pathMatcher.match("/api/users/password-reset", path)
-            || pathMatcher.match("/api/users/password/reset", path))) {
-      String key = userId != null ? userId.toString() : ip;
-      return ipBuckets.computeIfAbsent("pwreset:" + key,
-          k -> Bucket.builder()
-              .addLimit(Bandwidth.classic(3, Refill.greedy(3, Duration.ofHours(1))))
-              .build());
-    }
-    if ("POST".equals(method) && pathMatcher.match("/api/users/unlock", path)) {
-      String key = userId != null ? userId.toString() : ip;
-      return ipBuckets.computeIfAbsent("unlock:" + key,
-          k -> Bucket.builder()
-              .addLimit(Bandwidth.classic(3, Refill.greedy(3, Duration.ofHours(1))))
-              .build());
-    }
-    if ("GET".equals(method) && pathMatcher.match("/api/articles", path)) {
-      if (userId == null) return null;
-      return userBuckets.computeIfAbsent("articles:" + userId,
-          k -> Bucket.builder()
-              .addLimit(Bandwidth.classic(120, Refill.greedy(120, Duration.ofMinutes(1))))
-              .build());
-    }
-    if ("GET".equals(method) && pathMatcher.match("/api/notifications", path)) {
-      if (userId == null) return null;
-      return userBuckets.computeIfAbsent("notifications:" + userId,
-          k -> Bucket.builder()
-              .addLimit(Bandwidth.classic(60, Refill.greedy(60, Duration.ofMinutes(1))))
-              .build());
-    }
-    if ("POST".equals(method) && pathMatcher.match("/api/comments", path)) {
-      if (userId == null) return null;
-      return userBuckets.computeIfAbsent("comments:" + userId,
-          k -> Bucket.builder()
-              .addLimit(Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1))))
-              .build());
-    }
-    if ("POST".equals(method) && pathMatcher.match("/api/comments/*/likes", path)) {
-      if (userId == null) return null;
-      return userBuckets.computeIfAbsent("comment-likes:" + userId,
-          k -> Bucket.builder()
-              .addLimit(Bandwidth.classic(30, Refill.greedy(30, Duration.ofMinutes(1))))
-              .build());
+    // userId 기반 규칙 매칭
+    for (RateLimitRule rule : USER_RULES) {
+      if (rule.method().equals(method) && pathMatcher.match(rule.path(), path)) {
+        if (userId == null) return null;
+        return userBuckets.computeIfAbsent(rule.prefix() + ":" + userId,
+            k -> Bucket.builder()
+                .addLimit(Bandwidth.classic(rule.limit(),
+                    Refill.greedy(rule.limit(), rule.duration())))
+                .build());
+      }
     }
     return null;
   }
 
-  private String getClientIp(HttpServletRequest request) {
-    String ip = request.getHeader("X-Forwarded-For");
-    if (ip != null && !ip.isEmpty()) {
-      return ip.split(",")[0].trim();
-    }
-    return request.getRemoteAddr();
-  }
+  private record RateLimitRule(
+      String method,
+      String path,
+      String prefix,
+      int limit,
+      Duration duration
+  ) {}
 }
