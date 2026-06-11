@@ -62,7 +62,7 @@ public class ArticleService {
         .filter(a -> !a.isDeleted())
         .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
     article.softDelete();
-
+    log.debug("ArticleDeletedEvent 발행 | articleId={}", articleId);
     eventPublisher.publishEvent(new ArticleDeletedEvent(articleId));
 
     log.info("기사 논리 삭제 완료 | articleId={}", articleId);
@@ -81,16 +81,19 @@ public class ArticleService {
           ArticleView saved = articleViewRepository.save(ArticleView.create(userId, article));
           articleRepository.increaseViewCount(articleId);
 
-          // 💡 [교정 완료] Enum 타입 형변환(.name()) 및 정확한 Getter명(getPublishDate()) 적용
+          log.debug("ArticleViewedEvent 발행 | articleId={}, userId={}", articleId, userId);
           eventPublisher.publishEvent(new ArticleViewedEvent(
               userId,
+              saved.getId(),
               Instant.now(),
               articleId,
               article.getSource().name(),
               article.getSourceUrl(),
               article.getTitle(),
               article.getPublishDate(),
-              article.getSummary()
+              article.getSummary(),
+              article.getCommentCount(),
+              article.getViewCount() + 1
           ));
 
           log.info("기사 조회 등록 완료 | articleId={}, userId={}", articleId, userId);

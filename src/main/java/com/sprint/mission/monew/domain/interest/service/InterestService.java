@@ -64,6 +64,7 @@ public class InterestService {
     Interest interest = interestRepository.findById(id)
         .orElseThrow(() -> InterestNotFoundException.withId(id));
     interestRepository.delete(interest);
+    log.debug("InterestDeletedEvent 발행 | interestId={}", id);
     eventPublisher.publishEvent(new InterestDeletedEvent(id));
     log.info("관심사 물리 삭제 완료 | interestId={}", id);
   }

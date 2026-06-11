@@ -60,6 +60,9 @@ public class CommentLikeService {
     UUID articleId = comment.getArticle().getId();
     String articleTitle = comment.getArticle().getTitle();
     Instant commentCreatedAt = comment.getCreatedAt();
+    UUID commentUserId = comment.getUser().getId();
+    String commentUserNickname = comment.getUser().getNickname();
+    String commentContent = comment.getContent();
 
     CommentLike commentLike = CommentLike.create(user, comment);
 
@@ -76,14 +79,18 @@ public class CommentLikeService {
     log.info("댓글 좋아요 등록 완료 | commentLikeId={}, commentId={}, userId={}",
         savedCommentLike.getId(), commentId, userId);
 
-    // 💡 [수정] 활동 기록용 좋아요 등록 이벤트 발행 (MongoDB commentLikes 배열 타겟)
+    log.debug("CommentLikedEvent 발행 | commentId={}, userId={}", commentId, userId);
     eventPublisher.publishEvent(new CommentLikedEvent(
         userId,
-        savedCommentLike.getId(), // 💡 누락되었던 likeId 매핑
-        Instant.now(),            // 💡 레코드의 3번째 인자인 이벤트 생성일(createdAt)
+        savedCommentLike.getId(),
+        Instant.now(),
         commentId,
         articleId,
         articleTitle,
+        commentUserId,
+        commentUserNickname,
+        commentContent,
+        comment.getLikeCount() + 1,
         commentCreatedAt
     ));
 
@@ -109,7 +116,7 @@ public class CommentLikeService {
 
     commentRepository.decreaseLikeCount(commentId);
 
-    // 💡 [수정] 활동 기록용 좋아요 취소 이벤트 발행 (MongoDB commentLikes 배열에서 제거 트리거)
+    log.debug("CommentLikeRemovedEvent 발행 | commentId={}, userId={}", commentId, userId);
     eventPublisher.publishEvent(new CommentLikeRemovedEvent(userId, commentId));
 
     log.info("댓글 좋아요 취소 완료 | commentId={}, userId={}", commentId, userId);

@@ -29,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 // 💡 [수정] 스프링 이벤트 발행 및 댓글 작성 이벤트 클래스 import 추가
 import org.springframework.context.ApplicationEventPublisher;
 import com.sprint.mission.monew.domain.useractivity.listener.CommentCreatedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.CommentUpdatedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.CommentDeletedEvent;
 
 @Slf4j
 @Service
@@ -59,13 +61,15 @@ public class CommentService {
     Comment savedComment = commentRepository.save(comment);
     articleRepository.increaseCommentCount(request.articleId());
 
-    // 💡 [수정] 댓글 작성 이벤트 발행 (MongoDB comments 배열에 10건 제한 저장 트리거)
-    // 리스너가 대상 유저의 도큐먼트를 찾을 수 있도록 10건 메타데이터 외에 userId를 함께 실어 보냅니다.
+    log.debug("CommentCreatedEvent 발행 | commentId={}, userId={}", savedComment.getId(), user.getId());
     eventPublisher.publishEvent(new CommentCreatedEvent(
         user.getId(),
         savedComment.getId(),
         article.getId(),
         article.getTitle(),
+        savedComment.getContent(),
+        user.getNickname(),
+        0L,
         savedComment.getCreatedAt()
     ));
 
@@ -89,6 +93,8 @@ public class CommentService {
     }
 
     comment.updateContent(request.content());
+    log.debug("CommentUpdatedEvent 발행 | commentId={}", commentId);
+    eventPublisher.publishEvent(new CommentUpdatedEvent(commentId, request.content()));
 
     log.info("댓글 수정 완료 | commentId={}, userId={}", commentId, userId);
 
@@ -111,6 +117,8 @@ public class CommentService {
       UUID articleId = comment.getArticle().getId();
       comment.softDelete();
       articleRepository.decreaseCommentCount(articleId);
+      log.debug("CommentDeletedEvent 발행 | commentId={}, authorId={}", commentId, userId);
+      eventPublisher.publishEvent(new CommentDeletedEvent(userId, commentId));
     }
 
     log.info("댓글 논리 삭제 완료 | commentId={}, userId={}", commentId, userId);
