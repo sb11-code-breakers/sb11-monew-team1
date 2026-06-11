@@ -1,33 +1,32 @@
-package com.sprint.mission.monew.domain.user.entity;
+package com.sprint.mission.monew.domain.user.document;
 
-import com.sprint.mission.monew.common.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Getter
-@NoArgsConstructor
-@Entity
-@Table(name = "password_reset_tokens")
-public class PasswordResetToken extends BaseEntity {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Document(collection = "password_reset_tokens")
+public class PasswordResetToken {
 
   private static final long EXPIRY_HOURS = 1;
 
-  @Column(nullable = false)
+  @Id
+  private UUID id;
   private UUID userId;
-
-  @Column(nullable = false, unique = true)
   private String code;
 
-  @Column(nullable = false)
+  @Indexed(expireAfter = "0s")
   private Instant expiredAt;
 
   public static PasswordResetToken create(UUID userId) {
     PasswordResetToken token = new PasswordResetToken();
+    token.id = UUID.randomUUID();
     token.userId = userId;
     token.code = UUID.randomUUID().toString();
     token.expiredAt = Instant.now().plusSeconds(EXPIRY_HOURS * 3600);
