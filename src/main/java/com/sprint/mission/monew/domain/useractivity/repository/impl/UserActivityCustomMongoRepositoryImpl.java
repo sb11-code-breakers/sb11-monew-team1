@@ -31,6 +31,13 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
   }
 
   @Override
+  public void updateNickname(UUID userId, String nickname) {
+    Query query = Query.query(Criteria.where("_id").is(userId));
+    Update update = new Update().set("nickname", nickname);
+    mongoTemplate.updateFirst(query, update, UserActivity.class);
+  }
+
+  @Override
   public void anonymize(UUID userId) {
     Query query = Query.query(Criteria.where("_id").is(userId));
     // 텍스트 변경 대신 활동 내역 자체를 완전히 파기(초기화)
@@ -53,6 +60,13 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
   // ==========================================
   // 2. 활동 추가 (맨 앞에 넣고 10개 유지 - Genius Move!)
   // ==========================================
+
+  @Override
+  public void updateCommentContent(UUID commentId, String content) {
+    Query query = new Query(Criteria.where("comments.commentId").is(commentId));
+    Update update = new Update().set("comments.$.content", content);
+    mongoTemplate.updateFirst(query, update, UserActivity.class);
+  }
 
   @Override
   public void pushComment(UUID userId, RecentComment comment) {

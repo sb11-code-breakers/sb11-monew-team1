@@ -9,10 +9,12 @@ import java.util.UUID;
 
 public interface UserActivityCustomMongoRepository {
   void createUserActivity(UserActivity userActivity);
+  void updateNickname(UUID userId, String nickname);
   void anonymize(UUID userId);
   void anonymizeCommentLikesByCommentUserId(UUID userId);
 
   void pushComment(UUID userId, RecentComment comment);
+  void updateCommentContent(UUID commentId, String content);
   void pushSubscription(UUID userId, RecentSubscription subscription);
   void pushCommentLike(UUID userId, RecentCommentLike commentLike);
   void pushArticleView(UUID userId, RecentArticleView articleView);

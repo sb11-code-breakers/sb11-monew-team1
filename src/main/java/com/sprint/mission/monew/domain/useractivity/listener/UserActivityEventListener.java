@@ -7,10 +7,12 @@ import com.sprint.mission.monew.domain.useractivity.document.RecentSubscription;
 import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
 import com.sprint.mission.monew.domain.useractivity.repository.UserActivityMongoRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class UserActivityEventListener {
@@ -19,23 +21,33 @@ public class UserActivityEventListener {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(UserCreatedEvent event) {
-    // 💡 [수정] UserCreatedEvent가 순수 팩트(UUID userId, Instant createdAt) 구조로 다이어트됨에 따라
-    // 더 이상 존재하지 않는 event.userActivity() 호출부 제거 후, 식별자를 통해 초기 빈 도큐먼트를 생성하도록 교정
-    UserActivity userActivity = UserActivity.of(event.userId(),event.createdAt());
+    log.debug("UserActivity 생성 | userId={}", event.userId());
+    UserActivity userActivity = UserActivity.of(event.userId(), event.email(), event.nickname(), event.createdAt());
     userActivityMongoRepository.createUserActivity(userActivity);
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(UserDeletedEvent event) {
+    log.debug("UserActivity 익명화 | userId={}", event.userId());
     userActivityMongoRepository.anonymize(event.userId());
     userActivityMongoRepository.anonymizeCommentLikesByCommentUserId(event.userId());
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(UserNicknameUpdatedEvent event) {
+    log.debug("UserActivity 닉네임 업데이트 | userId={}", event.userId());
+    userActivityMongoRepository.updateNickname(event.userId(), event.nickname());
+  }
+
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(SubscriptionCreatedEvent event) {
+    log.debug("구독 push | userId={}, interestId={}", event.userId(), event.interestId());
     RecentSubscription subscription = RecentSubscription.of(
+        event.subscriptionId(),
         event.interestId(),
         event.interestName(),
+        event.interestKeywords(),
+        event.interestSubscriberCount(),
         event.createdAt()
     );
     userActivityMongoRepository.pushSubscription(event.userId(), subscription);
@@ -43,49 +55,65 @@ public class UserActivityEventListener {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(SubscriptionCancelledEvent event) {
+    log.debug("구독 pull | userId={}, interestId={}", event.userId(), event.interestId());
     userActivityMongoRepository.pullSubscription(event.userId(), event.interestId());
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(CommentCreatedEvent event) {
+    log.debug("댓글 push | userId={}, commentId={}", event.userId(), event.commentId());
     RecentComment comment = RecentComment.of(
-        event.commentId(), event.articleId(), event.articleTitle(), event.createdAt()
+        event.commentId(), event.articleId(), event.articleTitle(),
+        event.userId(), event.userNickname(), event.content(), event.likeCount(), event.createdAt()
     );
     userActivityMongoRepository.pushComment(event.userId(), comment);
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(CommentUpdatedEvent event) {
+    log.debug("댓글 content 업데이트 | commentId={}", event.commentId());
+    userActivityMongoRepository.updateCommentContent(event.commentId(), event.content());
+  }
+
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(CommentDeletedEvent event) {
+    log.debug("댓글 pull | authorId={}, commentId={}", event.authorId(), event.commentId());
+    userActivityMongoRepository.pullComment(event.authorId(), event.commentId());
+  }
+
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(CommentLikedEvent event) {
-    // RecentCommentLike.of에 commentCreatedAt을 추가로 전달
+    log.debug("댓글 좋아요 push | userId={}, commentId={}", event.userId(), event.commentId());
     RecentCommentLike commentLike = RecentCommentLike.of(
-        event.commentId(),
-        event.articleId(),
-        event.articleTitle(),
-        event.commentCreatedAt(),
-        event.createdAt()
+        event.likeId(), event.createdAt(),
+        event.commentId(), event.articleId(), event.articleTitle(),
+        event.commentUserId(), event.commentUserNickname(), event.commentContent(),
+        event.commentLikeCount(), event.commentCreatedAt()
     );
     userActivityMongoRepository.pushCommentLike(event.userId(), commentLike);
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(CommentLikeRemovedEvent event) {
+    log.debug("댓글 좋아요 pull | userId={}, commentId={}", event.userId(), event.commentId());
     userActivityMongoRepository.pullCommentLike(event.userId(), event.commentId());
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(ArticleViewedEvent event) {
-    // 💡 [수정] 아래 첨부해주신 레코드 규격(createdAt이 2번째 순서)의 데이터 게터를 활용하여
-    // RecentArticleView 생성 모델 내부 파라미터 매핑을 결함 없이 온전하게 유지합니다.
+    log.debug("기사 조회 push | userId={}, articleId={}", event.userId(), event.articleId());
     RecentArticleView articleView = RecentArticleView.of(
+        event.articleViewId(), event.userId(), event.createdAt(),
         event.articleId(), event.source(), event.sourceUrl(), event.articleTitle(),
-        event.articlePublishedDate(), event.articleSummary(), event.createdAt()
+        event.articlePublishedDate(), event.articleSummary(),
+        event.articleCommentCount(), event.articleViewCount()
     );
     userActivityMongoRepository.pushArticleView(event.userId(), articleView);
   }
 
-  // 💡 게시글 삭제 시 RDB 정합성을 위해 몽고DB 연쇄 삭제 로직으로 변경
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(ArticleDeletedEvent event) {
+    log.debug("기사 삭제 cascade | articleId={}", event.articleId());
     userActivityMongoRepository.pullArticleViewsByArticleId(event.articleId());
     userActivityMongoRepository.pullCommentsByArticleId(event.articleId());
     userActivityMongoRepository.pullCommentLikesByArticleId(event.articleId());
@@ -93,6 +121,7 @@ public class UserActivityEventListener {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(InterestDeletedEvent event) {
+    log.debug("관심사 삭제 cascade | interestId={}", event.interestId());
     userActivityMongoRepository.pullSubscriptionsByInterestId(event.interestId());
   }
 }
