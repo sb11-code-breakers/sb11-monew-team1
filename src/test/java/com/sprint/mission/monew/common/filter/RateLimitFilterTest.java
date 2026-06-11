@@ -205,12 +205,18 @@ class RateLimitFilterTest {
     }
 
     @Test
-    @DisplayName("슬래시 경로도 한도 적용")
-    void 슬래시_경로도_한도_적용() throws Exception {
+    @DisplayName("슬래시 경로도 한도 초과 시 429 반환")
+    void 슬래시_경로도_한도_초과_시_429_반환() throws Exception {
+      String userId = UUID.randomUUID().toString();
+      for (int i = 0; i < 3; i++) {
+        mockMvc.perform(post("/api/users/password/reset")
+                .header("Monew-Request-User-ID", userId))
+            .andExpect(status().isOk());
+      }
       mockMvc
           .perform(post("/api/users/password/reset")
-              .header("Monew-Request-User-ID", UUID.randomUUID().toString()))
-          .andExpect(status().isOk());
+              .header("Monew-Request-User-ID", userId))
+          .andExpect(status().isTooManyRequests());
     }
 
     @Test

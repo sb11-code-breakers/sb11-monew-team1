@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 
@@ -44,21 +45,24 @@ public class RateLimitFilter implements Filter {
   private final AntPathMatcher pathMatcher = new AntPathMatcher();
   private final ObjectMapper objectMapper;
 
-  // IP 기반 Rate Limit 규칙
+  private enum KeyStrategy {
+    IP_ONLY,
+    USER_ID_OR_IP
+  }
+
   private static final List<RateLimitRule> IP_RULES = List.of(
-      new RateLimitRule("POST", "/api/users/login", "login", 3, Duration.ofMinutes(1)),
-      new RateLimitRule("POST", "/api/users", "signup", 5, Duration.ofHours(1)),
-      new RateLimitRule("POST", "/api/users/password-reset", "pwreset", 3, Duration.ofHours(1)),
-      new RateLimitRule("POST", "/api/users/password/reset", "pwreset", 3, Duration.ofHours(1)),
-      new RateLimitRule("POST", "/api/users/unlock", "unlock", 3, Duration.ofHours(1))
+      new RateLimitRule(HttpMethod.POST, "/api/users/login", "login", 3, Duration.ofMinutes(1), KeyStrategy.IP_ONLY),
+      new RateLimitRule(HttpMethod.POST, "/api/users", "signup", 5, Duration.ofHours(1), KeyStrategy.IP_ONLY),
+      new RateLimitRule(HttpMethod.POST, "/api/users/password-reset", "pwreset", 3, Duration.ofHours(1), KeyStrategy.USER_ID_OR_IP),
+      new RateLimitRule(HttpMethod.POST, "/api/users/password/reset", "pwreset", 3, Duration.ofHours(1), KeyStrategy.USER_ID_OR_IP),
+      new RateLimitRule(HttpMethod.POST, "/api/users/unlock", "unlock", 3, Duration.ofHours(1), KeyStrategy.USER_ID_OR_IP)
   );
 
-  // userId 기반 Rate Limit 규칙
   private static final List<RateLimitRule> USER_RULES = List.of(
-      new RateLimitRule("GET", "/api/articles", "articles", 120, Duration.ofMinutes(1)),
-      new RateLimitRule("GET", "/api/notifications", "notifications", 60, Duration.ofMinutes(1)),
-      new RateLimitRule("POST", "/api/comments", "comments", 10, Duration.ofMinutes(1)),
-      new RateLimitRule("POST", "/api/comments/*/likes", "comment-likes", 30, Duration.ofMinutes(1))
+      new RateLimitRule(HttpMethod.GET, "/api/articles", "articles", 120, Duration.ofMinutes(1), KeyStrategy.USER_ID_OR_IP),
+      new RateLimitRule(HttpMethod.GET, "/api/notifications", "notifications", 60, Duration.ofMinutes(1), KeyStrategy.USER_ID_OR_IP),
+      new RateLimitRule(HttpMethod.POST, "/api/comments", "comments", 10, Duration.ofMinutes(1), KeyStrategy.USER_ID_OR_IP),
+      new RateLimitRule(HttpMethod.POST, "/api/comments/*/likes", "comment-likes", 30, Duration.ofMinutes(1), KeyStrategy.USER_ID_OR_IP)
   );
 
   private final Map<String, Bucket> ipBuckets = Collections.synchronizedMap(
@@ -169,10 +173,9 @@ public class RateLimitFilter implements Filter {
   }
 
   private Bucket resolveBucket(String path, String method, String ip, UUID userId) {
-    // IP 기반 규칙 매칭
     for (RateLimitRule rule : IP_RULES) {
-      if (rule.method().equals(method) && pathMatcher.match(rule.path(), path)) {
-        String key = userId != null ? userId.toString() : ip;
+      if (rule.method().matches(method) && pathMatcher.match(rule.path(), path)) {
+        String key = resolveKey(rule.keyStrategy(), ip, userId);
         return ipBuckets.computeIfAbsent(rule.prefix() + ":" + key,
             k -> Bucket.builder()
                 .addLimit(Bandwidth.classic(rule.limit(),
@@ -180,9 +183,8 @@ public class RateLimitFilter implements Filter {
                 .build());
       }
     }
-    // userId 기반 규칙 매칭
     for (RateLimitRule rule : USER_RULES) {
-      if (rule.method().equals(method) && pathMatcher.match(rule.path(), path)) {
+      if (rule.method().matches(method) && pathMatcher.match(rule.path(), path)) {
         if (userId == null) return null;
         return userBuckets.computeIfAbsent(rule.prefix() + ":" + userId,
             k -> Bucket.builder()
@@ -194,11 +196,19 @@ public class RateLimitFilter implements Filter {
     return null;
   }
 
+  private String resolveKey(KeyStrategy strategy, String ip, UUID userId) {
+    return switch (strategy) {
+      case IP_ONLY -> ip;
+      case USER_ID_OR_IP -> userId != null ? userId.toString() : ip;
+    };
+  }
+
   private record RateLimitRule(
-      String method,
+      HttpMethod method,
       String path,
       String prefix,
       int limit,
-      Duration duration
+      Duration duration,
+      KeyStrategy keyStrategy
   ) {}
 }
