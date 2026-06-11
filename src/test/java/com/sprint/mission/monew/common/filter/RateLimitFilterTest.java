@@ -17,12 +17,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.test.context.TestPropertySource;
 
 @WebMvcTest(
     value = RateLimitFilterTest.FakeController.class,
     excludeFilters = @Filter(type = FilterType.ASSIGNABLE_TYPE, classes = AuthFilter.class)
 )
 @Import(RateLimitFilter.class)
+@TestPropertySource(properties = "monew.rate-limit.enabled=true")
 class RateLimitFilterTest {
 
   @Autowired
@@ -64,7 +66,7 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("로그인 IP 한도 초과 시 429 반환")
     void 로그인_IP_한도_초과_시_429_반환() throws Exception {
-      String ip = "9.9.9.9";
+      String ip = "99.99.99.99"; // 다른 테스트와 겹치지 않는 IP
       for (int i = 0; i < 3; i++) {
         mockMvc.perform(post("/test/rate/login")
             .header("X-Forwarded-For", ip));
