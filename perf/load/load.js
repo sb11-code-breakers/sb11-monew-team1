@@ -12,6 +12,8 @@
 // PATTERN: smoke | load | stress | spike | soak   (기본 load)
 // TARGET : mix | articleSearch | articleSearchKeyword | commentList | commentListDeep
 //          | notifications | userActivity | like | createComment | articleView   (기본 mix)
+//   ⚠️ commentListDeep는 1 이터레이션 = 순차 20요청이라 open 모델(stress/spike)의 RPS를 왜곡한다.
+//      깊은 페이지는 speed 측정 전용으로 쓰고, 부하 TARGET으로는 단일 요청 엔드포인트를 권장.
 // 숫자 env: VUS(closed 목표 동시성) · RATE(open 목표 RPS) · RAMP · STEADY · PRE_VUS · MAX_VUS · SOAK
 import {
   articleSearch, articleSearchKeyword, commentList, commentListDeep,
