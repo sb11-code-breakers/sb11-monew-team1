@@ -1,6 +1,6 @@
 package com.sprint.mission.monew.common.config;
 
-import com.sprint.mission.monew.batch.exception.BatchExceptionHandler;
+import com.sprint.mission.monew.batch.common.exception.BatchExceptionHandler;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;

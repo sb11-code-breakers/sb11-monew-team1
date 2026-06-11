@@ -14,7 +14,7 @@ import com.sprint.mission.monew.domain.article.dto.ArticleBackupEntry;
 import com.sprint.mission.monew.domain.article.dto.ArticleRestoreResultDto;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
-import com.sprint.mission.monew.batch.exception.ArticleRestoreFailedException;
+import com.sprint.mission.monew.domain.article.exception.ArticleRestoreFailedException;
 import com.sprint.mission.monew.domain.article.repository.ArticleInterestRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
