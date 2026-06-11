@@ -56,6 +56,15 @@ class RateLimitFilterTest {
 
     @GetMapping("/api/articles")
     void articles() {}
+
+    @GetMapping("/api/notifications")
+    void notifications() {}
+
+    @PostMapping("/api/comments")
+    void comments() {}
+
+    @PostMapping("/api/comments/{commentId}/likes")
+    void commentLikes() {}
   }
 
   @Nested
@@ -77,7 +86,8 @@ class RateLimitFilterTest {
       String ip = "99.99.99.99";
       for (int i = 0; i < 3; i++) {
         mockMvc.perform(post("/api/users/login")
-            .header("X-Forwarded-For", ip));
+                .header("X-Forwarded-For", ip))
+            .andExpect(status().isOk());
       }
       mockMvc
           .perform(post("/api/users/login")
@@ -92,11 +102,20 @@ class RateLimitFilterTest {
       String ip2 = "10.0.0.2";
       for (int i = 0; i < 3; i++) {
         mockMvc.perform(post("/api/users/login")
-            .header("X-Forwarded-For", ip1));
+                .header("X-Forwarded-For", ip1))
+            .andExpect(status().isOk());
       }
       mockMvc
           .perform(post("/api/users/login")
               .header("X-Forwarded-For", ip2))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("X-Forwarded-For 없으면 RemoteAddr 사용")
+    void X_Forwarded_For_없으면_RemoteAddr_사용() throws Exception {
+      mockMvc
+          .perform(post("/api/users/login"))
           .andExpect(status().isOk());
     }
   }
@@ -120,7 +139,8 @@ class RateLimitFilterTest {
       String ip = "3.3.3.3";
       for (int i = 0; i < 5; i++) {
         mockMvc.perform(post("/api/users")
-            .header("X-Forwarded-For", ip));
+                .header("X-Forwarded-For", ip))
+            .andExpect(status().isOk());
       }
       mockMvc
           .perform(post("/api/users")
@@ -148,12 +168,23 @@ class RateLimitFilterTest {
       String userId = UUID.randomUUID().toString();
       for (int i = 0; i < 3; i++) {
         mockMvc.perform(post("/api/users/password-reset")
-            .header("Monew-Request-User-ID", userId));
+                .header("Monew-Request-User-ID", userId))
+            .andExpect(status().isOk());
       }
       mockMvc
           .perform(post("/api/users/password-reset")
               .header("Monew-Request-User-ID", userId))
           .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    @DisplayName("비정상 userId 헤더는 IP fallback 적용")
+    void 비정상_userId_헤더는_IP_fallback_적용() throws Exception {
+      mockMvc
+          .perform(post("/api/users/password-reset")
+              .header("Monew-Request-User-ID", "invalid-uuid")
+              .header("X-Forwarded-For", "5.5.5.5"))
+          .andExpect(status().isOk());
     }
   }
 
@@ -176,7 +207,8 @@ class RateLimitFilterTest {
       String userId = UUID.randomUUID().toString();
       for (int i = 0; i < 3; i++) {
         mockMvc.perform(post("/api/users/unlock")
-            .header("Monew-Request-User-ID", userId));
+                .header("Monew-Request-User-ID", userId))
+            .andExpect(status().isOk());
       }
       mockMvc
           .perform(post("/api/users/unlock")
@@ -203,6 +235,81 @@ class RateLimitFilterTest {
     void 인증되지_않은_사용자는_한도_미적용() throws Exception {
       mockMvc
           .perform(get("/api/articles"))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("비정상 userId 헤더는 한도 미적용")
+    void 비정상_userId_헤더는_한도_미적용() throws Exception {
+      mockMvc
+          .perform(get("/api/articles")
+              .header("Monew-Request-User-ID", "invalid-uuid"))
+          .andExpect(status().isOk());
+    }
+  }
+
+  @Nested
+  @DisplayName("알림 조회 Rate Limiting")
+  class NotificationsRateLimit {
+
+    @Test
+    @DisplayName("인증된 사용자 한도 이하 요청은 정상 처리된다")
+    void 인증된_사용자_한도_이하_요청은_정상_처리된다() throws Exception {
+      mockMvc
+          .perform(get("/api/notifications")
+              .header("Monew-Request-User-ID", UUID.randomUUID().toString()))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("인증되지 않은 사용자는 한도 미적용")
+    void 인증되지_않은_사용자는_한도_미적용() throws Exception {
+      mockMvc
+          .perform(get("/api/notifications"))
+          .andExpect(status().isOk());
+    }
+  }
+
+  @Nested
+  @DisplayName("댓글 Rate Limiting")
+  class CommentsRateLimit {
+
+    @Test
+    @DisplayName("댓글 한도 이하 요청은 정상 처리된다")
+    void 댓글_한도_이하_요청은_정상_처리된다() throws Exception {
+      mockMvc
+          .perform(post("/api/comments")
+              .header("Monew-Request-User-ID", UUID.randomUUID().toString()))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("인증되지 않은 사용자는 한도 미적용")
+    void 인증되지_않은_사용자는_한도_미적용() throws Exception {
+      mockMvc
+          .perform(post("/api/comments"))
+          .andExpect(status().isOk());
+    }
+  }
+
+  @Nested
+  @DisplayName("댓글 좋아요 Rate Limiting")
+  class CommentLikesRateLimit {
+
+    @Test
+    @DisplayName("댓글 좋아요 한도 이하 요청은 정상 처리된다")
+    void 댓글_좋아요_한도_이하_요청은_정상_처리된다() throws Exception {
+      mockMvc
+          .perform(post("/api/comments/" + UUID.randomUUID() + "/likes")
+              .header("Monew-Request-User-ID", UUID.randomUUID().toString()))
+          .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("인증되지 않은 사용자는 한도 미적용")
+    void 인증되지_않은_사용자는_한도_미적용() throws Exception {
+      mockMvc
+          .perform(post("/api/comments/" + UUID.randomUUID() + "/likes"))
           .andExpect(status().isOk());
     }
   }

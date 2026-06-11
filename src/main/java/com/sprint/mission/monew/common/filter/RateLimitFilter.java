@@ -6,6 +6,7 @@ import com.sprint.mission.monew.common.exception.CommonErrorCode;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
+import jakarta.annotation.PreDestroy;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -36,7 +37,7 @@ import org.springframework.util.AntPathMatcher;
 public class RateLimitFilter implements Filter {
 
   @Value("${monew.rate-limit.enabled}")
-  private boolean enabled;
+  private volatile boolean enabled;
 
   private final AntPathMatcher pathMatcher = new AntPathMatcher();
   private final ObjectMapper objectMapper;
@@ -79,6 +80,19 @@ public class RateLimitFilter implements Filter {
 
   public void setEnabled(boolean enabled) {
     this.enabled = enabled;
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    scheduler.shutdown();
+    try {
+      if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+        scheduler.shutdownNow();
+      }
+    } catch (InterruptedException e) {
+      scheduler.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
   }
 
   @Override
