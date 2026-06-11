@@ -50,10 +50,10 @@ public class RateLimitFilter implements Filter {
         }
       });
 
-  private final Map<UUID, Bucket> userBuckets = Collections.synchronizedMap(
+  private final Map<String, Bucket> userBuckets = Collections.synchronizedMap(
       new LinkedHashMap<>(1000, 0.75f, true) {
         @Override
-        protected boolean removeEldestEntry(Map.Entry<UUID, Bucket> eldest) {
+        protected boolean removeEldestEntry(Map.Entry<String, Bucket> eldest) {
           return size() > 50_000;
         }
       });
@@ -78,13 +78,14 @@ public class RateLimitFilter implements Filter {
     userBuckets.clear();
   }
 
+  public void setEnabled(boolean enabled) {
+    this.enabled = enabled;
+  }
+
   public void runScheduledCleanup() {
     ipBuckets.clear();
     userBuckets.clear();
     log.debug("Rate limit 버킷 초기화 완료");
-  }
-  public void setEnabled(boolean enabled) {
-    this.enabled = enabled;
   }
 
   @PreDestroy
@@ -161,7 +162,9 @@ public class RateLimitFilter implements Filter {
               .addLimit(Bandwidth.classic(5, Refill.greedy(5, Duration.ofHours(1))))
               .build());
     }
-    if ("POST".equals(method) && pathMatcher.match("/api/users/password-reset", path)) {
+    if ("POST".equals(method) && (
+        pathMatcher.match("/api/users/password-reset", path)
+            || pathMatcher.match("/api/users/password/reset", path))) {
       String key = userId != null ? userId.toString() : ip;
       return ipBuckets.computeIfAbsent("pwreset:" + key,
           k -> Bucket.builder()
@@ -177,28 +180,28 @@ public class RateLimitFilter implements Filter {
     }
     if ("GET".equals(method) && pathMatcher.match("/api/articles", path)) {
       if (userId == null) return null;
-      return userBuckets.computeIfAbsent(userId,
+      return userBuckets.computeIfAbsent("articles:" + userId,
           k -> Bucket.builder()
               .addLimit(Bandwidth.classic(120, Refill.greedy(120, Duration.ofMinutes(1))))
               .build());
     }
     if ("GET".equals(method) && pathMatcher.match("/api/notifications", path)) {
       if (userId == null) return null;
-      return userBuckets.computeIfAbsent(userId,
+      return userBuckets.computeIfAbsent("notifications:" + userId,
           k -> Bucket.builder()
               .addLimit(Bandwidth.classic(60, Refill.greedy(60, Duration.ofMinutes(1))))
               .build());
     }
     if ("POST".equals(method) && pathMatcher.match("/api/comments", path)) {
       if (userId == null) return null;
-      return userBuckets.computeIfAbsent(userId,
+      return userBuckets.computeIfAbsent("comments:" + userId,
           k -> Bucket.builder()
               .addLimit(Bandwidth.classic(10, Refill.greedy(10, Duration.ofMinutes(1))))
               .build());
     }
     if ("POST".equals(method) && pathMatcher.match("/api/comments/*/likes", path)) {
       if (userId == null) return null;
-      return userBuckets.computeIfAbsent(userId,
+      return userBuckets.computeIfAbsent("comment-likes:" + userId,
           k -> Bucket.builder()
               .addLimit(Bandwidth.classic(30, Refill.greedy(30, Duration.ofMinutes(1))))
               .build());

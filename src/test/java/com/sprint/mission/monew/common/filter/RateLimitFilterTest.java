@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -38,6 +39,11 @@ class RateLimitFilterTest {
         .build();
   }
 
+  @AfterEach
+  void tearDown() {
+    rateLimitFilter.shutdown();
+  }
+
   @RestController
   @Profile("test-rate")
   static class FakeController {
@@ -50,6 +56,9 @@ class RateLimitFilterTest {
 
     @PostMapping("/api/users/password-reset")
     void passwordReset() {}
+
+    @PostMapping("/api/users/password/reset")
+    void passwordReset2() {}
 
     @PostMapping("/api/users/unlock")
     void unlock() {}
@@ -193,6 +202,15 @@ class RateLimitFilterTest {
           .perform(post("/api/users/password-reset")
               .header("Monew-Request-User-ID", userId))
           .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    @DisplayName("슬래시 경로도 한도 적용")
+    void 슬래시_경로도_한도_적용() throws Exception {
+      mockMvc
+          .perform(post("/api/users/password/reset")
+              .header("Monew-Request-User-ID", UUID.randomUUID().toString()))
+          .andExpect(status().isOk());
     }
 
     @Test
