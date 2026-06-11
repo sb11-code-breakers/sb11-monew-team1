@@ -100,10 +100,11 @@ LIMIT 51;
 -- ════════════════════════════════════════════════════════════
 \echo '=== I3 키워드 검색 — Seq Scan + Filter 기대(→ trigram 대상) ==='
 EXPLAIN (ANALYZE, BUFFERS)
+-- 정렬은 실제 호출 계약(read.js R1' = orderBy=commentCount)과 동일하게 맞춘다.
 SELECT a.id FROM articles a
 WHERE a.deleted_at IS NULL
   AND (a.title ILIKE '%뉴스%' OR a.summary ILIKE '%뉴스%')
-ORDER BY a.publish_date DESC, a.created_at DESC, a.id DESC
+ORDER BY a.comment_count DESC, a.id DESC
 LIMIT 51;
 
 -- ════════════════════════════════════════════════════════════

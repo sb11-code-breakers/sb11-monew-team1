@@ -31,10 +31,12 @@ export function like() {
 }
 
 // W3 · 조회수 기록 (check-then-act → INSERT + viewCount UPDATE). 바디 없음.
+// 멱등 재조회/신규 모두 200이어야 정상(409 아님). 경합 시 500이 나면 계약 위반으로 드러내야 한다.
 export function articleView() {
   const uid = randomUserId();
-  http.post(`${BASE}/api/articles/${pick(articleIds)}/article-views`, null, {
+  const res = http.post(`${BASE}/api/articles/${pick(articleIds)}/article-views`, null, {
     headers: headers(uid),
     tags: tags('W3 POST /api/articles/{id}/article-views', 'write'),
   });
+  expect2xx(res, 'W3');
 }

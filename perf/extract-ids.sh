@@ -32,7 +32,9 @@ mkdir -p "$OUT_DIR"
 # 공통: 튜플만(-t) · 정렬 안 함(-A) · 콤마 구분(-F','). 빈 줄은 k6 쪽에서 걸러진다.
 psql_csv() { psql "$DB_URL" -tA -F',' -c "$1"; }
 
-echo "[extract] DB=$DB_URL  LIMIT=$LIMIT  OUT_DIR=$OUT_DIR"
+# DB_URL의 user:password를 마스킹해 로그/CI 아티팩트에 자격증명이 남지 않게 한다.
+REDACTED_DB_URL="$(sed -E 's#(://[^:/@]+):[^@]*@#\1:***@#' <<< "$DB_URL")"
+echo "[extract] DB=$REDACTED_DB_URL  LIMIT=$LIMIT  OUT_DIR=$OUT_DIR"
 
 # ── 유저 ──────────────────────────────────────────────────────
 psql_csv "
@@ -44,10 +46,24 @@ psql_csv "
 # ── 기사: 인기(댓글 많은) + 일반/한산 혼합 ───────────────────
 # 인기 기사만 뽑으면 깊은 커서·정렬 비용이 항상 크게 나오고, 한산 기사만 뽑으면 안 드러난다 → 섞는다.
 HOT=$(( LIMIT / 10 ))                                   # 약 10%는 댓글 상위(인기) 기사
+# 랜덤 집합에서 hot과 겹치는 id를 제외한 뒤 UNION ALL → 중복 제거로 행 수가 LIMIT보다 줄지 않게.
 psql_csv "
-  (SELECT id FROM articles WHERE deleted_at IS NULL ORDER BY comment_count DESC LIMIT $HOT)
-  UNION
-  (SELECT id FROM articles WHERE deleted_at IS NULL ORDER BY random() LIMIT $(( LIMIT - HOT )))
+  WITH hot AS (
+    SELECT id FROM articles
+    WHERE deleted_at IS NULL
+    ORDER BY comment_count DESC
+    LIMIT $HOT
+  ),
+  sampled AS (
+    SELECT id FROM articles
+    WHERE deleted_at IS NULL
+      AND id NOT IN (SELECT id FROM hot)
+    ORDER BY random()
+    LIMIT $(( LIMIT - HOT ))
+  )
+  SELECT id FROM hot
+  UNION ALL
+  SELECT id FROM sampled
 " > "$OUT_DIR/article_ids.csv"
 
 # ── 댓글: commentId,articleId (R3 등 댓글 목록·좋아요 측정용) ──

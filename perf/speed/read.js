@@ -43,7 +43,8 @@ export function commentListDeep() {
   const base = `${BASE}/api/comments?articleId=${c.articleId}&orderBy=createdAt&direction=DESC&limit=${PAGE_LIMIT}`;
   let url = base;
   let res;
-  for (let p = 0; p < DEEP_PAGES; p++) {
+  const pages = Number.isInteger(DEEP_PAGES) && DEEP_PAGES > 0 ? DEEP_PAGES : 1; // 최소 1회 보장
+  for (let p = 0; p < pages; p++) {
     res = http.get(url, { headers: headers(randomUserId()), tags: tags('R3d GET /api/comments(deep)', 'list') });
     if (res.status < 200 || res.status >= 300) break;
     const body = res.json();

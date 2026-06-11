@@ -26,11 +26,21 @@ function loadLines(path) {
   return raw.split('\n').map((l) => l.trim()).filter(Boolean);
 }
 
-export const userIds = new SharedArray('userIds', () => loadLines(`${IDS_DIR}/user_ids.csv`));
-export const articleIds = new SharedArray('articleIds', () => loadLines(`${IDS_DIR}/article_ids.csv`));
+// 빈 CSV가 통과하면 pick()이 undefined를 내고 URL/헤더에 섞여 가짜 측정이 된다 → 즉시 중단.
+function assertNonEmpty(name, arr) {
+  if (!arr.length) {
+    throw new Error(`ID 풀 비어 있음: ${name} — 'perf/extract-ids.sh'로 다시 추출하세요.`);
+  }
+  return arr;
+}
+
+export const userIds = new SharedArray('userIds', () =>
+  assertNonEmpty('user_ids.csv', loadLines(`${IDS_DIR}/user_ids.csv`)));
+export const articleIds = new SharedArray('articleIds', () =>
+  assertNonEmpty('article_ids.csv', loadLines(`${IDS_DIR}/article_ids.csv`)));
 // comment_ids.csv: "commentId,articleId"
 export const comments = new SharedArray('comments', () =>
-  loadLines(`${IDS_DIR}/comment_ids.csv`).map((line) => {
+  assertNonEmpty('comment_ids.csv', loadLines(`${IDS_DIR}/comment_ids.csv`)).map((line) => {
     const [id, articleId] = line.split(',');
     return { id, articleId };
   }),

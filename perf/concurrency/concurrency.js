@@ -26,6 +26,7 @@ const DURATION = __ENV.DURATION || '1m';
 const ok2xx = new Counter('concurrency_2xx');     // 성공(보통 버스트당 1개여야 정상)
 const conflict409 = new Counter('concurrency_409'); // 정상 거부(실패 아님)
 const server5xx = new Counter('concurrency_5xx');   // 진짜 결함(미처리 예외/데드락) — C4 취약점 신호
+const c23OverSuccess = new Counter('concurrency_c23_over_success'); // C2·C3 불변식 위반(성공>1) — threshold로 게이트
 
 // 같은 (user, 자원)에 동일 POST를 BURST개 병렬 발사.
 function fireBurst(url, uid, name) {
@@ -49,11 +50,12 @@ function analyze(responses, label, expectIdempotent) {
   server5xx.add(e5xx);
 
   if (expectIdempotent) {
-    // C4: 멱등이라면 모든 응답 2xx여야 한다. registerView가 DataIntegrityViolationException을
+    // C4: 멱등이라면 5xx가 없어야 한다. registerView가 DataIntegrityViolationException을
     // 안 잡으면 진 쪽이 500 → 이 체크가 깨지는 것이 곧 취약점 재현 증거.
-    check(null, { [`${label}: 모든 응답 2xx(멱등)`]: () => e5xx === 0 });
+    check(null, { [`${label}: 5xx 없음(멱등 방어)`]: () => e5xx === 0 });
   } else {
     // C2·C3: 유니크 제약+catch로 방어 → 5xx 0건, 성공 1개 이하(나머지는 409).
+    if (okN > 1) c23OverSuccess.add(1); // 불변식 위반 → threshold로 실패 처리(아래 options)
     check(null, {
       [`${label}: 5xx 없음(방어 정상)`]: () => e5xx === 0,
       [`${label}: 성공 1개 이하`]: () => okN <= 1,
@@ -110,5 +112,8 @@ export const options = {
   },
   thresholds: CASE === 'c4'
     ? {} // C4: 500 재현이 목적이라 임계로 막지 않는다(분포는 요약 메트릭으로 본다)
-    : { concurrency_5xx: ['count==0'] }, // C2·C3: 방어가 정상이면 5xx 0건
+    : { // C2·C3: 방어가 정상이면 5xx 0건 + 중복 성공(>1) 0건
+        concurrency_5xx: ['count==0'],
+        concurrency_c23_over_success: ['count==0'],
+      },
 };
