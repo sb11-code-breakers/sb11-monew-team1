@@ -3,6 +3,7 @@ package com.sprint.mission.monew.domain.comment.repository;
 import com.sprint.mission.monew.batch.dto.CommentCleanupItem;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.repository.querydsl.CommentCustomRepository;
+import com.sprint.mission.monew.domain.useractivity.projection.CommentLiveData;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +23,10 @@ public interface CommentRepository extends JpaRepository<Comment, UUID>, Comment
       "AND a.deletedAt IS NULL " +
       "ORDER BY c.createdAt DESC ")
   List<Comment> findTop10RecentCommentsByUserId(@Param("userId") UUID userId, Pageable pageable);
+
+  @Query("SELECT c.id as id, c.content as content, c.likeCount as likeCount " +
+      "FROM Comment c WHERE c.id IN :ids AND c.deletedAt IS NULL")
+  List<CommentLiveData> findCommentLiveDataByIds(@Param("ids") List<UUID> ids);
 
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("""

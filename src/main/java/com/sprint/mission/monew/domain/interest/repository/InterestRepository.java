@@ -15,6 +15,9 @@ public interface InterestRepository
   @Query("SELECT DISTINCT i FROM Interest i JOIN FETCH i.keywords")
   List<Interest> findAllWithKeywords();
 
+  @Query("SELECT DISTINCT i FROM Interest i JOIN FETCH i.keywords WHERE i.id IN :ids")
+  List<Interest> findWithKeywordsByIds(@Param("ids") List<UUID> ids);
+
   @Query(
       """
       SELECT DISTINCT i FROM Interest i JOIN i.keywords k

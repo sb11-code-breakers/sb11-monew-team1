@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.article.repository;
 
 import com.sprint.mission.monew.domain.article.entity.ArticleView;
+import com.sprint.mission.monew.domain.useractivity.projection.ArticleViewLiveData;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -30,4 +31,16 @@ public interface ArticleViewRepository extends JpaRepository<ArticleView, UUID> 
   boolean existsByArticleIdAndUserId(UUID articleId, UUID userId);
 
   Optional<ArticleView> findByArticleIdAndUserId(UUID articleId, UUID userId);
+
+  @Query("""
+      SELECT av.id as id, a.id as articleId,
+             a.commentCount as articleCommentCount, a.viewCount as articleViewCount
+      FROM ArticleView av
+      JOIN av.article a
+      WHERE av.userId = :userId
+      AND a.id IN :articleIds
+      AND a.deletedAt IS NULL
+      """)
+  List<ArticleViewLiveData> findArticleViewLiveDataByUserIdAndArticleIds(
+      @Param("userId") UUID userId, @Param("articleIds") List<UUID> articleIds);
 }
