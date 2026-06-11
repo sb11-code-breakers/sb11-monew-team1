@@ -436,5 +436,11 @@ class RateLimitFilterTest {
     void shutdown_호출_시_스케줄러가_종료된다() {
       rateLimitFilter.shutdown();
     }
+
+    @Test
+    @DisplayName("스케줄러 정리 작업이 버킷을 초기화한다")
+    void 스케줄러_정리_작업이_버킷을_초기화한다() {
+      rateLimitFilter.runScheduledCleanup();
+    }
   }
 }

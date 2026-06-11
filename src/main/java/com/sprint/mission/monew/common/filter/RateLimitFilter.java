@@ -78,6 +78,11 @@ public class RateLimitFilter implements Filter {
     userBuckets.clear();
   }
 
+  public void runScheduledCleanup() {
+    ipBuckets.clear();
+    userBuckets.clear();
+    log.debug("Rate limit 버킷 초기화 완료");
+  }
   public void setEnabled(boolean enabled) {
     this.enabled = enabled;
   }
