@@ -60,11 +60,20 @@ class RateLimitFilterTest {
     @GetMapping("/api/notifications")
     void notifications() {}
 
+    @PostMapping("/api/notifications")
+    void notificationsPost() {}
+
     @PostMapping("/api/comments")
     void comments() {}
 
+    @GetMapping("/api/comments")
+    void commentsGet() {}
+
     @PostMapping("/api/comments/{commentId}/likes")
     void commentLikes() {}
+
+    @GetMapping("/api/comments/{commentId}/likes")
+    void commentLikesGet() {}
   }
 
   @Nested
@@ -301,6 +310,15 @@ class RateLimitFilterTest {
               .header("Monew-Request-User-ID", userId))
           .andExpect(status().isTooManyRequests());
     }
+
+    @Test
+    @DisplayName("GET 외 메서드는 한도 미적용")
+    void GET_외_메서드는_한도_미적용() throws Exception {
+      mockMvc
+          .perform(post("/api/notifications")
+              .header("Monew-Request-User-ID", UUID.randomUUID().toString()))
+          .andExpect(status().isOk());
+    }
   }
 
   @Nested
@@ -338,6 +356,15 @@ class RateLimitFilterTest {
               .header("Monew-Request-User-ID", userId))
           .andExpect(status().isTooManyRequests());
     }
+
+    @Test
+    @DisplayName("POST 외 메서드는 한도 미적용")
+    void POST_외_메서드는_한도_미적용() throws Exception {
+      mockMvc
+          .perform(get("/api/comments")
+              .header("Monew-Request-User-ID", UUID.randomUUID().toString()))
+          .andExpect(status().isOk());
+    }
   }
 
   @Nested
@@ -374,6 +401,15 @@ class RateLimitFilterTest {
           .perform(post("/api/comments/" + UUID.randomUUID() + "/likes")
               .header("Monew-Request-User-ID", userId))
           .andExpect(status().isTooManyRequests());
+    }
+
+    @Test
+    @DisplayName("POST 외 메서드는 한도 미적용")
+    void POST_외_메서드는_한도_미적용() throws Exception {
+      mockMvc
+          .perform(get("/api/comments/" + UUID.randomUUID() + "/likes")
+              .header("Monew-Request-User-ID", UUID.randomUUID().toString()))
+          .andExpect(status().isOk());
     }
   }
 
