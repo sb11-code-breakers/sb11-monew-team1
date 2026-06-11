@@ -13,14 +13,24 @@ public class RecentComment {
   private UUID commentId;
   private UUID articleId;
   private String articleTitle;
+  private UUID userId;
+  private String userNickname;
+  private String content;
+  private long likeCount;
   private Instant createdAt;
+
   public static RecentComment of(
-      UUID commentId, UUID articleId, String articleTitle, Instant createdAt) {
+      UUID commentId, UUID articleId, String articleTitle,
+      UUID userId, String userNickname, String content, long likeCount, Instant createdAt) {
 
     RecentComment doc = new RecentComment();
     doc.commentId = commentId;
     doc.articleId = articleId;
     doc.articleTitle = articleTitle;
+    doc.userId = userId;
+    doc.userNickname = userNickname;
+    doc.content = content;
+    doc.likeCount = likeCount;
     doc.createdAt = createdAt;
     return doc;
   }

@@ -1,6 +1,7 @@
 package com.sprint.mission.monew.domain.useractivity.document;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -10,14 +11,22 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RecentSubscription {
 
+  private UUID subscriptionId;
   private UUID interestId;
   private String interestName;
+  private List<String> interestKeywords;
+  private long interestSubscriberCount;
   private Instant subscribedAt;
+
   public static RecentSubscription of(
-      UUID interestId, String interestName, Instant subscribedAt) {
+      UUID subscriptionId, UUID interestId, String interestName,
+      List<String> interestKeywords, long interestSubscriberCount, Instant subscribedAt) {
     RecentSubscription doc = new RecentSubscription();
+    doc.subscriptionId = subscriptionId;
     doc.interestId = interestId;
     doc.interestName = interestName;
+    doc.interestKeywords = interestKeywords;
+    doc.interestSubscriberCount = interestSubscriberCount;
     doc.subscribedAt = subscribedAt;
     return doc;
   }

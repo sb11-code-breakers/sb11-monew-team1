@@ -4,9 +4,12 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record CommentCreatedEvent(
-    UUID userId, // 이 활동을 기록할 유저 (주로 작성자 본인)
+    UUID userId,
     UUID commentId,
     UUID articleId,
     String articleTitle,
+    String content,
+    String userNickname,
+    long likeCount,
     Instant createdAt
 ) {}

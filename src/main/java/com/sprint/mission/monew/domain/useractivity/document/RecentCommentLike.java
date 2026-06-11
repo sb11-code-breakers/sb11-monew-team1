@@ -10,22 +10,34 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RecentCommentLike {
 
+  private UUID likeId;
+  private Instant likedAt;
   private UUID commentId;
   private UUID articleId;
   private String articleTitle;
+  private UUID commentUserId;
+  private String commentUserNickname;
+  private String commentContent;
+  private long commentLikeCount;
   private Instant commentCreatedAt;
-  private Instant likedAt;
 
   public static RecentCommentLike of(
+      UUID likeId, Instant likedAt,
       UUID commentId, UUID articleId, String articleTitle,
-      Instant commentCreatedAt, Instant likedAt) {
+      UUID commentUserId, String commentUserNickname, String commentContent,
+      long commentLikeCount, Instant commentCreatedAt) {
 
     RecentCommentLike doc = new RecentCommentLike();
+    doc.likeId = likeId;
+    doc.likedAt = likedAt;
     doc.commentId = commentId;
     doc.articleId = articleId;
     doc.articleTitle = articleTitle;
+    doc.commentUserId = commentUserId;
+    doc.commentUserNickname = commentUserNickname;
+    doc.commentContent = commentContent;
+    doc.commentLikeCount = commentLikeCount;
     doc.commentCreatedAt = commentCreatedAt;
-    doc.likedAt = likedAt;
     return doc;
   }
 }
