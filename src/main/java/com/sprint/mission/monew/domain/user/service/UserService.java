@@ -10,7 +10,6 @@ import com.sprint.mission.monew.domain.user.dto.UserPasswordUpdateRequest;
 import com.sprint.mission.monew.domain.user.dto.UserResponse;
 import com.sprint.mission.monew.domain.user.dto.UserUnlockRequest;
 import com.sprint.mission.monew.domain.user.dto.UserUpdateRequest;
-import com.sprint.mission.monew.domain.user.entity.UserUnlockToken;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.InvalidPasswordResetCodeException;
 import com.sprint.mission.monew.domain.user.exception.UserInvalidUnlockTokenException;
@@ -30,6 +29,7 @@ import com.sprint.mission.monew.domain.user.repository.PasswordResetTokenReposit
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import com.sprint.mission.monew.domain.user.document.EmailVerification;
 import com.sprint.mission.monew.domain.user.document.PasswordResetToken;
+import com.sprint.mission.monew.domain.user.document.UserUnlockToken;
 import org.springframework.beans.factory.annotation.Value;
 import java.time.Instant;
 import java.util.UUID;

@@ -1,33 +1,32 @@
-package com.sprint.mission.monew.domain.user.entity;
+package com.sprint.mission.monew.domain.user.document;
 
-import com.sprint.mission.monew.common.entity.BaseEntity;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Getter
-@NoArgsConstructor
-@Entity
-@Table(name = "user_unlock_tokens")
-public class UserUnlockToken extends BaseEntity {
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Document(collection = "user_unlock_tokens")
+public class UserUnlockToken {
 
   private static final long EXPIRY_HOURS = 24;
 
-  @Column(nullable = false)
+  @Id
+  private UUID id;
   private UUID userId;
-
-  @Column(nullable = false, unique = true)
   private String token;
 
-  @Column(nullable = false)
+  @Indexed(expireAfter = "0s")
   private Instant expiredAt;
 
   public static UserUnlockToken create(UUID userId) {
     UserUnlockToken unlockToken = new UserUnlockToken();
+    unlockToken.id = UUID.randomUUID();
     unlockToken.userId = userId;
     unlockToken.token = UUID.randomUUID().toString();
     unlockToken.expiredAt = Instant.now().plusSeconds(EXPIRY_HOURS * 3600);
