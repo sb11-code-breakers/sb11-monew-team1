@@ -14,8 +14,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @DataMongoTest
+@ActiveProfiles("test")
 @Import(MongoContainerConfig.class)
 class UserUnlockTokenRepositoryTest {
 
@@ -54,6 +57,23 @@ class UserUnlockTokenRepositoryTest {
       Optional<UserUnlockToken> result =
           userUnlockTokenRepository.findByTokenAndExpiredAtAfter(
               "invalid-token", Instant.now());
+
+      // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("만료된 토큰은 조회되지 않음")
+    void 만료된_토큰은_조회되지_않음() {
+      // given
+      UserUnlockToken token = UserUnlockToken.create(UUID.randomUUID());
+      ReflectionTestUtils.setField(token, "expiredAt", Instant.now().minusSeconds(10));
+      userUnlockTokenRepository.save(token);
+
+      // when
+      Optional<UserUnlockToken> result =
+          userUnlockTokenRepository.findByTokenAndExpiredAtAfter(
+              token.getToken(), Instant.now());
 
       // then
       assertThat(result).isEmpty();

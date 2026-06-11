@@ -14,8 +14,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @DataMongoTest
+@ActiveProfiles("test")
 @Import(MongoContainerConfig.class)
 class PasswordResetTokenRepositoryTest {
 
@@ -54,6 +57,23 @@ class PasswordResetTokenRepositoryTest {
       Optional<PasswordResetToken> result =
           passwordResetTokenRepository.findByCodeAndExpiredAtAfter(
               "invalid-code", Instant.now());
+
+      // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("만료된 토큰은 조회되지 않음")
+    void 만료된_토큰은_조회되지_않음() {
+      // given
+      PasswordResetToken token = PasswordResetToken.create(UUID.randomUUID());
+      ReflectionTestUtils.setField(token, "expiredAt", Instant.now().minusSeconds(10));
+      passwordResetTokenRepository.save(token);
+
+      // when
+      Optional<PasswordResetToken> result =
+          passwordResetTokenRepository.findByCodeAndExpiredAtAfter(
+              token.getCode(), Instant.now());
 
       // then
       assertThat(result).isEmpty();
