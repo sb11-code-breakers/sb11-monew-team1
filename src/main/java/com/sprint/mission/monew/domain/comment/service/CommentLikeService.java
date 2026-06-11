@@ -23,8 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 // 💡 [수정] 몽고DB 활동 기록 백엔드로 흘러갈 좋아요 등록/취소 이벤트 import 추가
-import com.sprint.mission.monew.domain.comment.event.CommentLikedEvent;
-import com.sprint.mission.monew.domain.comment.event.CommentLikeRemovedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.CommentLikedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.CommentLikeRemovedEvent;
 import java.time.Instant;
 
 @Slf4j
@@ -79,11 +79,12 @@ public class CommentLikeService {
     // 💡 [수정] 활동 기록용 좋아요 등록 이벤트 발행 (MongoDB commentLikes 배열 타겟)
     eventPublisher.publishEvent(new CommentLikedEvent(
         userId,
+        savedCommentLike.getId(), // 💡 누락되었던 likeId 매핑
+        Instant.now(),            // 💡 레코드의 3번째 인자인 이벤트 생성일(createdAt)
         commentId,
         articleId,
         articleTitle,
-        commentCreatedAt,
-        Instant.now()
+        commentCreatedAt
     ));
 
     UUID authorId = comment.getUser() != null ? comment.getUser().getId() : null;

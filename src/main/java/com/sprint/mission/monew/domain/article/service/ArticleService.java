@@ -11,16 +11,16 @@ import com.sprint.mission.monew.domain.article.mapper.ArticleMapper;
 import com.sprint.mission.monew.domain.article.mapper.ArticleViewMapper;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// 💡 [수정] 스프링 이벤트 발행 및 기사 조회/삭제 이벤트 import 추가
 import org.springframework.context.ApplicationEventPublisher;
-import com.sprint.mission.monew.domain.article.event.ArticleViewedEvent;
-import com.sprint.mission.monew.domain.article.event.ArticleDeletedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.ArticleViewedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.ArticleDeletedEvent;
 
 @Slf4j
 @Service
@@ -32,7 +32,7 @@ public class ArticleService {
   private final ArticleViewRepository articleViewRepository;
   private final ArticleMapper articleMapper;
   private final ArticleViewMapper articleViewMapper;
-  private final ApplicationEventPublisher eventPublisher; // 💡 [수정] 이벤트 퍼블리셔 주입 추가
+  private final ApplicationEventPublisher eventPublisher;
 
   public CursorPageResponse<ArticleResponse> search(ArticleQueryCondition condition, UUID requestUserId) {
     return articleRepository.search(condition, requestUserId);
@@ -63,7 +63,6 @@ public class ArticleService {
         .orElseThrow(() -> ArticleNotFoundException.withId(articleId));
     article.softDelete();
 
-    // 💡 [수정] 기사 논리 삭제 이벤트 발행 (MongoDB 활동 로그 전파용)
     eventPublisher.publishEvent(new ArticleDeletedEvent(articleId));
 
     log.info("기사 논리 삭제 완료 | articleId={}", articleId);
@@ -82,9 +81,17 @@ public class ArticleService {
           ArticleView saved = articleViewRepository.save(ArticleView.create(userId, article));
           articleRepository.increaseViewCount(articleId);
 
-          // 💡 [수정] 기사 최초 조회 성공 시 이벤트 발행 (MongoDB articleViews 배열에 최대 10건 적재 트리거)
-          // 몽고DB 일기장에 기록될 유저ID, 기사ID와 불변 텍스트인 기사 제목을 실어 보냅니다.
-          eventPublisher.publishEvent(new ArticleViewedEvent(userId, articleId, article.getTitle()));
+          // 💡 [교정 완료] Enum 타입 형변환(.name()) 및 정확한 Getter명(getPublishDate()) 적용
+          eventPublisher.publishEvent(new ArticleViewedEvent(
+              userId,
+              Instant.now(),
+              articleId,
+              article.getSource().name(),
+              article.getSourceUrl(),
+              article.getTitle(),
+              article.getPublishDate(),
+              article.getSummary()
+          ));
 
           log.info("기사 조회 등록 완료 | articleId={}, userId={}", articleId, userId);
           return articleViewMapper.toResponse(saved, article.getViewCount() + 1);

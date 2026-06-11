@@ -4,6 +4,7 @@ import com.sprint.mission.monew.domain.useractivity.document.RecentArticleView;
 import com.sprint.mission.monew.domain.useractivity.document.RecentComment;
 import com.sprint.mission.monew.domain.useractivity.document.RecentCommentLike;
 import com.sprint.mission.monew.domain.useractivity.document.RecentSubscription;
+import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
 import com.sprint.mission.monew.domain.useractivity.repository.UserActivityMongoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,10 @@ public class UserActivityEventListener {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(UserCreatedEvent event) {
-    userActivityMongoRepository.createUserActivity(event.userActivity());
+    // 💡 [수정] UserCreatedEvent가 순수 팩트(UUID userId, Instant createdAt) 구조로 다이어트됨에 따라
+    // 더 이상 존재하지 않는 event.userActivity() 호출부 제거 후, 식별자를 통해 초기 빈 도큐먼트를 생성하도록 교정
+    UserActivity userActivity = UserActivity.of(event.userId(),event.createdAt());
+    userActivityMongoRepository.createUserActivity(userActivity);
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -70,6 +74,8 @@ public class UserActivityEventListener {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(ArticleViewedEvent event) {
+    // 💡 [수정] 아래 첨부해주신 레코드 규격(createdAt이 2번째 순서)의 데이터 게터를 활용하여
+    // RecentArticleView 생성 모델 내부 파라미터 매핑을 결함 없이 온전하게 유지합니다.
     RecentArticleView articleView = RecentArticleView.of(
         event.articleId(), event.source(), event.sourceUrl(), event.articleTitle(),
         event.articlePublishedDate(), event.articleSummary(), event.createdAt()

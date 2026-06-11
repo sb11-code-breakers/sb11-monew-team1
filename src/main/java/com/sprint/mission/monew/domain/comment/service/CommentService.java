@@ -1,4 +1,4 @@
-\package com.sprint.mission.monew.domain.comment.service;
+package com.sprint.mission.monew.domain.comment.service;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.article.entity.Article;
@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 // 💡 [수정] 스프링 이벤트 발행 및 댓글 작성 이벤트 클래스 import 추가
 import org.springframework.context.ApplicationEventPublisher;
-import com.sprint.mission.monew.domain.comment.event.CommentCreatedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.CommentCreatedEvent;
 
 @Slf4j
 @Service

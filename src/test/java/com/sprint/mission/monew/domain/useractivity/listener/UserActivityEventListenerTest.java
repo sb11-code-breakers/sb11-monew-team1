@@ -48,7 +48,7 @@ class UserActivityEventListenerTest {
       Instant now = Instant.now();
       UserActivity activity = UserActivity.of(userId, now);
 
-      listener.handle(new UserCreatedEvent(activity));
+      listener.handle(new UserCreatedEvent(userId, now));
 
       verify(userActivityMongoRepository).createUserActivity(activityCaptor.capture());
       UserActivity captured = activityCaptor.getValue();
@@ -190,7 +190,7 @@ class UserActivityEventListenerTest {
       Instant viewTime = Instant.now();
 
       ArticleViewedEvent event = new ArticleViewedEvent(
-          userId, UUID.randomUUID(), viewTime, articleId,
+          userId, viewTime, articleId,
           "NAVER", "https://url", "오늘의 뉴스", Instant.now(), "기사 요약"
       );
 
@@ -212,9 +212,8 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("ArticleDeletedEvent를 받으면 연쇄 삭제(Cascade) pull 3개 메서드를 호출한다")
     void handle_ArticleDeleted() {
-      UUID userId = UUID.randomUUID();
       UUID articleId = UUID.randomUUID();
-      listener.handle(new ArticleDeletedEvent(userId, articleId));
+      listener.handle(new ArticleDeletedEvent(articleId));
 
       verify(userActivityMongoRepository).pullArticleViewsByArticleId(articleId);
       verify(userActivityMongoRepository).pullCommentsByArticleId(articleId);

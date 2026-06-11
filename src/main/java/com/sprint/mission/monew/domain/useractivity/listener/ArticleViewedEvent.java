@@ -5,7 +5,6 @@ import java.util.UUID;
 
 public record ArticleViewedEvent(
     UUID userId, // 조회한 유저
-    UUID viewId,
     Instant createdAt,
     UUID articleId,
     String source,
@@ -14,3 +13,4 @@ public record ArticleViewedEvent(
     Instant articlePublishedDate,
     String articleSummary
 ) {}
+

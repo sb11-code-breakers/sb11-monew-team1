@@ -47,8 +47,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 // 💡 [수정] 스프링 이벤트 발행 기능 및 생성한 이벤트 클래스 import 추가
 import org.springframework.context.ApplicationEventPublisher;
-import com.sprint.mission.monew.domain.user.event.UserCreatedEvent;
-import com.sprint.mission.monew.domain.user.event.UserDeletedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.UserCreatedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.UserDeletedEvent;
 
 @Slf4j
 @Transactional(readOnly = true)
@@ -82,7 +82,7 @@ public class UserService {
     User saved = userRepository.save(user);
 
     // 💡 [수정] PostgreSQL 저장 성공 직후, MongoDB 활동 로그 초기 생성을 위한 이벤트 발행
-    eventPublisher.publishEvent(new UserCreatedEvent(saved.getId(), saved.getEmail()));
+    eventPublisher.publishEvent(new UserCreatedEvent(saved.getId(), Instant.now()));
 
     EmailVerification verification = EmailVerification.create(saved.getId());
     EmailVerification savedVerification = emailVerificationRepository.save(verification);

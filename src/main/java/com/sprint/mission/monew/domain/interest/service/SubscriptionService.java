@@ -12,17 +12,16 @@ import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepositor
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
+import com.sprint.mission.monew.domain.useractivity.listener.SubscriptionCancelledEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.SubscriptionCreatedEvent;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-// 💡 [수정] 스프링 이벤트 발행 및 구독 등록/취소 이벤트 import 추가
-import org.springframework.context.ApplicationEventPublisher;
-import com.sprint.mission.monew.domain.interest.event.SubscriptionCreatedEvent;
-import com.sprint.mission.monew.domain.interest.event.SubscriptionCancelledEvent;
 
 @Slf4j
 @Service
@@ -53,7 +52,9 @@ public class SubscriptionService {
 
       // 💡 [수정] 관심사 구독 완료 이벤트 발행 (MongoDB subscriptions 배열에 추가 트리거)
       // 화면단 조회를 위해 RDB 테이블의 관심사 이름(interest.getName())을 불변 데이터로 함께 실어 보냅니다.
-      eventPublisher.publishEvent(new SubscriptionCreatedEvent(userId, interestId, interest.getName()));
+      eventPublisher.publishEvent(new SubscriptionCreatedEvent(userId, interestId, interest.getName(),
+          Instant.now()
+      ));
 
       log.info("관심사 구독 완료 | interestId={}, userId={}", interestId, userId);
       return response;
