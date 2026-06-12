@@ -68,13 +68,16 @@ class UserActivityMongoRepositoryTest {
     @Test
     @DisplayName("익명화하면 모든 활동 배열이 빈 배열로 초기화된다")
     void 익명화하면_모든_활동_배열이_초기화된다() {
+      // given
       UUID userId = UUID.randomUUID();
       repository.createUserActivity(newActivity(userId));
       repository.pushComment(userId, newComment(UUID.randomUUID(), UUID.randomUUID(), "기사"));
       repository.pushSubscription(userId, newSubscription(UUID.randomUUID(), UUID.randomUUID(), "IT"));
 
+      // when
       repository.anonymize(userId);
 
+      // then
       UserActivity found = repository.findById(userId).orElseThrow();
       assertThat(found.getComments()).isEmpty();
       assertThat(found.getCommentLikes()).isEmpty();

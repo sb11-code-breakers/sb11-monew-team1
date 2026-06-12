@@ -25,7 +25,7 @@ public class RecentSubscription {
     doc.subscriptionId = subscriptionId;
     doc.interestId = interestId;
     doc.interestName = interestName;
-    doc.interestKeywords = interestKeywords;
+    doc.interestKeywords = List.copyOf(interestKeywords);
     doc.interestSubscriberCount = interestSubscriberCount;
     doc.subscribedAt = subscribedAt;
     return doc;

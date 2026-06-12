@@ -60,9 +60,12 @@ public class CommentLikeService {
     UUID articleId = comment.getArticle().getId();
     String articleTitle = comment.getArticle().getTitle();
     Instant commentCreatedAt = comment.getCreatedAt();
-    UUID commentUserId = comment.getUser().getId();
-    String commentUserNickname = comment.getUser().getNickname();
+    // comment.user는 ON DELETE SET NULL로 null일 수 있음
+    UUID commentUserId = comment.getUser() != null ? comment.getUser().getId() : null;
+    String commentUserNickname = comment.getUser() != null ? comment.getUser().getNickname() : null;
     String commentContent = comment.getContent();
+    // increaseLikeCount는 @Modifying(clearAutomatically=true)라 이후 comment.getLikeCount()가 stale해짐
+    long nextLikeCount = comment.getLikeCount() + 1;
 
     CommentLike commentLike = CommentLike.create(user, comment);
 
@@ -70,7 +73,7 @@ public class CommentLikeService {
     CommentLikeResponse response;
     try {
       savedCommentLike = commentLikeRepository.saveAndFlush(commentLike);
-      response = commentLikeMapper.toResponse(savedCommentLike, comment.getLikeCount() + 1);
+      response = commentLikeMapper.toResponse(savedCommentLike, nextLikeCount);
       commentRepository.increaseLikeCount(commentId);
     } catch (DataIntegrityViolationException e) {
       throw CommentLikeAlreadyExistsException.withId(userId, commentId);
@@ -83,14 +86,14 @@ public class CommentLikeService {
     eventPublisher.publishEvent(new CommentLikedEvent(
         userId,
         savedCommentLike.getId(),
-        Instant.now(),
+        savedCommentLike.getCreatedAt(),
         commentId,
         articleId,
         articleTitle,
         commentUserId,
         commentUserNickname,
         commentContent,
-        comment.getLikeCount() + 1,
+        nextLikeCount,
         commentCreatedAt
     ));
 
