@@ -137,6 +137,20 @@ class UserActivityMongoRepositoryTest {
     }
 
     @Test
+    @DisplayName("commentId로 댓글 내용을 수정할 수 있다")
+    void 댓글_내용_수정_검증() {
+      UUID userId = UUID.randomUUID();
+      UUID commentId = UUID.randomUUID();
+      repository.createUserActivity(newActivity(userId));
+      repository.pushComment(userId, newComment(commentId, UUID.randomUUID(), "기사"));
+
+      repository.updateCommentContent(commentId, "수정된 내용");
+
+      assertThat(repository.findById(userId).orElseThrow().getComments().get(0).getContent())
+          .isEqualTo("수정된 내용");
+    }
+
+    @Test
     @DisplayName("articleId로 전체 유저의 댓글을 연쇄 삭제(Cascade)한다")
     void 연쇄_삭제_Cascade_검증() {
       UUID articleId = UUID.randomUUID();
@@ -185,6 +199,19 @@ class UserActivityMongoRepositoryTest {
       assertThat(found.getCommentLikes()).hasSize(1);
       assertThat(found.getCommentLikes().get(0).getCommentId()).isEqualTo(commentId);
       assertThat(found.getCommentLikes().get(0).getArticleTitle()).isEqualTo("좋아요한 기사");
+    }
+
+    @Test
+    @DisplayName("commentId로 댓글 좋아요를 단건 pull 할 수 있다")
+    void 단건_pull_검증() {
+      UUID userId = UUID.randomUUID();
+      UUID commentId = UUID.randomUUID();
+      repository.createUserActivity(newActivity(userId));
+      repository.pushCommentLike(userId, newCommentLike(UUID.randomUUID(), commentId, UUID.randomUUID(), "기사"));
+
+      repository.pullCommentLike(userId, commentId);
+
+      assertThat(repository.findById(userId).orElseThrow().getCommentLikes()).isEmpty();
     }
 
     @Test
@@ -285,6 +312,19 @@ class UserActivityMongoRepositoryTest {
       assertThat(found.getArticleViews()).hasSize(1);
       assertThat(found.getArticleViews().get(0).getArticleId()).isEqualTo(articleId);
       assertThat(found.getArticleViews().get(0).getArticleTitle()).isEqualTo("불변 기사 제목");
+    }
+
+    @Test
+    @DisplayName("userId와 articleId로 기사 조회 내역을 단건 pull 할 수 있다")
+    void 단건_pull_검증() {
+      UUID userId = UUID.randomUUID();
+      UUID articleId = UUID.randomUUID();
+      repository.createUserActivity(newActivity(userId));
+      repository.pushArticleView(userId, newArticleView(UUID.randomUUID(), userId, articleId, "기사"));
+
+      repository.pullArticleView(userId, articleId);
+
+      assertThat(repository.findById(userId).orElseThrow().getArticleViews()).isEmpty();
     }
 
     @Test

@@ -100,6 +100,12 @@ public class UserActivityEventListener {
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(ArticleViewDeletedEvent event) {
+    log.debug("기사 조회 내역 단건 삭제 | userId={}, articleId={}", event.userId(), event.articleId());
+    userActivityMongoRepository.pullArticleView(event.userId(), event.articleId());
+  }
+
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(ArticleViewedEvent event) {
     log.debug("기사 조회 push | userId={}, articleId={}", event.userId(), event.articleId());
     RecentArticleView articleView = RecentArticleView.of(
