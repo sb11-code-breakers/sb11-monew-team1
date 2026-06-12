@@ -37,7 +37,4 @@ public class UserActivity {
     return doc;
   }
 
-  public void updateNickname(String nickname) {
-    this.nickname = nickname;
-  }
 }

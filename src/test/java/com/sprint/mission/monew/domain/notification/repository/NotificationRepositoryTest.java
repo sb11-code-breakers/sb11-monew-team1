@@ -54,9 +54,9 @@ class NotificationRepositoryTest {
     void 커서_없이_조회하면_해당_사용자의_미확인_알림만_반환한다() {
       // given
       notificationRepository.save(
-          Notification.create(userId, "알림1", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(userId, "알림1", ResourceType.ARTICLE, UUID.randomUUID()));
       notificationRepository.save(
-          Notification.create(userId, "알림2", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(userId, "알림2", ResourceType.ARTICLE, UUID.randomUUID()));
       NotificationQueryCondition condition = new NotificationQueryCondition(null, null, null, 10);
 
       // when
@@ -73,9 +73,9 @@ class NotificationRepositoryTest {
     void 확인된_알림은_조회_결과에_포함되지_않는다() {
       // given
       Notification unconfirmed = notificationRepository.save(
-          Notification.create(userId, "미확인", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(userId, "미확인", ResourceType.ARTICLE, UUID.randomUUID()));
       Notification confirmed = notificationRepository.save(
-          Notification.create(userId, "확인됨", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(userId, "확인됨", ResourceType.ARTICLE, UUID.randomUUID()));
       confirmed.confirm();
       notificationRepository.save(confirmed);
       NotificationQueryCondition condition = new NotificationQueryCondition(null, null, null, 10);
@@ -94,9 +94,9 @@ class NotificationRepositoryTest {
     void 다른_사용자의_알림은_조회_결과에_포함되지_않는다() {
       // given
       notificationRepository.save(
-          Notification.create(userId, "내 알림", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(userId, "내 알림", ResourceType.ARTICLE, UUID.randomUUID()));
       notificationRepository.save(
-          Notification.create(UUID.randomUUID(), "타인 알림", ResourceType.INTEREST,
+          Notification.create(UUID.randomUUID(), "타인 알림", ResourceType.ARTICLE,
               UUID.randomUUID()));
       NotificationQueryCondition condition = new NotificationQueryCondition(null, null, null, 10);
 
@@ -115,7 +115,7 @@ class NotificationRepositoryTest {
       // given
       for (int i = 0; i < 3; i++) {
         notificationRepository.save(
-            Notification.create(userId, "알림" + i, ResourceType.INTEREST, UUID.randomUUID()));
+            Notification.create(userId, "알림" + i, ResourceType.ARTICLE, UUID.randomUUID()));
       }
       NotificationQueryCondition condition = new NotificationQueryCondition(null, null, null, 2);
 
@@ -134,11 +134,11 @@ class NotificationRepositoryTest {
       // given - createdAt이 오래된→최신 순인 알림 3건
       Instant base = Instant.now();
       Notification oldest =
-          Notification.create(userId, "알림1", ResourceType.INTEREST, UUID.randomUUID());
+          Notification.create(userId, "알림1", ResourceType.ARTICLE, UUID.randomUUID());
       Notification middle =
-          Notification.create(userId, "알림2", ResourceType.INTEREST, UUID.randomUUID());
+          Notification.create(userId, "알림2", ResourceType.ARTICLE, UUID.randomUUID());
       Notification newest =
-          Notification.create(userId, "알림3", ResourceType.INTEREST, UUID.randomUUID());
+          Notification.create(userId, "알림3", ResourceType.ARTICLE, UUID.randomUUID());
       ReflectionTestUtils.setField(oldest, "createdAt", base.minusSeconds(20));
       ReflectionTestUtils.setField(middle, "createdAt", base.minusSeconds(10));
       ReflectionTestUtils.setField(newest, "createdAt", base);
@@ -198,7 +198,7 @@ class NotificationRepositoryTest {
       // given
       UUID otherUserId = UUID.randomUUID();
       Notification notification = notificationRepository.save(
-          Notification.create(otherUserId, "타인 알림", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(otherUserId, "타인 알림", ResourceType.ARTICLE, UUID.randomUUID()));
 
       // when
       Optional<Notification> result = notificationRepository.findByIdAndUserIdAndConfirmedAtIsNull(
@@ -213,7 +213,7 @@ class NotificationRepositoryTest {
     void 이미_확인된_알림이면_빈_Optional을_반환한다() {
       // given
       Notification notification = notificationRepository.save(
-          Notification.create(userId, "확인된 알림", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(userId, "확인된 알림", ResourceType.ARTICLE, UUID.randomUUID()));
       notification.confirm();
       notificationRepository.save(notification);
 
@@ -230,7 +230,7 @@ class NotificationRepositoryTest {
     void id와_userId가_모두_일치하고_미확인_상태면_알림을_반환한다() {
       // given
       Notification notification = notificationRepository.save(
-          Notification.create(userId, "내 알림", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(userId, "내 알림", ResourceType.ARTICLE, UUID.randomUUID()));
 
       // when
       Optional<Notification> result = notificationRepository.findByIdAndUserIdAndConfirmedAtIsNull(
@@ -252,9 +252,9 @@ class NotificationRepositoryTest {
     void 미확인_알림_전체_확인_시_모두_confirmedAt이_설정된다() {
       // given
       notificationRepository.save(
-          Notification.create(userId, "알림1", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(userId, "알림1", ResourceType.ARTICLE, UUID.randomUUID()));
       notificationRepository.save(
-          Notification.create(userId, "알림2", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(userId, "알림2", ResourceType.ARTICLE, UUID.randomUUID()));
 
       // when
       notificationRepository.confirmAllByUserId(userId, Instant.now());
@@ -279,7 +279,7 @@ class NotificationRepositoryTest {
     void 이미_확인된_알림은_confirmAll_호출_후에도_confirmedAt이_변경되지_않는다() {
       // given
       Notification confirmed = notificationRepository.save(
-          Notification.create(userId, "확인됨", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(userId, "확인됨", ResourceType.ARTICLE, UUID.randomUUID()));
       confirmed.confirm();
       notificationRepository.save(confirmed);
 
@@ -303,7 +303,7 @@ class NotificationRepositoryTest {
     void 확인_후_7일_경과한_알림은_물리_삭제된다() {
       // given
       notificationRepository.save(
-          Notification.create(userId, "오래된 알림", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(userId, "오래된 알림", ResourceType.ARTICLE, UUID.randomUUID()));
       notificationRepository.confirmAllByUserId(userId, Instant.now().minus(8, ChronoUnit.DAYS));
 
       // when
@@ -325,9 +325,9 @@ class NotificationRepositoryTest {
       Instant cutoff = Instant.now();
 
       Notification notification1 =
-          Notification.create(userId, "삭제될 알림", ResourceType.INTEREST, UUID.randomUUID());
+          Notification.create(userId, "삭제될 알림", ResourceType.ARTICLE, UUID.randomUUID());
       Notification notification2 =
-          Notification.create(userId, "남아있을 알림", ResourceType.INTEREST, UUID.randomUUID());
+          Notification.create(userId, "남아있을 알림", ResourceType.ARTICLE, UUID.randomUUID());
 
       ReflectionTestUtils.setField(notification1, "confirmedAt", cutoff.minusSeconds(100));
       ReflectionTestUtils.setField(notification2, "confirmedAt", cutoff.plusSeconds(100));

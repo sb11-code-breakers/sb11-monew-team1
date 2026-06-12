@@ -47,7 +47,7 @@ class SubscriptionRepositoryTest {
     interestRepository.deleteAll();
     userRepository.deleteAll();
 
-    interest = interestRepository.save(Interest.create("인공지능", List.of("AI")));
+    interest = interestRepository.save(Interest.create("인공지능", 11, List.of("AI")));
     user = userRepository.save(User.create("test@test.com", "테스터", "password123!"));
   }
 
@@ -181,7 +181,7 @@ class SubscriptionRepositoryTest {
     @DisplayName("조회 대상 관심사의 (관심사ID, 구독자ID) 쌍만 반환한다")
     void 조회_대상_관심사의_구독자_쌍만_반환한다() {
       // given — interest는 조회 대상(구독자 2명), otherInterest는 제외 대상
-      Interest otherInterest = interestRepository.save(Interest.create("스포츠", List.of("축구")));
+      Interest otherInterest = interestRepository.save(Interest.create("스포츠", 6, List.of("축구")));
       User user2 = userRepository.save(User.create("user2@test.com", "유저2", "password123!"));
       subscriptionRepository.save(Subscription.create(interest, user));
       subscriptionRepository.save(Subscription.create(interest, user2));

@@ -58,3 +58,12 @@ application*.yaml
 ### Docs ###
 docs/intro
 docs/draft
+
+### Performance test ###
+# 측정 일회성 산출물
+k6/results/
+perf/results/
+# 시드에서 추출한 ID 풀 (실재 id, 환경 의존)
+*_ids.csv
+k6/*.csv
+perf/*.csv

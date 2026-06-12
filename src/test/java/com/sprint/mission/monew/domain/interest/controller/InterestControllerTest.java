@@ -17,6 +17,7 @@ import com.sprint.mission.monew.common.dto.CursorPageResponse;
 import com.sprint.mission.monew.domain.interest.dto.InterestCreateRequest;
 import com.sprint.mission.monew.domain.interest.dto.InterestResponse;
 import com.sprint.mission.monew.domain.interest.dto.InterestUpdateRequest;
+import com.sprint.mission.monew.domain.interest.exception.InterestAlreadyExistsException;
 import com.sprint.mission.monew.domain.interest.exception.InterestNotFoundException;
 import com.sprint.mission.monew.domain.interest.service.InterestService;
 import com.sprint.mission.monew.domain.user.document.UserSession;
@@ -254,6 +255,25 @@ class InterestControllerTest {
           )
           .andExpect(status().isBadRequest());
       verifyNoInteractions(interestService);
+    }
+
+    @Test
+    @DisplayName("유사한 이름이 존재하면 409를 반환한다")
+    void 유사한_이름이_존재하면_409를_반환한다() throws Exception {
+      // given
+      willThrow(InterestAlreadyExistsException.withName("AI소식"))
+          .given(interestService).create(any());
+
+      // when & then
+      mockMvc
+          .perform(
+              post("/api/interests")
+                  .header("Monew-Request-User-ID", sessionToken)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(
+                      new InterestCreateRequest("AI소식", List.of("AI"))))
+          )
+          .andExpect(status().isConflict());
     }
 
     @Test

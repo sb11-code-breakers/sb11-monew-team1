@@ -1,9 +1,11 @@
 package com.sprint.mission.monew.batch.news.collect.listener;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -11,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.sprint.mission.monew.batch.news.collect.metrics.NewsCollectMetrics;
+import com.sprint.mission.monew.domain.article.service.ArticleNotificationService;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,6 +34,9 @@ public class NewsCollectJobListenerTest {
 
   @Mock
   NewsCollectMetrics newsCollectMetrics;
+  
+  @Mock
+  ArticleNotificationService articleNotificationService;
 
   @InjectMocks
   NewsCollectJobListener listener;
@@ -75,6 +81,7 @@ public class NewsCollectJobListenerTest {
       given(jobExecution.getStartTime()).willReturn(null);
       given(jobExecution.getEndTime()).willReturn(end);
       given(jobExecution.getStatus()).willReturn(BatchStatus.COMPLETED);
+      given(jobExecution.getCreateTime()).willReturn(LocalDateTime.of(2026, 6, 10, 9, 0, 0));
 
       // when
       listener.afterJob(jobExecution);
@@ -92,6 +99,7 @@ public class NewsCollectJobListenerTest {
       given(jobExecution.getStartTime()).willReturn(start);
       given(jobExecution.getEndTime()).willReturn(null);
       given(jobExecution.getStatus()).willReturn(BatchStatus.COMPLETED);
+      given(jobExecution.getCreateTime()).willReturn(LocalDateTime.of(2026, 6, 10, 9, 0, 0));
 
       // when
       listener.afterJob(jobExecution);
@@ -153,6 +161,7 @@ public class NewsCollectJobListenerTest {
 
       when(jobExecution.getStartTime()).thenReturn(start);
       when(jobExecution.getEndTime()).thenReturn(end);
+      when(jobExecution.getCreateTime()).thenReturn(LocalDateTime.of(2026, 6, 10, 9, 0, 0));
 
       // when
       listener.afterJob(jobExecution);
@@ -160,6 +169,22 @@ public class NewsCollectJobListenerTest {
       // then
       verify(newsCollectMetrics, times(1)).markSuccess();
       verify(newsCollectMetrics).recordJobDuration(Duration.ofSeconds(5));
+    }
+
+    @Test
+    @DisplayName("알림 발행 실패 시 예외를 전파하지 않는다")
+    void 알림_발행_실패_시_예외를_전파하지_않는다() {
+      // given
+      when(jobExecution.getStatus()).thenReturn(BatchStatus.COMPLETED);
+      when(jobExecution.getCreateTime()).thenReturn(LocalDateTime.of(2026, 6, 10, 9, 0, 0));
+      when(jobExecution.getStartTime()).thenReturn(null);
+      when(jobExecution.getEndTime()).thenReturn(null);
+      willThrow(new RuntimeException("알림 오류"))
+          .given(articleNotificationService)
+          .notifyNewArticles(any());
+
+      // when & then
+      assertThatCode(() -> listener.afterJob(jobExecution)).doesNotThrowAnyException();
     }
   }
 }

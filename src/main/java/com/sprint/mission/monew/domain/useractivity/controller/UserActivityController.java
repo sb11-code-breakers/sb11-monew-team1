@@ -6,6 +6,7 @@ import com.sprint.mission.monew.domain.useractivity.service.UserActivityService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -18,6 +19,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserActivityController implements UserActivityApi {
 
   private final UserActivityService userActivityService;
+
+  @Override
+  @DeleteMapping("/{userId}/article-views/{articleId}")
+  public ResponseEntity<Void> deleteArticleView(
+      @PathVariable UUID userId,
+      @PathVariable UUID articleId,
+      @RequestHeader("Monew-Request-User-ID") UUID requestUserId) {
+    userActivityService.deleteArticleView(userId, articleId, requestUserId);
+    return ResponseEntity.noContent().build();
+  }
 
   @Override
   @GetMapping("/{userId}")

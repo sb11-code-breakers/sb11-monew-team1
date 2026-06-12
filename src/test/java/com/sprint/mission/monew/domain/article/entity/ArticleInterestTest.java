@@ -16,7 +16,7 @@ class ArticleInterestTest {
     // given
     Article article = Article.create(ArticleSource.NAVER, "https://example.com", "제목",
         Instant.now(), null);
-    Interest interest = Interest.create("AI", List.of("AI"));
+    Interest interest = Interest.create("AI", 2, List.of("AI"));
 
     // when
     ArticleInterest articleInterest = ArticleInterest.create(article, interest);

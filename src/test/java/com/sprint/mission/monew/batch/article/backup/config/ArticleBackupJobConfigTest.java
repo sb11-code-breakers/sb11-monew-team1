@@ -8,6 +8,7 @@ import com.sprint.mission.monew.batch.article.backup.listener.ArticleBackupJobLi
 import com.sprint.mission.monew.batch.article.backup.listener.ArticleBackupStepListener;
 import com.sprint.mission.monew.batch.article.backup.reader.ArticleBackupReader;
 import com.sprint.mission.monew.batch.article.backup.writer.ArticleBackupWriter;
+import com.sprint.mission.monew.batch.common.listener.SkipLoggingListener;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,7 @@ class ArticleBackupJobConfigTest {
     void job_step_생성_성공() {
       // given
       ArticleBackupJobListener jobListener = mock(ArticleBackupJobListener.class);
+      SkipLoggingListener skipLoggingListener = mock(SkipLoggingListener.class);
       ArticleBackupReader reader = mock(ArticleBackupReader.class);
       ArticleBackupWriter writer = mock(ArticleBackupWriter.class);
       ArticleBackupStepListener stepListener = mock(ArticleBackupStepListener.class);
@@ -39,6 +41,7 @@ class ArticleBackupJobConfigTest {
           jobRepository,
           transactionManager,
           jobListener,
+          skipLoggingListener,
           reader,
           writer,
           stepListener

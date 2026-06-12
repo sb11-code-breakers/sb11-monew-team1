@@ -51,7 +51,7 @@ class InterestRepositoryTest {
     void 저장_후_ID로_조회하면_name과_keywords가_일치한다() {
       // given
       List<String> keywords = List.of("AI", "머신러닝", "딥러닝");
-      Interest interest = Interest.create("인공지능", keywords);
+      Interest interest = Interest.create("인공지능", 11, keywords);
 
       // when
       Interest saved = interestRepository.save(interest);
@@ -76,9 +76,9 @@ class InterestRepositoryTest {
       // given
       interestRepository.saveAll(
           List.of(
-              Interest.create("Celebrity", List.of("연예인")),
-              Interest.create("AI", List.of("인공지능")),
-              Interest.create("Baseball", List.of("야구"))));
+              Interest.create("Celebrity", 9, List.of("연예인")),
+              Interest.create("AI", 2, List.of("인공지능")),
+              Interest.create("Baseball", 8, List.of("야구"))));
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition("", InterestOrderBy.NAME, SortDirection.DESC, null, null, null, 10);
@@ -101,9 +101,9 @@ class InterestRepositoryTest {
       // given
       interestRepository.saveAll(
           List.of(
-              Interest.create("Baseball", List.of("bat", "pitcher")),
-              Interest.create("Basketball", List.of("court", "dunk")),
-              Interest.create("AI", List.of("machine learning"))));
+              Interest.create("Baseball", 8, List.of("bat", "pitcher")),
+              Interest.create("Basketball", 10, List.of("court", "dunk")),
+              Interest.create("AI", 2, List.of("machine learning"))));
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
@@ -124,9 +124,9 @@ class InterestRepositoryTest {
       // given
       interestRepository.saveAll(
           List.of(
-              Interest.create("Soccer", List.of("football", "goal")),
-              Interest.create("Basketball", List.of("court", "dunk")),
-              Interest.create("Tennis", List.of("racket", "serve"))));
+              Interest.create("Soccer", 6, List.of("football", "goal")),
+              Interest.create("Basketball", 10, List.of("court", "dunk")),
+              Interest.create("Tennis", 6, List.of("racket", "serve"))));
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
@@ -147,8 +147,8 @@ class InterestRepositoryTest {
       // given
       interestRepository.saveAll(
           List.of(
-              Interest.create("Soccer", List.of("football")),
-              Interest.create("Tennis", List.of("racket"))));
+              Interest.create("Soccer", 6, List.of("football")),
+              Interest.create("Tennis", 6, List.of("racket"))));
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition(
@@ -169,9 +169,9 @@ class InterestRepositoryTest {
       // given
       interestRepository.saveAll(
           List.of(
-              Interest.create("Celebrity", List.of("연예인")),
-              Interest.create("AI", List.of("인공지능")),
-              Interest.create("Baseball", List.of("야구"))));
+              Interest.create("Celebrity", 9, List.of("연예인")),
+              Interest.create("AI", 2, List.of("인공지능")),
+              Interest.create("Baseball", 8, List.of("야구"))));
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition("", InterestOrderBy.NAME, SortDirection.ASC, null, null, null, 10);
@@ -190,9 +190,9 @@ class InterestRepositoryTest {
     @DisplayName("orderBy=subscriberCount, direction=DESC로 정렬된다")
     void orderBy_subscriberCount_direction_DESC로_정렬된다() {
       // given
-      Interest soccer = Interest.create("Soccer", List.of("football"));
-      Interest tennis = Interest.create("Tennis", List.of("racket"));
-      Interest ai = Interest.create("AI", List.of("인공지능"));
+      Interest soccer = Interest.create("Soccer", 6, List.of("football"));
+      Interest tennis = Interest.create("Tennis", 6, List.of("racket"));
+      Interest ai = Interest.create("AI", 2, List.of("인공지능"));
       interestRepository.saveAll(List.of(soccer, tennis, ai));
       interestRepository.increaseSubscriberCount(soccer.getId());
       interestRepository.increaseSubscriberCount(soccer.getId()); // 2
@@ -216,9 +216,9 @@ class InterestRepositoryTest {
     @DisplayName("orderBy=subscriberCount, direction=ASC로 정렬된다")
     void orderBy_subscriberCount_direction_ASC로_정렬된다() {
       // given
-      Interest soccer = Interest.create("Soccer", List.of("football"));
-      Interest tennis = Interest.create("Tennis", List.of("racket"));
-      Interest ai = Interest.create("AI", List.of("인공지능"));
+      Interest soccer = Interest.create("Soccer", 6, List.of("football"));
+      Interest tennis = Interest.create("Tennis", 6, List.of("racket"));
+      Interest ai = Interest.create("AI", 2, List.of("인공지능"));
       interestRepository.saveAll(List.of(soccer, tennis, ai));
       interestRepository.increaseSubscriberCount(soccer.getId());
       interestRepository.increaseSubscriberCount(soccer.getId()); // 2
@@ -244,9 +244,9 @@ class InterestRepositoryTest {
       // given
       interestRepository.saveAll(
           List.of(
-              Interest.create("Celebrity", List.of("연예인")),
-              Interest.create("Baseball", List.of("야구")),
-              Interest.create("AI", List.of("인공지능"))));
+              Interest.create("Celebrity", 11, List.of("연예인")),
+              Interest.create("Baseball", 8, List.of("야구")),
+              Interest.create("AI", 2, List.of("인공지능"))));
       UUID userId = UUID.randomUUID();
       InterestQueryCondition condition =
           new InterestQueryCondition("", InterestOrderBy.NAME, SortDirection.DESC, null, null, null, 2);
@@ -266,9 +266,9 @@ class InterestRepositoryTest {
     @DisplayName("SUBSCRIBER_COUNT 정렬 hasNext=true 시 nextCursor는 정수 문자열이다")
     void SUBSCRIBER_COUNT_hasNext_true_시_nextCursor는_정수다() {
       // given — DESC: Soccer(2), Tennis(1), AI(0)
-      Interest soccer = Interest.create("Soccer", List.of("football"));
-      Interest tennis = Interest.create("Tennis", List.of("racket"));
-      Interest ai = Interest.create("AI", List.of("인공지능"));
+      Interest soccer = Interest.create("Soccer", 6, List.of("football"));
+      Interest tennis = Interest.create("Tennis", 6, List.of("racket"));
+      Interest ai = Interest.create("AI", 2, List.of("인공지능"));
       interestRepository.saveAll(List.of(soccer, tennis, ai));
       interestRepository.increaseSubscriberCount(soccer.getId());
       interestRepository.increaseSubscriberCount(soccer.getId());
@@ -293,9 +293,9 @@ class InterestRepositoryTest {
     @DisplayName("SUBSCRIBER_COUNT ASC 정렬 hasNext=true 시 nextCursor는 정수 문자열이다")
     void SUBSCRIBER_COUNT_ASC_hasNext_true_시_nextCursor는_정수다() {
       // given — ASC: AI(0), Tennis(1), Soccer(2)
-      Interest soccer = Interest.create("Soccer", List.of("football"));
-      Interest tennis = Interest.create("Tennis", List.of("racket"));
-      Interest ai = Interest.create("AI", List.of("인공지능"));
+      Interest soccer = Interest.create("Soccer", 6, List.of("football"));
+      Interest tennis = Interest.create("Tennis", 6, List.of("racket"));
+      Interest ai = Interest.create("AI", 2, List.of("인공지능"));
       interestRepository.saveAll(List.of(soccer, tennis, ai));
       interestRepository.increaseSubscriberCount(soccer.getId());
       interestRepository.increaseSubscriberCount(soccer.getId());
@@ -322,9 +322,9 @@ class InterestRepositoryTest {
       // given
       interestRepository.saveAll(
           List.of(
-              Interest.create("Celebrity", List.of("연예인")),
-              Interest.create("Baseball", List.of("야구")),
-              Interest.create("AI", List.of("인공지능"))));
+              Interest.create("Celebrity", 9, List.of("연예인")),
+              Interest.create("Baseball", 8, List.of("야구")),
+              Interest.create("AI", 2, List.of("인공지능"))));
       UUID userId = UUID.randomUUID();
       CursorPageResponse<InterestResponse> firstPage =
           interestRepository.findInterests(
@@ -357,9 +357,9 @@ class InterestRepositoryTest {
       // given — ASC: AI, Baseball, Celebrity
       interestRepository.saveAll(
           List.of(
-              Interest.create("Celebrity", List.of("연예인")),
-              Interest.create("Baseball", List.of("야구")),
-              Interest.create("AI", List.of("인공지능"))));
+              Interest.create("Celebrity", 9, List.of("연예인")),
+              Interest.create("Baseball", 8, List.of("야구")),
+              Interest.create("AI", 2, List.of("인공지능"))));
       UUID userId = UUID.randomUUID();
       CursorPageResponse<InterestResponse> firstPage =
           interestRepository.findInterests(
@@ -390,9 +390,9 @@ class InterestRepositoryTest {
     @DisplayName("cursor 기반으로 SUBSCRIBER_COUNT DESC 다음 페이지를 조회한다")
     void cursor_기반으로_SUBSCRIBER_COUNT_DESC_다음_페이지를_조회한다() {
       // given — DESC: Soccer(2), Tennis(1), AI(0)
-      Interest soccer = Interest.create("Soccer", List.of("football"));
-      Interest tennis = Interest.create("Tennis", List.of("racket"));
-      Interest ai = Interest.create("AI", List.of("인공지능"));
+      Interest soccer = Interest.create("Soccer", 6, List.of("football"));
+      Interest tennis = Interest.create("Tennis", 6, List.of("racket"));
+      Interest ai = Interest.create("AI", 2, List.of("인공지능"));
       interestRepository.saveAll(List.of(soccer, tennis, ai));
       interestRepository.increaseSubscriberCount(soccer.getId());
       interestRepository.increaseSubscriberCount(soccer.getId());
@@ -427,9 +427,9 @@ class InterestRepositoryTest {
     @DisplayName("cursor 기반으로 SUBSCRIBER_COUNT ASC 다음 페이지를 조회한다")
     void cursor_기반으로_SUBSCRIBER_COUNT_ASC_다음_페이지를_조회한다() {
       // given — ASC: AI(0), Tennis(1), Soccer(2)
-      Interest soccer = Interest.create("Soccer", List.of("football"));
-      Interest tennis = Interest.create("Tennis", List.of("racket"));
-      Interest ai = Interest.create("AI", List.of("인공지능"));
+      Interest soccer = Interest.create("Soccer", 6, List.of("football"));
+      Interest tennis = Interest.create("Tennis", 6, List.of("racket"));
+      Interest ai = Interest.create("AI", 2, List.of("인공지능"));
       interestRepository.saveAll(List.of(soccer, tennis, ai));
       interestRepository.increaseSubscriberCount(soccer.getId());
       interestRepository.increaseSubscriberCount(soccer.getId());
@@ -464,8 +464,8 @@ class InterestRepositoryTest {
     @DisplayName("구독한 관심사는 subscribedByMe=true, 미구독은 false로 반환된다")
     void 구독한_관심사는_subscribedByMe가_true_미구독은_false로_반환된다() {
       // given
-      Interest soccer = interestRepository.save(Interest.create("Soccer", List.of("football")));
-      Interest tennis = interestRepository.save(Interest.create("Tennis", List.of("racket")));
+      Interest soccer = interestRepository.save(Interest.create("Soccer", 6, List.of("football")));
+      Interest tennis = interestRepository.save(Interest.create("Tennis", 6, List.of("racket")));
 
       User user = em.persistAndFlush(User.create("test@test.com", "tester", "pass"));
       em.persistAndFlush(Subscription.create(soccer, user));
@@ -495,8 +495,8 @@ class InterestRepositoryTest {
     @DisplayName("기사 제목 또는 요약에 키워드가 포함된 관심사를 반환한다")
     void 기사_제목_또는_요약에_키워드가_포함된_관심사를_반환한다() {
       // given
-      interestRepository.save(Interest.create("인공지능", List.of("AI", "머신러닝")));
-      interestRepository.save(Interest.create("스포츠", List.of("축구", "야구")));
+      interestRepository.save(Interest.create("인공지능", 11, List.of("AI", "머신러닝")));
+      interestRepository.save(Interest.create("스포츠", 6, List.of("축구", "야구")));
 
       // when
       List<Interest> result = interestRepository.findMatchingInterests("AI 반도체 전망", "머신러닝 동향");
@@ -510,7 +510,7 @@ class InterestRepositoryTest {
     @DisplayName("일치하는 키워드가 없으면 빈 목록을 반환한다")
     void 일치하는_키워드가_없으면_빈_목록을_반환한다() {
       // given
-      interestRepository.save(Interest.create("인공지능", List.of("AI", "머신러닝")));
+      interestRepository.save(Interest.create("인공지능", 11, List.of("AI", "머신러닝")));
 
       // when
       List<Interest> result = interestRepository.findMatchingInterests("오늘의 날씨", "맑고 쾌청한 하루");
@@ -528,7 +528,7 @@ class InterestRepositoryTest {
     @DisplayName("삭제 후 findById로 조회하면 empty를 반환한다")
     void 삭제_후_findById로_조회하면_empty를_반환한다() {
       // given
-      Interest interest = Interest.create("블록체인", List.of("비트코인", "이더리움"));
+      Interest interest = Interest.create("블록체인", 11, List.of("비트코인", "이더리움"));
       Interest saved = interestRepository.save(interest);
       UUID savedId = saved.getId();
 
@@ -543,7 +543,7 @@ class InterestRepositoryTest {
     @DisplayName("관심사 삭제 시 cascade로 키워드도 함께 삭제된다")
     void 관심사_삭제_시_cascade로_키워드도_함께_삭제된다() {
       // given
-      Interest interest = Interest.create("메타버스", List.of("VR", "AR"));
+      Interest interest = Interest.create("메타버스", 8, List.of("VR", "AR"));
       Interest saved = interestRepository.save(interest);
       List<UUID> keywordIds = saved.getKeywords().stream().map(InterestKeyword::getId).toList();
 
@@ -554,6 +554,71 @@ class InterestRepositoryTest {
 
       // then — REMOVED 상태의 엔티티는 em.find()에서 null 반환
       keywordIds.forEach(id -> assertThat(em.find(InterestKeyword.class, id)).isNull());
+    }
+  }
+
+  @Nested
+  @DisplayName("오탈자 후보 조회 (jamo_length 범위)")
+  class FindTypoCandidates {
+
+    @Test
+    @DisplayName("jamo_length 범위 내 이름만 반환한다")
+    void jamo_length_범위_내_이름만_반환한다() {
+      // given
+      interestRepository.save(Interest.create("반도체", 7, List.of()));
+
+      // when
+      List<String> result = interestRepository.findTypoCandidates(6, 9);
+
+      // then
+      assertThat(result).contains("반도체");
+    }
+
+    @Test
+    @DisplayName("jamo_length 범위 밖 이름은 제외한다")
+    void jamo_length_범위_밖_이름은_제외한다() {
+      // given
+      interestRepository.save(Interest.create("삼성전자", 11, List.of()));
+
+      // when
+      List<String> result = interestRepository.findTypoCandidates(6, 9);
+
+      // then
+      assertThat(result).doesNotContain("삼성전자");
+    }
+  }
+
+  @Nested
+  @DisplayName("토큰 OR LIKE 후보 조회")
+  class FindNamesByTokens {
+
+    @Test
+    @DisplayName("빈 토큰 목록이면 DB 조회 없이 빈 목록을 반환한다")
+    void 빈_토큰_목록이면_빈_목록을_반환한다() {
+      // given
+      interestRepository.save(Interest.create("AI 뉴스", 6, List.of()));
+
+      // when
+      List<String> result = interestRepository.findNamesByTokens(List.of());
+
+      // then — 빈 리스트 조기반환(line 37), 전체 조회 없음
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("토큰 중 하나라도 포함되면 반환한다")
+    void 토큰_중_하나라도_포함되면_반환한다() {
+      // given
+      interestRepository.save(Interest.create("AI 뉴스", 6, List.of()));
+      interestRepository.save(Interest.create("주식 정보", 7, List.of()));
+      interestRepository.save(Interest.create("환경", 4, List.of()));
+
+      // when
+      List<String> result = interestRepository.findNamesByTokens(List.of("뉴스"));
+
+      // then
+      assertThat(result).contains("AI 뉴스");
+      assertThat(result).doesNotContain("주식 정보", "환경");
     }
   }
 }

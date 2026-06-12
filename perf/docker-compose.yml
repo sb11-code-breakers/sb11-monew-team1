@@ -1,0 +1,71 @@
+# 성능 측정용 로컬 환경 — ECS task definition 제약을 그대로 복제한다.
+# 목적: 스테이징/운영에 부하를 쏘지 않고(ADR 결정), 동일 스펙에서 앱·JVM·DB 한계를 측정.
+name: monew-perf
+
+services:
+  monew-app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: monew:loadtest
+    # ── ECS 제약 복제 (monew-task-definition 기준: Task cpu 1024 / monew-app hard 768MB) ──
+    cpus: 1.0                 # ECS Task 1 vCPU (실제론 grafana-alloy 사이드카와 공유 → 로컬은 약간 후함)
+    mem_limit: 768m           # ECS hard limit (memory)
+    mem_reservation: 512m     # ECS soft limit (memoryReservation)
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      # ECS와 동일한 제약 JVM 옵션 (JAVA_TOOL_OPTIONS는 JVM이 자동 인식 → 측정 충실도 핵심)
+      JAVA_TOOL_OPTIONS: "-Xmx384m -Xms256m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1"
+      DB_URL: jdbc:postgresql://postgres:5432/monew
+      DB_USERNAME: monew
+      DB_PASSWORD: monew
+      MONGODB_URI: mongodb://mongo:27017/monew
+      # prod 프로파일 기동 필수값 — 로컬 측정 전용 더미 (외부 호출 안 함)
+      ADMIN_TOKEN: loadtest-admin-token
+      NAVER_CLIENT_ID: loadtest-dummy
+      NAVER_CLIENT_SECRET: loadtest-dummy
+      AWS_REGION: ap-northeast-2     # AWS 기능 미사용, 클라이언트 빌더 region 충족용
+    ports:
+      - "8080:80"             # host 8080 → container 80 (prod profile server.port=80)
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    # 앱 기동(약 20~30초) 중 초반 요청이 전부 에러로 잡히지 않도록 health 게이트를 둔다.
+    # k6는 'docker compose ps'에서 monew-app이 (healthy)가 된 뒤 실행할 것.
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/actuator/health || exit 1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+
+  postgres:
+    image: postgres:18.3       # 테스트(application-test.yaml: jdbc:tc:postgresql:18.3)와 동일 버전
+    cpus: 2.0                 # DB는 앱과 다른 코어에서 (CPU 경합 = 측정 오염 방지)
+    environment:
+      POSTGRES_DB: monew
+      POSTGRES_USER: monew
+      POSTGRES_PASSWORD: monew
+    # ddl-auto=validate 이므로 앱 기동 전 스키마가 존재해야 한다 → 최초 부팅 시 1회 적용
+    volumes:
+      - ../src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U monew -d monew" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  mongo:
+    image: mongo:8.0.23        # 테스트(MongoContainerConfig)와 동일 버전
+    cpus: 1.0
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: [ "CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10

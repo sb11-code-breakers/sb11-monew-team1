@@ -16,6 +16,7 @@ import com.sprint.mission.monew.domain.interest.dto.InterestUpdateRequest;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
 import com.sprint.mission.monew.domain.interest.entity.Subscription;
 import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
+import com.sprint.mission.monew.domain.interest.util.JamoNormalizer;
 import com.sprint.mission.monew.domain.interest.repository.SubscriptionRepository;
 import com.sprint.mission.monew.domain.user.document.UserSession;
 import com.sprint.mission.monew.domain.user.entity.User;
@@ -90,7 +91,7 @@ class InterestIntegrationTest {
     @DisplayName("저장된 관심사가 목록에 포함된다")
     void 저장된_관심사가_목록에_포함된다() throws Exception {
       // given
-      interestRepository.save(Interest.create("인공지능", List.of("AI")));
+      interestRepository.save(Interest.create("인공지능", 11, List.of("AI")));
 
       // when & then
       mockMvc
@@ -108,7 +109,7 @@ class InterestIntegrationTest {
     @DisplayName("구독한 관심사는 subscribedByMe=true로 반환된다")
     void 구독한_관심사는_subscribedByMe_true로_반환된다() throws Exception {
       // given
-      Interest interest = interestRepository.save(Interest.create("인공지능", List.of("AI")));
+      Interest interest = interestRepository.save(Interest.create("인공지능", 11, List.of("AI")));
       User user = userRepository.save(User.create("test@test.com", "테스터", "password123!"));
       subscriptionRepository.save(Subscription.create(interest, user));
 
@@ -136,7 +137,7 @@ class InterestIntegrationTest {
     @DisplayName("유사한 관심사가 이미 존재하면 409를 반환한다")
     void 유사한_관심사가_이미_존재하면_409를_반환한다() throws Exception {
       // given
-      interestRepository.save(Interest.create("인공지능X", List.of("머신러닝")));
+      interestRepository.save(Interest.create("인공지능X", 12, List.of("머신러닝")));
       InterestCreateRequest request = new InterestCreateRequest("인공지능", List.of("AI"));
 
       // when & then
@@ -146,6 +147,66 @@ class InterestIntegrationTest {
                   .header("Monew-Request-User-ID", anySessionToken)
                   .contentType(MediaType.APPLICATION_JSON)
                   .content(objectMapper.writeValueAsString(request)))
+          .andExpect(status().isConflict())
+          .andExpect(jsonPath("$.code").value("INTEREST_ALREADY_EXISTS"));
+    }
+
+    @Test
+    @DisplayName("오탈자 경로: 자모 1개 차이 관심사 등록 시 409를 반환한다")
+    void 오탈자_경로_자모_1개_차이_관심사_등록_시_409를_반환한다() throws Exception {
+      // given — "반도체" 저장, "반도쳬" 등록 시도
+      String existing = "반도체";
+      interestRepository.save(
+          Interest.create(existing, JamoNormalizer.normalize(existing).length(), List.of("반도체")));
+
+      // when & then
+      mockMvc
+          .perform(
+              post("/api/interests")
+                  .header("Monew-Request-User-ID", anySessionToken)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(
+                      new InterestCreateRequest("반도쳬", List.of("반도체")))))
+          .andExpect(status().isConflict())
+          .andExpect(jsonPath("$.code").value("INTEREST_ALREADY_EXISTS"));
+    }
+
+    @Test
+    @DisplayName("동의어 경로: 같은 suffix 그룹 관심사 등록 시 409를 반환한다")
+    void 동의어_경로_같은_suffix_그룹_관심사_등록_시_409를_반환한다() throws Exception {
+      // given — "AI 뉴스" 저장, "AI 소식" 등록 시도 (둘 다 보도 그룹)
+      String existing = "AI 뉴스";
+      interestRepository.save(
+          Interest.create(existing, JamoNormalizer.normalize(existing).length(), List.of("AI")));
+
+      // when & then
+      mockMvc
+          .perform(
+              post("/api/interests")
+                  .header("Monew-Request-User-ID", anySessionToken)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(
+                      new InterestCreateRequest("AI 소식", List.of("AI")))))
+          .andExpect(status().isConflict())
+          .andExpect(jsonPath("$.code").value("INTEREST_ALREADY_EXISTS"));
+    }
+
+    @Test
+    @DisplayName("prefix 경로: 같은 prefix 그룹 관심사 등록 시 409를 반환한다")
+    void prefix_경로_같은_prefix_그룹_관심사_등록_시_409를_반환한다() throws Exception {
+      // given — "최신AI" 저장, "최근AI" 등록 시도 (둘 다 시간 prefix 그룹)
+      String existing = "최신AI";
+      interestRepository.save(
+          Interest.create(existing, JamoNormalizer.normalize(existing).length(), List.of("AI")));
+
+      // when & then
+      mockMvc
+          .perform(
+              post("/api/interests")
+                  .header("Monew-Request-User-ID", anySessionToken)
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content(objectMapper.writeValueAsString(
+                      new InterestCreateRequest("최근AI", List.of("AI")))))
           .andExpect(status().isConflict())
           .andExpect(jsonPath("$.code").value("INTEREST_ALREADY_EXISTS"));
     }
@@ -195,7 +256,7 @@ class InterestIntegrationTest {
     @DisplayName("정상 요청이면 200과 수정된 키워드를 반환한다")
     void 정상_요청이면_200과_수정된_키워드를_반환한다() throws Exception {
       // given
-      Interest interest = interestRepository.save(Interest.create("인공지능", List.of("AI")));
+      Interest interest = interestRepository.save(Interest.create("인공지능", 11, List.of("AI")));
       InterestUpdateRequest request = new InterestUpdateRequest(List.of("GPT", "자연어처리"));
 
       // when & then
@@ -232,7 +293,7 @@ class InterestIntegrationTest {
     @DisplayName("정상 요청이면 204를 반환하고 DB에서 삭제된다")
     void 정상_요청이면_204를_반환하고_DB에서_삭제된다() throws Exception {
       // given
-      Interest interest = interestRepository.save(Interest.create("블록체인", List.of("비트코인")));
+      Interest interest = interestRepository.save(Interest.create("블록체인", 11, List.of("비트코인")));
 
       // when & then
       mockMvc
@@ -255,7 +316,7 @@ class InterestIntegrationTest {
 
     @BeforeEach
     void setUp() {
-      interest = interestRepository.save(Interest.create("인공지능", List.of("AI", "머신러닝")));
+      interest = interestRepository.save(Interest.create("인공지능", 11, List.of("AI", "머신러닝")));
       user = userRepository.save(User.create("test@test.com", "테스터", "password123!"));
 
       UserSession session = UserSession.create(user.getId(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
@@ -315,7 +376,7 @@ class InterestIntegrationTest {
 
     @BeforeEach
     void setUp() {
-      interest = interestRepository.save(Interest.create("인공지능", List.of("AI", "머신러닝")));
+      interest = interestRepository.save(Interest.create("인공지능", 11, List.of("AI", "머신러닝")));
       user = userRepository.save(User.create("test@test.com", "테스터", "password123!"));
 
       UserSession session = UserSession.create(user.getId(), "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);

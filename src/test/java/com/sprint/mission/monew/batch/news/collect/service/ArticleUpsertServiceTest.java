@@ -48,7 +48,7 @@ class ArticleUpsertServiceTest {
   }
 
   private Interest 관심사_생성(String name, String... keywords) {
-    return Interest.create(name, List.of(keywords));
+    return Interest.create(name, 0, List.of(keywords));
   }
 
   @Nested

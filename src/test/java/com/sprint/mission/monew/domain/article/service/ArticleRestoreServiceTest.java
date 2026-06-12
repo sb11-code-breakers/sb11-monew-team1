@@ -67,7 +67,7 @@ class ArticleRestoreServiceTest {
   }
 
   private Interest 관심사_생성(String keyword) {
-    return Interest.create("테스트 관심사", List.of(keyword));
+    return Interest.create("테스트 관심사", 14, List.of(keyword));
   }
 
   private Article 기사_생성(String sourceUrl) {

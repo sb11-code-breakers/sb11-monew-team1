@@ -33,6 +33,23 @@ public class InterestCustomRepositoryImpl implements InterestCustomRepository {
   private final JPAQueryFactory queryFactory;
 
   @Override
+  public List<String> findNamesByTokens(List<String> tokens) {
+    if (tokens.isEmpty()) return List.of();
+    return queryFactory
+        .select(interest.name)
+        .from(interest)
+        .where(containsAnyToken(tokens))
+        .fetch();
+  }
+
+  private BooleanExpression containsAnyToken(List<String> tokens) {
+    return tokens.stream()
+        .map(interest.name::containsIgnoreCase)
+        .reduce(BooleanExpression::or)
+        .orElse(null);
+  }
+
+  @Override
   public CursorPageResponse<InterestResponse> findInterests(InterestQueryCondition condition,
       UUID userId) {
     List<Tuple> raw = queryFactory

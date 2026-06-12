@@ -63,7 +63,7 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
 
   @Override
   public void updateCommentContent(UUID commentId, String content) {
-    Query query = new Query(Criteria.where("comments.commentId").is(commentId));
+    Query query = new Query(Criteria.where("comments._id").is(commentId));
     Update update = new Update().set("comments.$.content", content);
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }
@@ -103,7 +103,7 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
   @Override
   public void pullComment(UUID userId, UUID commentId) {
     Query query = Query.query(Criteria.where("_id").is(userId));
-    Update update = new Update().pull("comments", Query.query(Criteria.where("commentId").is(commentId)));
+    Update update = new Update().pull("comments", Query.query(Criteria.where("_id").is(commentId)));
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }
 

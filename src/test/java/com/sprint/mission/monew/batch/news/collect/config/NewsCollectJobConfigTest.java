@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
 
+import com.sprint.mission.monew.batch.common.listener.SkipLoggingListener;
 import com.sprint.mission.monew.batch.news.collect.listener.NewsCollectJobListener;
 import com.sprint.mission.monew.batch.news.collect.listener.NewsCollectStepListener;
 import com.sprint.mission.monew.batch.news.collect.reader.NewsCollectReader;

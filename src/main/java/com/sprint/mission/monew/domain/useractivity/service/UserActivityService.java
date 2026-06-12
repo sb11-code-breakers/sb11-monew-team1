@@ -20,12 +20,25 @@ public class UserActivityService {
   private final UserRepository userRepository;
   private final UserActivityMongoRepository userActivityMongoRepository;
 
+  @Transactional
+  public void deleteArticleView(UUID userId, UUID articleId, UUID requestUserId) {
+    if (!userId.equals(requestUserId)) {
+      throw UserAccessDeniedException.forUser(requestUserId);
+    }
+    userRepository.findByIdAndDeletedAtIsNull(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
+    userActivityMongoRepository.pullArticleView(userId, articleId);
+  }
+
   public UserActivity getUserActivity(UUID userId, UUID requestUserId) {
     log.debug("활동 내역 조회 시도: userId={}", userId);
 
     if (!userId.equals(requestUserId)) {
       throw UserAccessDeniedException.forUser(requestUserId);
     }
+
+    userRepository.findByIdAndDeletedAtIsNull(userId)
+        .orElseThrow(() -> UserNotFoundException.withId(userId));
 
     UserActivity activity = userActivityMongoRepository.findById(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
