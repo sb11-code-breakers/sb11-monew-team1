@@ -2,8 +2,8 @@ package com.sprint.mission.monew.domain.article.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.sprint.mission.monew.batch.article.backup.dto.ArticleBackupItem;
 import com.sprint.mission.monew.common.config.JpaConfig;
 import com.sprint.mission.monew.common.config.QuerydslConfig;
 import com.sprint.mission.monew.common.dto.SortDirection;
@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
@@ -57,6 +58,110 @@ class ArticleRepositoryTest {
         null, null, null, null, null,
         ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
         null, null, null, limit);
+  }
+
+  private static final UUID MIN_UUID = new UUID(0L, 0L);
+
+  @Nested
+  @DisplayName("findArticlesForBackup")
+  class FindArticlesForBackup {
+
+    private final Instant from = Instant.now().minusSeconds(60);
+    private final Instant to = Instant.now().plusSeconds(60);
+
+    @Test
+    @DisplayName("소프트딜리트된 기사는 반환하지 않는다")
+    void 소프트딜리트된_기사는_반환하지_않는다() {
+      // given
+      Article article = articleRepository.save(
+          Article.create(ArticleSource.NAVER, "https://example.com/deleted", "삭제기사", Instant.now(), null));
+      article.softDelete();
+      articleRepository.save(article);
+
+      // when
+      List<ArticleBackupItem> result = articleRepository.findArticlesForBackup(
+          from, to, MIN_UUID, PageRequest.of(0, 10));
+
+      // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("from~to 범위 밖 기사는 반환하지 않는다")
+    void 범위_밖_기사는_반환하지_않는다() {
+      // given
+      articleRepository.save(
+          Article.create(ArticleSource.NAVER, "https://example.com/out", "범위밖기사", Instant.now(), null));
+
+      Instant futureFrom = Instant.now().plusSeconds(3600);
+      Instant futureTo = futureFrom.plusSeconds(3600);
+
+      // when
+      List<ArticleBackupItem> result = articleRepository.findArticlesForBackup(
+          futureFrom, futureTo, MIN_UUID, PageRequest.of(0, 10));
+
+      // then
+      assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("from~to 범위 내 기사를 반환한다")
+    void 범위_내_기사를_반환한다() {
+      // given
+      articleRepository.save(
+          Article.create(ArticleSource.NAVER, "https://example.com/a1", "기사1", Instant.now(), null));
+      articleRepository.save(
+          Article.create(ArticleSource.NAVER, "https://example.com/a2", "기사2", Instant.now(), null));
+
+      // when
+      List<ArticleBackupItem> result = articleRepository.findArticlesForBackup(
+          from, to, MIN_UUID, PageRequest.of(0, 10));
+
+      // then
+      assertThat(result).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("lastId 커서 이후 기사만 반환한다")
+    void lastId_커서_이후_기사만_반환한다() {
+      // given
+      articleRepository.save(
+          Article.create(ArticleSource.NAVER, "https://example.com/b1", "기사A", Instant.now(), null));
+      articleRepository.save(
+          Article.create(ArticleSource.NAVER, "https://example.com/b2", "기사B", Instant.now(), null));
+
+      // DB 정렬 기준(PostgreSQL UUID 사전순)으로 전체 조회 후 첫 번째 id를 커서로 사용
+      List<ArticleBackupItem> all = articleRepository.findArticlesForBackup(
+          from, to, MIN_UUID, PageRequest.of(0, 10));
+      UUID firstId = all.get(0).id();
+
+      // when
+      List<ArticleBackupItem> result = articleRepository.findArticlesForBackup(
+          from, to, firstId, PageRequest.of(0, 10));
+
+      // then — DB 기준 첫 번째 이후 기사만 반환
+      assertThat(result).hasSize(1);
+      assertThat(result.get(0).id()).isEqualTo(all.get(1).id());
+    }
+
+    @Test
+    @DisplayName("Pageable size 제한이 적용된다")
+    void pageable_size_제한이_적용된다() {
+      // given
+      articleRepository.save(
+          Article.create(ArticleSource.NAVER, "https://example.com/c1", "기사1", Instant.now(), null));
+      articleRepository.save(
+          Article.create(ArticleSource.NAVER, "https://example.com/c2", "기사2", Instant.now(), null));
+      articleRepository.save(
+          Article.create(ArticleSource.NAVER, "https://example.com/c3", "기사3", Instant.now(), null));
+
+      // when
+      List<ArticleBackupItem> result = articleRepository.findArticlesForBackup(
+          from, to, MIN_UUID, PageRequest.of(0, 2));
+
+      // then
+      assertThat(result).hasSize(2);
+    }
   }
 
   @Nested

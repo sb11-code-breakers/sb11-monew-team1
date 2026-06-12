@@ -3,7 +3,7 @@ package com.sprint.mission.monew.domain.user.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.sprint.mission.monew.batch.dto.UserCleanupItem;
+import com.sprint.mission.monew.batch.user.cleanup.dto.UserCleanupItem;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.common.config.JpaConfig;
 import com.sprint.mission.monew.common.config.QuerydslConfig;
@@ -12,7 +12,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -25,7 +24,6 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @DataJpaTest
 @ActiveProfiles("test")

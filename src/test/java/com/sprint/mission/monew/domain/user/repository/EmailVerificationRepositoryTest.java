@@ -2,29 +2,32 @@ package com.sprint.mission.monew.domain.user.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.sprint.mission.monew.common.config.JpaConfig;
-import com.sprint.mission.monew.common.config.QuerydslConfig;
-import com.sprint.mission.monew.domain.user.entity.EmailVerification;
+import com.sprint.mission.monew.common.config.MongoContainerConfig;
+import com.sprint.mission.monew.domain.user.document.EmailVerification;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 
-@DataJpaTest
+@DataMongoTest
 @ActiveProfiles("test")
-@Import({JpaConfig.class, QuerydslConfig.class})
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import(MongoContainerConfig.class)
 class EmailVerificationRepositoryTest {
 
   @Autowired
   private EmailVerificationRepository emailVerificationRepository;
+
+  @BeforeEach
+  void setUp() {
+    emailVerificationRepository.deleteAll();
+  }
 
   @Nested
   @DisplayName("토큰으로 유효한 인증 조회")

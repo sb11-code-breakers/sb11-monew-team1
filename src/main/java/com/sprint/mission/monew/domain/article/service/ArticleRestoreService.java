@@ -1,12 +1,12 @@
 package com.sprint.mission.monew.domain.article.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sprint.mission.monew.batch.util.BatchGzipUtils;
+import com.sprint.mission.monew.batch.common.utils.BatchGzipUtils;
 import com.sprint.mission.monew.domain.article.dto.ArticleBackupEntry;
 import com.sprint.mission.monew.domain.article.dto.ArticleRestoreResultDto;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleInterest;
-import com.sprint.mission.monew.batch.exception.ArticleRestoreFailedException;
+import com.sprint.mission.monew.domain.article.exception.ArticleRestoreFailedException;
 import com.sprint.mission.monew.domain.article.repository.ArticleInterestRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.interest.entity.Interest;
