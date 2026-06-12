@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS users
     email_verified BOOLEAN                  NOT NULL DEFAULT FALSE,
     login_fail_count INT                    NOT NULL DEFAULT 0 CHECK (login_fail_count >= 0),
     locked_at      TIMESTAMP WITH TIME ZONE,
+    version        BIGINT                   NOT NULL DEFAULT 0,
     created_at     TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at     TIMESTAMP WITH TIME ZONE,
     deleted_at     TIMESTAMP WITH TIME ZONE,
