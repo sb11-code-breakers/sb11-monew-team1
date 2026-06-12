@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RecentComment {
 
-  private UUID commentId;
+  private UUID id;
   private UUID articleId;
   private String articleTitle;
   private UUID userId;
@@ -24,7 +24,7 @@ public class RecentComment {
       UUID userId, String userNickname, String content, long likeCount, Instant createdAt) {
 
     RecentComment doc = new RecentComment();
-    doc.commentId = commentId;
+    doc.id = commentId;
     doc.articleId = articleId;
     doc.articleTitle = articleTitle;
     doc.userId = userId;

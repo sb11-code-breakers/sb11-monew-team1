@@ -1,7 +1,7 @@
 package com.sprint.mission.monew.domain.useractivity.controller;
 
 import com.sprint.mission.monew.domain.useractivity.controller.api.UserActivityApi;
-import com.sprint.mission.monew.domain.useractivity.activityresponse.UserActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
 import com.sprint.mission.monew.domain.useractivity.service.UserActivityService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -21,10 +21,9 @@ public class UserActivityController implements UserActivityApi {
 
   @Override
   @GetMapping("/{userId}")
-  public ResponseEntity<UserActivityResponse> getUserActivity(
+  public ResponseEntity<UserActivity> getUserActivity(
       @PathVariable UUID userId,
       @RequestHeader("Monew-Request-User-ID") UUID requestUserId) {
-    UserActivityResponse response = userActivityService.getUserActivity(userId, requestUserId);
-    return ResponseEntity.ok(response);
+    return ResponseEntity.ok(userActivityService.getUserActivity(userId, requestUserId));
   }
 }

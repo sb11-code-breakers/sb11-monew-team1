@@ -108,7 +108,7 @@ class UserActivityEventListenerTest {
       assertThat(captured.getInterestName()).isEqualTo(interestName);
       assertThat(captured.getInterestKeywords()).isEqualTo(keywords);
       assertThat(captured.getInterestSubscriberCount()).isEqualTo(subscriberCount);
-      assertThat(captured.getSubscribedAt()).isNotNull();
+      assertThat(captured.getCreatedAt()).isNotNull();
     }
   }
 
@@ -145,7 +145,7 @@ class UserActivityEventListenerTest {
       verify(userActivityMongoRepository).pushComment(eq(userId), commentCaptor.capture());
 
       RecentComment captured = commentCaptor.getValue();
-      assertThat(captured.getCommentId()).isEqualTo(commentId);
+      assertThat(captured.getId()).isEqualTo(commentId);
       assertThat(captured.getArticleId()).isEqualTo(articleId);
       assertThat(captured.getArticleTitle()).isEqualTo(articleTitle);
       assertThat(captured.getUserId()).isEqualTo(userId);
@@ -223,7 +223,7 @@ class UserActivityEventListenerTest {
       assertThat(captured.getCommentContent()).isEqualTo(commentContent);
       assertThat(captured.getCommentLikeCount()).isEqualTo(commentLikeCount);
       assertThat(captured.getCommentCreatedAt()).isEqualTo(commentCreatedAt);
-      assertThat(captured.getLikedAt()).isEqualTo(likedAt);
+      assertThat(captured.getCreatedAt()).isEqualTo(likedAt);
     }
   }
 
@@ -266,10 +266,10 @@ class UserActivityEventListenerTest {
       assertThat(captured.getArticleTitle()).isEqualTo("오늘의 뉴스");
       assertThat(captured.getSource()).isEqualTo("NAVER");
       assertThat(captured.getViewedBy()).isEqualTo(userId);
-      assertThat(captured.getArticleViewId()).isEqualTo(articleViewId);
+      assertThat(captured.getId()).isEqualTo(articleViewId);
       assertThat(captured.getArticleCommentCount()).isEqualTo(10L);
       assertThat(captured.getArticleViewCount()).isEqualTo(100L);
-      assertThat(captured.getViewedAt()).isEqualTo(viewTime);
+      assertThat(captured.getCreatedAt()).isEqualTo(viewTime);
     }
   }
 

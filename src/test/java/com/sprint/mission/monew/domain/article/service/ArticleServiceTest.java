@@ -35,6 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class ArticleServiceTest {
@@ -44,6 +45,7 @@ class ArticleServiceTest {
   @Mock ArticleViewRepository articleViewRepository;
   @Mock ArticleMapper articleMapper;
   @Mock ArticleViewMapper articleViewMapper;
+  @Mock ApplicationEventPublisher eventPublisher;
 
   UUID requestUserId;
   ArticleQueryCondition defaultCondition;

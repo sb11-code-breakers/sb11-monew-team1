@@ -5,9 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
+import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
-import com.sprint.mission.monew.domain.useractivity.activityresponse.UserActivityResponse;
+import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
 import com.sprint.mission.monew.domain.useractivity.repository.UserActivityMongoRepository;
 import java.time.Instant;
@@ -28,6 +29,7 @@ class UserActivityServiceTest {
   @InjectMocks
   private UserActivityService userActivityService;
 
+  @Mock private UserRepository userRepository;
   @Mock private UserActivityMongoRepository userActivityMongoRepository;
 
   private UUID userId;
@@ -56,7 +58,18 @@ class UserActivityServiceTest {
     @DisplayName("존재하지 않는 userId면 예외가 발생한다")
     void 존재하지_않는_userId면_예외가_발생한다() {
       // given
-      given(userActivityMongoRepository.findById(userId)).willReturn(Optional.empty());
+      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
+
+      // when & then
+      assertThatThrownBy(() -> userActivityService.getUserActivity(userId, userId))
+          .isInstanceOf(UserNotFoundException.class);
+    }
+
+    @Test
+    @DisplayName("soft-delete된 userId면 예외가 발생한다")
+    void soft_delete된_userId면_예외가_발생한다() {
+      // given
+      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
 
       // when & then
       assertThatThrownBy(() -> userActivityService.getUserActivity(userId, userId))
@@ -67,18 +80,20 @@ class UserActivityServiceTest {
     @DisplayName("활동 내역 조회 시 MongoDB에서 UserActivity를 조회한다")
     void 활동_내역_조회_시_MongoDB에서_UserActivity를_조회한다() {
       // given
+      User mockUser = User.create("test@test.com", "테스트유저", "password123!");
+      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(mockUser));
       given(userActivityMongoRepository.findById(userId))
           .willReturn(Optional.of(UserActivity.of(userId, "test@test.com", "테스트유저", Instant.now())));
 
       // when
-      UserActivityResponse result = userActivityService.getUserActivity(userId, userId);
+      UserActivity result = userActivityService.getUserActivity(userId, userId);
 
       // then
       verify(userActivityMongoRepository).findById(userId);
       assertThat(result).isNotNull();
-      assertThat(result.id()).isEqualTo(userId);
-      assertThat(result.email()).isEqualTo("test@test.com");
-      assertThat(result.nickname()).isEqualTo("테스트유저");
+      assertThat(result.getId()).isEqualTo(userId);
+      assertThat(result.getEmail()).isEqualTo("test@test.com");
+      assertThat(result.getNickname()).isEqualTo("테스트유저");
     }
   }
 }

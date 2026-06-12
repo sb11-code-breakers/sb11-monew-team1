@@ -30,7 +30,7 @@ class RecentCommentTest {
       RecentComment comment = RecentComment.of(commentId, articleId, articleTitle, userId, userNickname, content, 0L, now);
 
       // then
-      assertThat(comment.getCommentId()).isEqualTo(commentId);
+      assertThat(comment.getId()).isEqualTo(commentId);
       assertThat(comment.getArticleId()).isEqualTo(articleId);
       assertThat(comment.getArticleTitle()).isEqualTo(articleTitle);
       assertThat(comment.getUserId()).isEqualTo(userId);

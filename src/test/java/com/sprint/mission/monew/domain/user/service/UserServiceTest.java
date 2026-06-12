@@ -54,6 +54,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 @ExtendWith(MockitoExtension.class)
@@ -94,6 +95,9 @@ class UserServiceTest {
 
   @Mock
   private LoginSuccessHandler loginSuccessHandler;
+
+  @Mock
+  private ApplicationEventPublisher eventPublisher;
 
   @Nested
   @DisplayName("회원가입")

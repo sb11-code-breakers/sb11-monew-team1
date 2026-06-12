@@ -119,7 +119,7 @@ class UserActivityMongoRepositoryTest {
       UserActivity found = repository.findById(userId).orElseThrow();
 
       assertThat(found.getComments()).hasSize(1);
-      assertThat(found.getComments().get(0).getCommentId()).isEqualTo(commentId);
+      assertThat(found.getComments().get(0).getId()).isEqualTo(commentId);
       assertThat(found.getComments().get(0).getArticleTitle()).isEqualTo("불변 기사 제목");
     }
 

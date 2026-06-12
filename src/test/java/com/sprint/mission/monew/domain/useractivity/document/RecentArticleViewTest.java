@@ -33,9 +33,9 @@ class RecentArticleViewTest {
       );
 
       // then
-      assertThat(view.getArticleViewId()).isEqualTo(articleViewId);
+      assertThat(view.getId()).isEqualTo(articleViewId);
       assertThat(view.getViewedBy()).isEqualTo(viewedBy);
-      assertThat(view.getViewedAt()).isEqualTo(now);
+      assertThat(view.getCreatedAt()).isEqualTo(now);
       assertThat(view.getArticleId()).isEqualTo(articleId);
       assertThat(view.getSource()).isEqualTo("NAVER");
       assertThat(view.getSourceUrl()).isEqualTo("https://news.naver.com/article/1");

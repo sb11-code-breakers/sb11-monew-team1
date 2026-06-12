@@ -11,23 +11,23 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RecentSubscription {
 
-  private UUID subscriptionId;
+  private UUID id;
   private UUID interestId;
   private String interestName;
   private List<String> interestKeywords;
   private long interestSubscriberCount;
-  private Instant subscribedAt;
+  private Instant createdAt;
 
   public static RecentSubscription of(
       UUID subscriptionId, UUID interestId, String interestName,
       List<String> interestKeywords, long interestSubscriberCount, Instant subscribedAt) {
     RecentSubscription doc = new RecentSubscription();
-    doc.subscriptionId = subscriptionId;
+    doc.id = subscriptionId;
     doc.interestId = interestId;
     doc.interestName = interestName;
     doc.interestKeywords = List.copyOf(interestKeywords);
     doc.interestSubscriberCount = interestSubscriberCount;
-    doc.subscribedAt = subscribedAt;
+    doc.createdAt = subscribedAt;
     return doc;
   }
 }

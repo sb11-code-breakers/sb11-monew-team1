@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RecentArticleView {
 
-  private UUID articleViewId;
+  private UUID id;
   private UUID viewedBy;
-  private Instant viewedAt;
+  private Instant createdAt;
   private UUID articleId;
   private String source;
   private String sourceUrl;
@@ -29,9 +29,9 @@ public class RecentArticleView {
       long articleCommentCount, long articleViewCount) {
 
     RecentArticleView doc = new RecentArticleView();
-    doc.articleViewId = articleViewId;
+    doc.id = articleViewId;
     doc.viewedBy = viewedBy;
-    doc.viewedAt = viewedAt;
+    doc.createdAt = viewedAt;
     doc.articleId = articleId;
     doc.source = source;
     doc.sourceUrl = sourceUrl;

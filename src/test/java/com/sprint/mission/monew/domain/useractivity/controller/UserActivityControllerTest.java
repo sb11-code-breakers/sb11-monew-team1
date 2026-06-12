@@ -9,10 +9,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.sprint.mission.monew.domain.user.document.UserSession;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
-import com.sprint.mission.monew.domain.useractivity.activityresponse.UserActivityResponse;
+import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
 import com.sprint.mission.monew.domain.useractivity.service.UserActivityService;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,10 +72,7 @@ class UserActivityControllerTest {
     void 성공_시_200을_반환한다() throws Exception {
       // given
       UUID targetUserId = UUID.randomUUID();
-      UserActivityResponse response = new UserActivityResponse(
-          targetUserId, "test@test.com", "테스터", Instant.now(),
-          List.of(), List.of(), List.of(), List.of()
-      );
+      UserActivity response = UserActivity.of(targetUserId, "test@test.com", "테스터", Instant.now());
       given(userActivityService.getUserActivity(targetUserId, userId)).willReturn(response);
 
       // when & then

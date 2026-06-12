@@ -37,7 +37,7 @@ class RecentCommentLikeTest {
       );
 
       // then
-      assertThat(like.getLikeId()).isEqualTo(likeId);
+      assertThat(like.getId()).isEqualTo(likeId);
       assertThat(like.getCommentId()).isEqualTo(commentId);
       assertThat(like.getArticleId()).isEqualTo(articleId);
       assertThat(like.getArticleTitle()).isEqualTo(articleTitle);
@@ -46,7 +46,7 @@ class RecentCommentLikeTest {
       assertThat(like.getCommentContent()).isEqualTo(commentContent);
       assertThat(like.getCommentLikeCount()).isEqualTo(commentLikeCount);
       assertThat(like.getCommentCreatedAt()).isEqualTo(commentCreatedAt);
-      assertThat(like.getLikedAt()).isEqualTo(now);
+      assertThat(like.getCreatedAt()).isEqualTo(now);
     }
   }
 }

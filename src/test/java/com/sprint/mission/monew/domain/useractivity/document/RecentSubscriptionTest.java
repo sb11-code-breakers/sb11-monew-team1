@@ -31,12 +31,12 @@ class RecentSubscriptionTest {
           subscriptionId, interestId, interestName, keywords, subscriberCount, now);
 
       // then
-      assertThat(subscription.getSubscriptionId()).isEqualTo(subscriptionId);
+      assertThat(subscription.getId()).isEqualTo(subscriptionId);
       assertThat(subscription.getInterestId()).isEqualTo(interestId);
       assertThat(subscription.getInterestName()).isEqualTo(interestName);
       assertThat(subscription.getInterestKeywords()).isEqualTo(keywords);
       assertThat(subscription.getInterestSubscriberCount()).isEqualTo(subscriberCount);
-      assertThat(subscription.getSubscribedAt()).isEqualTo(now);
+      assertThat(subscription.getCreatedAt()).isEqualTo(now);
     }
   }
 }
