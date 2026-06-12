@@ -101,9 +101,12 @@ LIMIT 51;
 \echo '=== I3 키워드 검색 — Seq Scan + Filter 기대(→ trigram 대상) ==='
 EXPLAIN (ANALYZE, BUFFERS)
 -- 정렬은 실제 호출 계약(read.js R1' = orderBy=commentCount)과 동일하게 맞춘다.
+-- 술어도 실제 앱 쿼리(QueryDSL containsIgnoreCase = lower(col) LIKE lower(?))와 동일하게 맞춘다.
+--   ILIKE로 적으면 gin(col gin_trgm_ops)는 타지만, 앱의 lower()+LIKE는 그 인덱스를 못 탄다
+--   → 측정 결론이 어긋남. 그래서 candidate-indexes.sql도 gin(lower(col))로 둔다.
 SELECT a.id FROM articles a
 WHERE a.deleted_at IS NULL
-  AND (a.title ILIKE '%뉴스%' OR a.summary ILIKE '%뉴스%')
+  AND (lower(a.title) LIKE lower('%뉴스%') OR lower(a.summary) LIKE lower('%뉴스%'))
 ORDER BY a.comment_count DESC, a.id DESC
 LIMIT 51;
 

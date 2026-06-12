@@ -27,12 +27,14 @@ CREATE INDEX IF NOT EXISTS idx_articles_publish_created_id
   ON articles (publish_date DESC, created_at DESC, id DESC)
   WHERE deleted_at IS NULL;
 
--- ── I3: 키워드 검색(선행 와일드카드 ILIKE) — trigram GIN ──
+-- ── I3: 키워드 검색(선행 와일드카드) — trigram GIN ──
+-- 앱 쿼리가 lower(col) LIKE lower(?)(QueryDSL containsIgnoreCase)이므로,
+-- 평문 gin(col)이 아니라 표현식 인덱스 gin(lower(col))이어야 실제 쿼리가 인덱스를 탄다.
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE INDEX IF NOT EXISTS idx_articles_title_trgm
-  ON articles USING gin (title gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_articles_summary_trgm
-  ON articles USING gin (summary gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_articles_title_lower_trgm
+  ON articles USING gin (lower(title) gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_articles_summary_lower_trgm
+  ON articles USING gin (lower(summary) gin_trgm_ops);
 
 -- 적용 후 통계 갱신 (안 하면 새 인덱스를 플래너가 안 고를 수 있음)
 ANALYZE comments;
@@ -42,6 +44,6 @@ ANALYZE articles;
 -- DROP INDEX IF EXISTS idx_comments_article_created_id;
 -- DROP INDEX IF EXISTS idx_comments_article_like_created_id;
 -- DROP INDEX IF EXISTS idx_articles_publish_created_id;
--- DROP INDEX IF EXISTS idx_articles_title_trgm;
--- DROP INDEX IF EXISTS idx_articles_summary_trgm;
+-- DROP INDEX IF EXISTS idx_articles_title_lower_trgm;
+-- DROP INDEX IF EXISTS idx_articles_summary_lower_trgm;
 -- 참고: 복합 인덱스가 커버하면 단일 idx_comments_like_count 는 I5에서 미사용으로 잡힐 수 있다(제거 후보).
