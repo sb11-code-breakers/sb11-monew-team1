@@ -63,3 +63,9 @@ export function expect2xx(res, label) {
   check(res, { [`${label} 2xx`]: (r) => r.status >= 200 && r.status < 300 });
   return res;
 }
+
+// 좋아요 전용: 409(중복)는 설계상 정상이므로 통과시키되 5xx 등 실패는 check에 드러낸다.
+export function expect2xxOr409(res, label) {
+  check(res, { [`${label} 2xx/409`]: (r) => (r.status >= 200 && r.status < 300) || r.status === 409 });
+  return res;
+}

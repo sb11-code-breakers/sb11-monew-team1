@@ -32,6 +32,14 @@ services:
         condition: service_healthy
       mongo:
         condition: service_healthy
+    # 앱 기동(약 20~30초) 중 초반 요청이 전부 에러로 잡히지 않도록 health 게이트를 둔다.
+    # k6는 'docker compose ps'에서 monew-app이 (healthy)가 된 뒤 실행할 것.
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:80/actuator/health || exit 1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
 
   postgres:
     image: postgres:18.3       # 테스트(application-test.yaml: jdbc:tc:postgresql:18.3)와 동일 버전
