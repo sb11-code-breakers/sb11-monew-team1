@@ -49,6 +49,11 @@ const PRE_VUS = Number(__ENV.PRE_VUS || 50);
 const MAX_VUS = Number(__ENV.MAX_VUS || 500);
 const SOAK = __ENV.SOAK || '30m';
 
+// arrival-rate(stress/spike)는 maxVUs >= preAllocatedVUs여야 한다. 뒤집히면 RPS를 못 채워 측정이 왜곡됨.
+if (MAX_VUS < PRE_VUS) {
+  throw new Error(`MAX_VUS(${MAX_VUS})는 PRE_VUS(${PRE_VUS}) 이상이어야 합니다`);
+}
+
 function buildScenario() {
   switch (PATTERN) {
     // 기준선·동작 확인
