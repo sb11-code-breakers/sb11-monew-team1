@@ -19,7 +19,7 @@ class NotificationTest {
   void setUp() {
     userId = UUID.randomUUID();
     content = "AI와 관련된 기사가 3건 등록되었습니다.";
-    resourceType = ResourceType.INTEREST;
+    resourceType = ResourceType.ARTICLE;
     resourceId = UUID.randomUUID();
   }
 

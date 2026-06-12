@@ -200,11 +200,10 @@ CREATE TABLE IF NOT EXISTS notifications
     id            UUID                     NOT NULL,
     user_id       UUID,
     content       VARCHAR(255)             NOT NULL,
-    resource_type VARCHAR(20)              NOT NULL CHECK (resource_type IN ('INTEREST', 'COMMENT')),
+    resource_type VARCHAR(20)              NOT NULL CHECK (resource_type IN ('ARTICLE', 'COMMENT')),
     resource_id   UUID                     NOT NULL,
     confirmed_at  TIMESTAMP WITH TIME ZONE,
     created_at    TIMESTAMP WITH TIME ZONE NOT NULL,
-    updated_at    TIMESTAMP WITH TIME ZONE,
     PRIMARY KEY (id),
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
 );
@@ -214,54 +213,3 @@ CREATE INDEX IF NOT EXISTS idx_notifications_unconfirmed ON notifications (user_
     WHERE confirmed_at IS NULL;
 CREATE INDEX IF NOT EXISTS idx_notification_cleanup_batch ON notifications (confirmed_at, id)
     WHERE confirmed_at IS NOT NULL;
-
--- =====================
--- 11. email_verifications
--- =====================
-CREATE TABLE IF NOT EXISTS email_verifications
-(
-    id         UUID                     NOT NULL,
-    token      VARCHAR(255)             NOT NULL,
-    user_id    UUID                     NOT NULL,
-    expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                             PRIMARY KEY (id),
-    UNIQUE (token),
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-    );
-
-CREATE INDEX IF NOT EXISTS idx_email_verifications_user_id ON email_verifications (user_id);
-
--- =====================
--- 12. password_reset_tokens
--- =====================
-CREATE TABLE IF NOT EXISTS password_reset_tokens
-(
-    id         UUID                     NOT NULL,
-    user_id    UUID                     NOT NULL,
-    code       VARCHAR(255)             NOT NULL,
-    expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (id),
-    UNIQUE (code),
-    UNIQUE (user_id),
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-    );
-
-CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens (user_id);
-
--- =====================
--- 13. account_unlock_tokens
--- =====================
-CREATE TABLE IF NOT EXISTS user_unlock_tokens
-(
-    id         UUID                     NOT NULL,
-    user_id    UUID                     NOT NULL,
-    token      VARCHAR(255)             NOT NULL,
-    expired_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    PRIMARY KEY (id),
-    UNIQUE (token),
-    UNIQUE (user_id),
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-    );

@@ -68,7 +68,7 @@ NotificationServiceTest {
       // given
       UUID notificationId = UUID.randomUUID();
       Notification notification =
-          Notification.create(userId, "알림", ResourceType.INTEREST, UUID.randomUUID());
+          Notification.create(userId, "알림", ResourceType.ARTICLE, UUID.randomUUID());
       given(notificationRepository.findByIdAndUserIdAndConfirmedAtIsNull(notificationId, userId))
           .willReturn(Optional.of(notification));
 
@@ -164,14 +164,14 @@ NotificationServiceTest {
     @DisplayName("전달받은 메시지로 구독자 수만큼 알림이 saveAll로 저장된다")
     void 전달받은_메시지로_구독자_수만큼_알림이_saveAll로_저장된다() {
       // given
-      UUID interestId = UUID.randomUUID();
+      UUID resourceId = UUID.randomUUID();
       String message = "[인공지능]와 관련된 기사가 5건 등록되었습니다.";
-      List<UUID> subscriberIds = List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+      List<UUID> recipientIds = List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
       given(notificationRepository.saveAll(any()))
           .willAnswer(invocation -> invocation.getArgument(0));
 
       // when
-      notificationService.createArticleNotifications(interestId, message, subscriberIds);
+      notificationService.createArticleNotifications(recipientIds, message, ResourceType.ARTICLE, resourceId);
 
       // then — 구독자 수만큼 저장되고 전달받은 메시지를 그대로 저장한다
       then(notificationRepository)
@@ -179,14 +179,25 @@ NotificationServiceTest {
           .saveAll(
               argThat(
                   notifications ->
-                      ((List<?>) notifications).size() == subscriberIds.size()
+                      ((List<?>) notifications).size() == recipientIds.size()
                           && ((List<com.sprint.mission.monew.domain.notification.entity.Notification>) notifications)
                               .stream()
                               .allMatch(
                                   n ->
                                       n.getContent().equals(message)
-                                          && n.getResourceType() == ResourceType.INTEREST
-                                          && n.getResourceId().equals(interestId))));
+                                          && n.getResourceType() == ResourceType.ARTICLE
+                                          && n.getResourceId().equals(resourceId))));
+    }
+
+    @Test
+    @DisplayName("수신자 목록이 비어 있으면 saveAll을 호출하지 않는다")
+    void 수신자_목록이_비어_있으면_saveAll을_호출하지_않는다() {
+      // when
+      notificationService.createArticleNotifications(
+          List.of(), "메시지", ResourceType.ARTICLE, UUID.randomUUID());
+
+      // then
+      then(notificationRepository).shouldHaveNoInteractions();
     }
   }
 }
