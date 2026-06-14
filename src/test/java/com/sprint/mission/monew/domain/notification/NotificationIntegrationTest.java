@@ -69,7 +69,7 @@ public class NotificationIntegrationTest {
       // given
       UUID resourceId = UUID.randomUUID();
       notificationRepository.save(
-          Notification.create(user.getId(), "알림 내용", ResourceType.INTEREST, resourceId));
+          Notification.create(user.getId(), "알림 내용", ResourceType.ARTICLE, resourceId));
 
       // when & then
       mockMvc.perform(get("/api/notifications")
@@ -84,7 +84,7 @@ public class NotificationIntegrationTest {
           .andExpect(jsonPath("$.content[0].confirmed").value(false))
           .andExpect(jsonPath("$.content[0].userId").value(user.getId().toString()))
           .andExpect(jsonPath("$.content[0].content").value("알림 내용"))
-          .andExpect(jsonPath("$.content[0].resourceType").value("INTEREST"))
+          .andExpect(jsonPath("$.content[0].resourceType").value("ARTICLE"))
           .andExpect(jsonPath("$.content[0].resourceId").value(resourceId.toString()));
     }
 
@@ -93,9 +93,9 @@ public class NotificationIntegrationTest {
     void 확인된_알림은_목록에_포함되지_않는다() throws Exception {
       // given
       notificationRepository.save(
-          Notification.create(user.getId(), "미확인", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(user.getId(), "미확인", ResourceType.ARTICLE, UUID.randomUUID()));
       Notification confirmed = notificationRepository.save(
-          Notification.create(user.getId(), "확인됨", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(user.getId(), "확인됨", ResourceType.ARTICLE, UUID.randomUUID()));
       confirmed.confirm();
       notificationRepository.save(confirmed);
 
@@ -115,7 +115,7 @@ public class NotificationIntegrationTest {
       // given
       for (int i = 0; i < 3; i++) {
         notificationRepository.save(
-            Notification.create(user.getId(), "알림" + i, ResourceType.INTEREST, UUID.randomUUID()));
+            Notification.create(user.getId(), "알림" + i, ResourceType.ARTICLE, UUID.randomUUID()));
       }
 
       // when & then
@@ -154,7 +154,7 @@ public class NotificationIntegrationTest {
     void cursor가_있으면_cursor_이후_알림만_반환한다() throws Exception {
       // given
       notificationRepository.save(
-          Notification.create(user.getId(), "알림", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(user.getId(), "알림", ResourceType.ARTICLE, UUID.randomUUID()));
 
       // when & then — 최신순(DESC)이므로 cursor=먼 미래 → createdAt < cursor인 알림 1건 반환
       mockMvc.perform(get("/api/notifications")
@@ -184,7 +184,7 @@ public class NotificationIntegrationTest {
     void 성공_시_204를_반환하고_DB에_confirmedAt이_설정된다() throws Exception {
       // given
       Notification notification = notificationRepository.save(
-          Notification.create(user.getId(), "알림", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(user.getId(), "알림", ResourceType.ARTICLE, UUID.randomUUID()));
 
       // when
       mockMvc.perform(patch("/api/notifications/{notificationId}", notification.getId())
@@ -202,7 +202,7 @@ public class NotificationIntegrationTest {
     void 이미_확인된_알림을_재확인하면_404를_반환한다() throws Exception {
       // given
       Notification notification = notificationRepository.save(
-          Notification.create(user.getId(), "알림", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(user.getId(), "알림", ResourceType.ARTICLE, UUID.randomUUID()));
       notification.confirm();
       notificationRepository.save(notification);
 
@@ -231,7 +231,7 @@ public class NotificationIntegrationTest {
       // given
       User other = userRepository.save(User.create("other@test.com", "타인", "password123!"));
       Notification notification = notificationRepository.save(
-          Notification.create(other.getId(), "타인 알림", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(other.getId(), "타인 알림", ResourceType.ARTICLE, UUID.randomUUID()));
 
       // when & then
       mockMvc.perform(patch("/api/notifications/{notificationId}", notification.getId())
@@ -257,7 +257,7 @@ public class NotificationIntegrationTest {
     void 성공_시_204를_반환하고_DB의_모든_미확인_알림에_confirmedAt이_설정된다() throws Exception {
       // given
       notificationRepository.save(
-          Notification.create(user.getId(), "알림1", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(user.getId(), "알림1", ResourceType.ARTICLE, UUID.randomUUID()));
       notificationRepository.save(
           Notification.create(user.getId(), "알림2", ResourceType.COMMENT, UUID.randomUUID()));
 
@@ -278,7 +278,7 @@ public class NotificationIntegrationTest {
     void 이미_확인된_알림은_전체_확인_후에도_confirmedAt이_변경되지_않는다() throws Exception {
       // given
       Notification confirmed = notificationRepository.save(
-          Notification.create(user.getId(), "확인됨", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(user.getId(), "확인됨", ResourceType.ARTICLE, UUID.randomUUID()));
       confirmed.confirm();
       notificationRepository.save(confirmed);
 
@@ -299,9 +299,9 @@ public class NotificationIntegrationTest {
     void 전체_확인_후_목록_조회_시_미확인_알림이_0건이다() throws Exception {
       // given
       notificationRepository.save(
-          Notification.create(user.getId(), "알림1", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(user.getId(), "알림1", ResourceType.ARTICLE, UUID.randomUUID()));
       notificationRepository.save(
-          Notification.create(user.getId(), "알림2", ResourceType.INTEREST, UUID.randomUUID()));
+          Notification.create(user.getId(), "알림2", ResourceType.ARTICLE, UUID.randomUUID()));
 
       // when — 전체 확인
       mockMvc.perform(patch("/api/notifications")

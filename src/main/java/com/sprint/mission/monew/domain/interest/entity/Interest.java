@@ -25,6 +25,9 @@ public class Interest extends BaseUpdatableEntity {
   @Column(nullable = false, length = 50)
   private String name;
 
+  @Column(nullable = false)
+  private int jamoLength;
+
   @BatchSize(size = 100)
   @OneToMany(mappedBy = "interest", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   private List<InterestKeyword> keywords = new ArrayList<>();
@@ -32,9 +35,10 @@ public class Interest extends BaseUpdatableEntity {
   @Column(nullable = false)
   private long subscriberCount = 0;
 
-  public static Interest create(String name, List<String> keywords) {
+  public static Interest create(String name, int jamoLength, List<String> keywords) {
     Interest interest = new Interest();
     interest.name = name;
+    interest.jamoLength = jamoLength;
     keywords.stream()
         .map(k -> InterestKeyword.create(interest, k))
         .forEach(interest.keywords::add);

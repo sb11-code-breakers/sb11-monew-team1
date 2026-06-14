@@ -315,7 +315,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.PUBLISH_DATE, SortDirection.DESC,
-          t3.toString(), article3.getCreatedAt(), article3.getId(), 10);
+          t3.toString(), article3.getPublishDate(), article3.getId(), 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -338,7 +338,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.PUBLISH_DATE, SortDirection.ASC,
-          t1.toString(), article1.getCreatedAt(), article1.getId(), 10);
+          t1.toString(), article1.getPublishDate(), article1.getId(), 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -394,7 +394,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.COMMENT_COUNT, SortDirection.DESC,
-          "0", article.getCreatedAt(), article.getId(), 10);
+          "0", article.getPublishDate(), article.getId(), 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -412,7 +412,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.VIEW_COUNT, SortDirection.DESC,
-          "0", article.getCreatedAt(), article.getId(), 10);
+          "0", article.getPublishDate(), article.getId(), 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -430,7 +430,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.COMMENT_COUNT, SortDirection.ASC,
-          "10", article.getCreatedAt(), article.getId(), 10);
+          "10", article.getPublishDate(), article.getId(), 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -448,7 +448,7 @@ class ArticleRepositoryTest {
       ArticleQueryCondition condition = new ArticleQueryCondition(
           null, null, null, null, null,
           ArticleOrderBy.VIEW_COUNT, SortDirection.ASC,
-          "10", article.getCreatedAt(), article.getId(), 10);
+          "10", article.getPublishDate(), article.getId(), 10);
 
       // when
       List<ArticleResponse> result = articleRepository.search(condition, requestUserId).content();
@@ -503,7 +503,7 @@ class ArticleRepositoryTest {
     @DisplayName("interestId로 필터링하면 해당 관심사 연결 기사만 반환한다")
     void interestId로_필터링하면_연결된_기사만_반환한다() {
       // given
-      Interest interest = interestRepository.save(Interest.create("AI", List.of("AI")));
+      Interest interest = interestRepository.save(Interest.create("AI", 2, List.of("AI")));
       Article article1 = articleRepository.save(
           Article.create(ArticleSource.NAVER, "url1", "AI 기사", Instant.now(), null));
       articleRepository.save(

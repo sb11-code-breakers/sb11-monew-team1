@@ -44,8 +44,7 @@ public class ArticleCustomRepositoryImpl implements ArticleCustomRepository {
             article.summary,
             article.commentCount,
             article.viewCount,
-            viewedByMeExpr,
-            article.createdAt
+            viewedByMeExpr
         )
         .from(article)
         .leftJoin(articleView).on(
@@ -61,7 +60,7 @@ public class ArticleCustomRepositoryImpl implements ArticleCustomRepository {
         )
         .orderBy(
             buildOrderSpecifier(condition.orderBy(), condition.direction()),
-            buildCreatedAtOrderSpecifier(condition.direction()),
+            buildPublishDateOrderSpecifier(condition.direction()),
             buildIdOrderSpecifier(condition.direction())
         )
         .limit(condition.limit() + 1L);
@@ -94,7 +93,7 @@ public class ArticleCustomRepositoryImpl implements ArticleCustomRepository {
     if (hasNext && !rawContent.isEmpty()) {
       Tuple last = rawContent.get(rawContent.size() - 1);
       nextCursor = extractCursor(last, condition.orderBy());
-      nextAfter = last.get(article.createdAt);
+      nextAfter = last.get(article.publishDate);
       nextIdAfter = last.get(article.id);
     }
 
@@ -159,11 +158,11 @@ public class ArticleCustomRepositoryImpl implements ArticleCustomRepository {
       boolean isAsc) {
     return isAsc
         ? field.gt(cursorValue)
-            .or(field.eq(cursorValue).and(article.createdAt.gt(after)))
-            .or(field.eq(cursorValue).and(article.createdAt.eq(after)).and(article.id.gt(idAfter)))
+            .or(field.eq(cursorValue).and(article.publishDate.gt(after)))
+            .or(field.eq(cursorValue).and(article.publishDate.eq(after)).and(article.id.gt(idAfter)))
         : field.lt(cursorValue)
-            .or(field.eq(cursorValue).and(article.createdAt.lt(after)))
-            .or(field.eq(cursorValue).and(article.createdAt.eq(after)).and(article.id.lt(idAfter)));
+            .or(field.eq(cursorValue).and(article.publishDate.lt(after)))
+            .or(field.eq(cursorValue).and(article.publishDate.eq(after)).and(article.id.lt(idAfter)));
   }
 
   private BooleanExpression buildCursorExpression(
@@ -171,11 +170,11 @@ public class ArticleCustomRepositoryImpl implements ArticleCustomRepository {
       boolean isAsc) {
     return isAsc
         ? field.gt(cursorValue)
-            .or(field.eq(cursorValue).and(article.createdAt.gt(after)))
-            .or(field.eq(cursorValue).and(article.createdAt.eq(after)).and(article.id.gt(idAfter)))
+            .or(field.eq(cursorValue).and(article.publishDate.gt(after)))
+            .or(field.eq(cursorValue).and(article.publishDate.eq(after)).and(article.id.gt(idAfter)))
         : field.lt(cursorValue)
-            .or(field.eq(cursorValue).and(article.createdAt.lt(after)))
-            .or(field.eq(cursorValue).and(article.createdAt.eq(after)).and(article.id.lt(idAfter)));
+            .or(field.eq(cursorValue).and(article.publishDate.lt(after)))
+            .or(field.eq(cursorValue).and(article.publishDate.eq(after)).and(article.id.lt(idAfter)));
   }
 
   private String extractCursor(Tuple last, ArticleOrderBy orderBy) {
@@ -195,9 +194,9 @@ public class ArticleCustomRepositoryImpl implements ArticleCustomRepository {
     };
   }
 
-  private OrderSpecifier<?> buildCreatedAtOrderSpecifier(SortDirection direction) {
+  private OrderSpecifier<?> buildPublishDateOrderSpecifier(SortDirection direction) {
     Order dir = direction == SortDirection.DESC ? Order.DESC : Order.ASC;
-    return new OrderSpecifier<>(dir, article.createdAt);
+    return new OrderSpecifier<>(dir, article.publishDate);
   }
 
   private OrderSpecifier<?> buildIdOrderSpecifier(SortDirection direction) {

@@ -18,7 +18,7 @@ class SubscriptionTest {
     @DisplayName("정상 생성 시 Interest와 User가 올바르게 설정된다")
     void 정상_생성_시_Interest와_User가_올바르게_설정된다() {
       // given
-      Interest interest = Interest.create("인공지능", List.of("AI"));
+      Interest interest = Interest.create("인공지능", 11, List.of("AI"));
       User user = User.create("test@test.com", "테스터", "password123!");
 
       // when

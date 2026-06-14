@@ -12,6 +12,11 @@ import org.springframework.data.repository.query.Param;
 public interface InterestRepository
     extends JpaRepository<Interest, UUID>, InterestCustomRepository {
 
+  boolean existsByName(String name);
+
+  @Query("SELECT i.name FROM Interest i WHERE i.jamoLength BETWEEN :minJamo AND :maxJamo")
+  List<String> findTypoCandidates(@Param("minJamo") int minJamo, @Param("maxJamo") int maxJamo);
+
   @Query("SELECT DISTINCT i FROM Interest i JOIN FETCH i.keywords")
   List<Interest> findAllWithKeywords();
 
