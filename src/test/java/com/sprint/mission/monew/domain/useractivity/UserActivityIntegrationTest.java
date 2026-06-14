@@ -151,7 +151,7 @@ public class UserActivityIntegrationTest {
     void 구독_관심사가_있으면_응답에_포함된다() throws Exception {
       // given
       Interest interest = interestRepository.save(
-          Interest.create("인공지능", List.of("AI"))
+          Interest.create("인공지능", 11, List.of("AI"))
       );
       subscriptionRepository.save(Subscription.create(interest, user));
 

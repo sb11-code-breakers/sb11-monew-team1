@@ -13,7 +13,6 @@ import com.sprint.mission.monew.batch.news.collect.service.ArticleUpsertService;
 import com.sprint.mission.monew.batch.news.collect.metrics.NewsCollectMetrics;
 import com.sprint.mission.monew.batch.news.collect.dto.NewsCollectItem;
 import com.sprint.mission.monew.domain.article.entity.ArticleSource;
-import com.sprint.mission.monew.domain.interest.service.InterestNotificationService;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.DisplayName;
@@ -30,9 +29,6 @@ public class NewsCollectWriterTest {
 
   @Mock
   private ArticleUpsertService articleUpsertService;
-
-  @Mock
-  private InterestNotificationService interestNotificationService;
 
   @Mock
   private NewsCollectMetrics newsCollectMetrics;
@@ -67,31 +63,6 @@ public class NewsCollectWriterTest {
       // then
       verify(newsCollectMetrics).countFailed(ArticleSource.HANKYUNG);
       verify(newsCollectMetrics, never()).countCollected(eq(ArticleSource.HANKYUNG), anyInt());
-    }
-
-    @Test
-    @DisplayName("알림 전송 실패 시 예외를 전파하지 않는다")
-    void 알림_전송_실패_시_예외를_전파하지_않는다() {
-      // given
-      NewsCollectItem item = new NewsCollectItem(
-          ArticleSource.HANKYUNG,
-          "https://hankyung.com/1",
-          "한경 기사",
-          Instant.now(),
-          "요약");
-
-      Chunk<NewsCollectItem> chunk = new Chunk<>(List.of(item));
-
-      willThrow(new RuntimeException("notify fail"))
-          .given(interestNotificationService)
-          .notifyNewArticles(any());
-
-      // when
-      writer.write(chunk);
-
-      // then
-      verify(articleUpsertService).upsertAll(eq(ArticleSource.HANKYUNG), anyList());
-      verify(newsCollectMetrics).countCollected(ArticleSource.HANKYUNG, 1);
     }
 
     @Test

@@ -46,7 +46,7 @@ public class NotificationCleanupJobIntegrationTest {
     notificationRepository.deleteAll();
 
     userId = UUID.randomUUID();
-    resourceType = ResourceType.INTEREST;
+    resourceType = ResourceType.ARTICLE;
     resourceId = UUID.randomUUID();
     Notification notification1 = Notification.create(userId, "첫 번째 알림", resourceType, resourceId);
     Notification notification2 = Notification.create(userId, "두 번째 알림", resourceType, resourceId);

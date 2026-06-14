@@ -10,6 +10,10 @@ import com.sprint.mission.monew.domain.interest.exception.InterestAlreadyExistsE
 import com.sprint.mission.monew.domain.interest.exception.InterestNotFoundException;
 import com.sprint.mission.monew.domain.interest.mapper.InterestMapper;
 import com.sprint.mission.monew.domain.interest.repository.InterestRepository;
+import com.sprint.mission.monew.domain.interest.util.JamoNormalizer;
+import com.sprint.mission.monew.domain.interest.util.LevenshteinUtils;
+import com.sprint.mission.monew.domain.interest.util.SynonymUtils;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -25,22 +29,49 @@ public class InterestService {
 
   private final InterestRepository interestRepository;
   private final InterestMapper interestMapper;
+  private final SynonymUtils synonymUtils;
 
-  public CursorPageResponse<InterestResponse> findAll(InterestQueryCondition condition, UUID userId) {
+  public CursorPageResponse<InterestResponse> findAll(InterestQueryCondition condition,
+      UUID userId) {
     return interestRepository.findInterests(condition, userId);
   }
 
   @Transactional
   public InterestResponse create(InterestCreateRequest request) {
-    log.debug("관심사 생성 시작 | name={}", request.name());
-    List<Interest> existingInterests = interestRepository.findAll();
-    boolean hasSimilar =
-        existingInterests.stream()
-            .anyMatch(existing -> similarity(request.name(), existing.getName()) >= 0.8);
-    if (hasSimilar) {
-      throw InterestAlreadyExistsException.withName(request.name());
+    String name = request.name();
+    log.debug("관심사 생성 시작 | name={}", name);
+
+    if (interestRepository.existsByName(name)) {
+      throw InterestAlreadyExistsException.withName(name);
     }
-    Interest saved = interestRepository.save(Interest.create(request.name(), request.keywords()));
+
+    String normalized = JamoNormalizer.normalize(name);
+    int jamoLen = normalized.length();
+    int minJamo = (int) Math.ceil(jamoLen * 0.8);
+    int maxJamo = (int) Math.floor(jamoLen / 0.8);
+
+    boolean typoMatch = interestRepository.findTypoCandidates(minJamo, maxJamo)
+        .stream()
+        .anyMatch(existing ->
+            LevenshteinUtils.similarity(normalized, JamoNormalizer.normalize(existing)) >= 0.8);
+
+    List<String> rawTokens = splitRaw(name);
+    List<String> normTokens = rawTokens.stream().map(JamoNormalizer::normalize).toList();
+    List<String> searchTokens = synonymUtils.expandSearchTokens(rawTokens);
+    boolean synonymMatch = !rawTokens.isEmpty() &&
+        interestRepository.findNamesByTokens(searchTokens)
+            .stream()
+            .anyMatch(existing -> {
+              List<String> existingTokens = splitRaw(existing).stream()
+                  .map(JamoNormalizer::normalize).toList();
+              return synonymUtils.jaccardSimilarity(normTokens, existingTokens) >= 0.8;
+            });
+
+    if (typoMatch || synonymMatch) {
+      throw InterestAlreadyExistsException.withName(name);
+    }
+
+    Interest saved = interestRepository.save(Interest.create(name, jamoLen, request.keywords()));
     log.info("관심사 생성 완료 | interestId={}, name={}", saved.getId(), saved.getName());
     return interestMapper.toResponse(saved);
   }
@@ -64,28 +95,9 @@ public class InterestService {
     log.info("관심사 물리 삭제 완료 | interestId={}", id);
   }
 
-  private double similarity(String a, String b) {
-    int maxLen = Math.max(a.length(), b.length());
-    if (maxLen == 0) {
-      return 1.0;
-    }
-    return 1.0 - (double) levenshteinDistance(a, b) / maxLen;
-  }
-
-  private int levenshteinDistance(String a, String b) {
-    int[] prev = new int[b.length() + 1];
-    for (int j = 0; j <= b.length(); j++) {
-      prev[j] = j;
-    }
-    for (int i = 1; i <= a.length(); i++) {
-      int[] curr = new int[b.length() + 1];
-      curr[0] = i;
-      for (int j = 1; j <= b.length(); j++) {
-        int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
-        curr[j] = Math.min(Math.min(curr[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
-      }
-      prev = curr;
-    }
-    return prev[b.length()];
+  private List<String> splitRaw(String s) {
+    return Arrays.stream(s.trim().split("\\s+"))
+        .filter(t -> !t.isBlank())
+        .toList();
   }
 }

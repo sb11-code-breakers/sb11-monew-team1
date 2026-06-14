@@ -1,10 +1,12 @@
 package com.sprint.mission.monew.domain.notification.listener;
 
+import com.sprint.mission.monew.domain.article.event.ArticleNotificationEvent;
 import com.sprint.mission.monew.domain.comment.event.CommentLikedNotificationEvent;
 import com.sprint.mission.monew.domain.notification.metrics.NotificationMetrics;
 import com.sprint.mission.monew.domain.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -30,6 +32,16 @@ public class NotificationEventListener {
           event.recipientId(),
           event.resourceId(),
           e);
+    }
+  }
+
+  @EventListener
+  public void handleArticleNotification(ArticleNotificationEvent event) {
+    try {
+      notificationService.createArticleNotifications(
+          event.recipientIds(), event.message(), event.resourceType(), event.resourceId());
+    } catch (Exception e) {
+      log.error("기사 알림 생성 실패 | resourceId={}", event.resourceId(), e);
     }
   }
 }

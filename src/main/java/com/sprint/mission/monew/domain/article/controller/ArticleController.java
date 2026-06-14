@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,6 +44,7 @@ public class ArticleController implements ArticleApi {
     return ResponseEntity.ok(articleService.search(condition, requestUserId));
   }
 
+  @Cacheable("article-sources")
   @GetMapping("/sources")
   @Override
   public ResponseEntity<List<ArticleSource>> getSources() {

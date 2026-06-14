@@ -16,7 +16,7 @@ class InterestKeywordTest {
     @DisplayName("interest와 keyword를 전달하면 InterestKeyword가 정상 생성된다")
     void interest와_keyword를_전달하면_InterestKeyword가_정상_생성된다() {
       // given
-      Interest interest = Interest.create("인공지능", java.util.List.of("AI"));
+      Interest interest = Interest.create("인공지능", 11, java.util.List.of("AI"));
       String keyword = "머신러닝";
 
       // when
