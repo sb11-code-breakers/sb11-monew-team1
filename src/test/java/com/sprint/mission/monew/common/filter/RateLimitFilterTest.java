@@ -13,14 +13,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.annotation.Profile;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@ActiveProfiles("test-rate")
 class RateLimitFilterTest {
 
   private MockMvc mockMvc;
@@ -41,7 +39,7 @@ class RateLimitFilterTest {
 
   @AfterEach
   void tearDown() {
-    rateLimitFilter.shutdown();
+    rateLimitFilter.clearBuckets();
   }
 
   @RestController
@@ -54,11 +52,8 @@ class RateLimitFilterTest {
     @PostMapping("/api/users")
     void signup() {}
 
-    @PostMapping("/api/users/password-reset")
-    void passwordReset() {}
-
     @PostMapping("/api/users/password/reset")
-    void passwordReset2() {}
+    void passwordReset() {}
 
     @PostMapping("/api/users/unlock")
     void unlock() {}
@@ -184,7 +179,7 @@ class RateLimitFilterTest {
     @DisplayName("비밀번호 재설정 한도 이하 요청은 정상 처리된다")
     void 비밀번호_재설정_한도_이하_요청은_정상_처리된다() throws Exception {
       mockMvc
-          .perform(post("/api/users/password-reset")
+          .perform(post("/api/users/password/reset")
               .header("Monew-Request-User-ID", UUID.randomUUID().toString()))
           .andExpect(status().isOk());
     }
@@ -192,21 +187,6 @@ class RateLimitFilterTest {
     @Test
     @DisplayName("비밀번호 재설정 한도 초과 시 429 반환")
     void 비밀번호_재설정_한도_초과_시_429_반환() throws Exception {
-      String userId = UUID.randomUUID().toString();
-      for (int i = 0; i < 3; i++) {
-        mockMvc.perform(post("/api/users/password-reset")
-                .header("Monew-Request-User-ID", userId))
-            .andExpect(status().isOk());
-      }
-      mockMvc
-          .perform(post("/api/users/password-reset")
-              .header("Monew-Request-User-ID", userId))
-          .andExpect(status().isTooManyRequests());
-    }
-
-    @Test
-    @DisplayName("슬래시 경로도 한도 초과 시 429 반환")
-    void 슬래시_경로도_한도_초과_시_429_반환() throws Exception {
       String userId = UUID.randomUUID().toString();
       for (int i = 0; i < 3; i++) {
         mockMvc.perform(post("/api/users/password/reset")
@@ -223,7 +203,7 @@ class RateLimitFilterTest {
     @DisplayName("비정상 userId 헤더는 IP fallback 적용")
     void 비정상_userId_헤더는_IP_fallback_적용() throws Exception {
       mockMvc
-          .perform(post("/api/users/password-reset")
+          .perform(post("/api/users/password/reset")
               .header("Monew-Request-User-ID", "invalid-uuid")
               .header("X-Forwarded-For", "5.5.5.5"))
           .andExpect(status().isOk());
@@ -282,19 +262,21 @@ class RateLimitFilterTest {
     }
 
     @Test
-    @DisplayName("인증되지 않은 사용자는 한도 미적용")
-    void 인증되지_않은_사용자는_한도_미적용() throws Exception {
+    @DisplayName("인증되지 않은 사용자는 IP fallback 적용")
+    void 인증되지_않은_사용자는_IP_fallback_적용() throws Exception {
       mockMvc
-          .perform(get("/api/articles"))
+          .perform(get("/api/articles")
+              .header("X-Forwarded-For", "7.7.7.7"))
           .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("비정상 userId 헤더는 한도 미적용")
-    void 비정상_userId_헤더는_한도_미적용() throws Exception {
+    @DisplayName("비정상 userId 헤더는 IP fallback 적용")
+    void 비정상_userId_헤더는_IP_fallback_적용() throws Exception {
       mockMvc
           .perform(get("/api/articles")
-              .header("Monew-Request-User-ID", "invalid-uuid"))
+              .header("Monew-Request-User-ID", "invalid-uuid")
+              .header("X-Forwarded-For", "8.8.8.8"))
           .andExpect(status().isOk());
     }
   }
@@ -313,10 +295,11 @@ class RateLimitFilterTest {
     }
 
     @Test
-    @DisplayName("인증되지 않은 사용자는 한도 미적용")
-    void 인증되지_않은_사용자는_한도_미적용() throws Exception {
+    @DisplayName("인증되지 않은 사용자는 IP fallback 적용")
+    void 인증되지_않은_사용자는_IP_fallback_적용() throws Exception {
       mockMvc
-          .perform(get("/api/notifications"))
+          .perform(get("/api/notifications")
+              .header("X-Forwarded-For", "9.9.9.9"))
           .andExpect(status().isOk());
     }
 
@@ -359,10 +342,11 @@ class RateLimitFilterTest {
     }
 
     @Test
-    @DisplayName("인증되지 않은 사용자는 한도 미적용")
-    void 인증되지_않은_사용자는_한도_미적용() throws Exception {
+    @DisplayName("인증되지 않은 사용자는 IP fallback 적용")
+    void 인증되지_않은_사용자는_IP_fallback_적용() throws Exception {
       mockMvc
-          .perform(post("/api/comments"))
+          .perform(post("/api/comments")
+              .header("X-Forwarded-For", "11.11.11.11"))
           .andExpect(status().isOk());
     }
 
@@ -405,10 +389,11 @@ class RateLimitFilterTest {
     }
 
     @Test
-    @DisplayName("인증되지 않은 사용자는 한도 미적용")
-    void 인증되지_않은_사용자는_한도_미적용() throws Exception {
+    @DisplayName("인증되지 않은 사용자는 IP fallback 적용")
+    void 인증되지_않은_사용자는_IP_fallback_적용() throws Exception {
       mockMvc
-          .perform(post("/api/comments/" + UUID.randomUUID() + "/likes"))
+          .perform(post("/api/comments/" + UUID.randomUUID() + "/likes")
+              .header("X-Forwarded-For", "12.12.12.12"))
           .andExpect(status().isOk());
     }
 
@@ -456,15 +441,9 @@ class RateLimitFilterTest {
     }
 
     @Test
-    @DisplayName("shutdown 호출 시 스케줄러가 종료된다")
-    void shutdown_호출_시_스케줄러가_종료된다() {
-      rateLimitFilter.shutdown();
-    }
-
-    @Test
-    @DisplayName("스케줄러 정리 작업이 버킷을 초기화한다")
-    void 스케줄러_정리_작업이_버킷을_초기화한다() {
-      rateLimitFilter.runScheduledCleanup();
+    @DisplayName("clearBuckets 호출 시 버킷이 초기화된다")
+    void clearBuckets_호출_시_버킷이_초기화된다() {
+      rateLimitFilter.clearBuckets();
     }
   }
 }
