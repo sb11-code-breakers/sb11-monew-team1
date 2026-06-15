@@ -22,7 +22,6 @@ public interface UserActivityCustomMongoRepository {
   void pullComment(UUID userId, UUID commentId);
   void pullSubscription(UUID userId, UUID interestId);
   void pullCommentLike(UUID userId, UUID commentId);
-  void pullArticleView(UUID userId, UUID articleId);
 
   void pullArticleViewsByArticleId(UUID articleId);
   void pullCommentsByArticleId(UUID articleId);

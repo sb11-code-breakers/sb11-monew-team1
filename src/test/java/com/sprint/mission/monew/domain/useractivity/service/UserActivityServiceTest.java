@@ -4,15 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.verify;
 
-import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
-import com.sprint.mission.monew.domain.useractivity.listener.ArticleViewDeletedEvent;
 import com.sprint.mission.monew.domain.useractivity.repository.UserActivityMongoRepository;
 import java.time.Instant;
 import java.util.Optional;
@@ -22,11 +19,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class UserActivityServiceTest {
@@ -36,58 +31,12 @@ class UserActivityServiceTest {
 
   @Mock private UserRepository userRepository;
   @Mock private UserActivityMongoRepository userActivityMongoRepository;
-  @Mock private ApplicationEventPublisher eventPublisher;
 
   private UUID userId;
 
   @BeforeEach
   void setUp() {
     userId = UUID.randomUUID();
-  }
-
-  @Nested
-  @DisplayName("기사 조회 내역 단건 삭제")
-  class DeleteArticleView {
-
-    @Test
-    @DisplayName("requestUserId가 userId와 다르면 403 예외가 발생한다")
-    void requestUserId가_userId와_다르면_403_예외가_발생한다() {
-      // given
-      UUID requestUserId = UUID.randomUUID();
-
-      // when & then
-      assertThatThrownBy(() -> userActivityService.deleteArticleView(userId, UUID.randomUUID(), requestUserId))
-          .isInstanceOf(UserAccessDeniedException.class);
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 userId면 예외가 발생한다")
-    void 존재하지_않는_userId면_예외가_발생한다() {
-      // given
-      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
-
-      // when & then
-      assertThatThrownBy(() -> userActivityService.deleteArticleView(userId, UUID.randomUUID(), userId))
-          .isInstanceOf(UserNotFoundException.class);
-    }
-
-    @Test
-    @DisplayName("성공 시 ArticleViewDeletedEvent를 발행한다")
-    void 성공_시_ArticleViewDeletedEvent를_발행한다() {
-      // given
-      UUID articleId = UUID.randomUUID();
-      User mockUser = User.create("test@test.com", "테스트유저", "password123!");
-      given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(mockUser));
-
-      // when
-      userActivityService.deleteArticleView(userId, articleId, userId);
-
-      // then
-      ArgumentCaptor<ArticleViewDeletedEvent> captor = ArgumentCaptor.forClass(ArticleViewDeletedEvent.class);
-      then(eventPublisher).should().publishEvent(captor.capture());
-      assertThat(captor.getValue().userId()).isEqualTo(userId);
-      assertThat(captor.getValue().articleId()).isEqualTo(articleId);
-    }
   }
 
   @Nested

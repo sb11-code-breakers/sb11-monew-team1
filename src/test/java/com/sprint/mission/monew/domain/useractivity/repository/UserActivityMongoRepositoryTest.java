@@ -62,8 +62,8 @@ class UserActivityMongoRepositoryTest {
   class LifecycleTest {
 
     @Test
-    @DisplayName("익명화하면 모든 활동 배열이 빈 배열로 초기화된다")
-    void 익명화하면_모든_활동_배열이_초기화된다() {
+    @DisplayName("익명화하면 email·nickname이 마스킹되고 모든 활동 배열이 빈 배열로 초기화된다")
+    void 익명화하면_개인정보가_마스킹되고_모든_활동_배열이_초기화된다() {
       // given
       UUID userId = UUID.randomUUID();
       repository.createUserActivity(newActivity(userId));
@@ -75,6 +75,8 @@ class UserActivityMongoRepositoryTest {
 
       // then
       UserActivity found = repository.findById(userId).orElseThrow();
+      assertThat(found.getEmail()).isEqualTo("");
+      assertThat(found.getNickname()).isEqualTo("알 수 없음");
       assertThat(found.getComments()).isEmpty();
       assertThat(found.getCommentLikes()).isEmpty();
       assertThat(found.getSubscriptions()).isEmpty();
@@ -340,22 +342,6 @@ class UserActivityMongoRepositoryTest {
       assertThat(found.getArticleViews()).hasSize(1);
       assertThat(found.getArticleViews().get(0).getArticleId()).isEqualTo(articleId);
       assertThat(found.getArticleViews().get(0).getArticleTitle()).isEqualTo("불변 기사 제목");
-    }
-
-    @Test
-    @DisplayName("userId와 articleId로 기사 조회 내역을 단건 pull 할 수 있다")
-    void 단건_pull_검증() {
-      // given
-      UUID userId = UUID.randomUUID();
-      UUID articleId = UUID.randomUUID();
-      repository.createUserActivity(newActivity(userId));
-      repository.pushArticleView(userId, newArticleView(UUID.randomUUID(), userId, articleId, "기사"));
-
-      // when
-      repository.pullArticleView(userId, articleId);
-
-      // then
-      assertThat(repository.findById(userId).orElseThrow().getArticleViews()).isEmpty();
     }
 
     @Test

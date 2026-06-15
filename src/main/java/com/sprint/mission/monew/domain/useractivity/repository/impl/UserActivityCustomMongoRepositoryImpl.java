@@ -37,8 +37,9 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
   @Override
   public void anonymize(UUID userId) {
     Query query = Query.query(Criteria.where("_id").is(userId));
-    // 텍스트 변경 대신 활동 내역 자체를 완전히 파기(초기화)
     Update update = new Update()
+        .set("email", "")
+        .set("nickname", "알 수 없음")
         .set("subscriptions", new ArrayList<>())
         .set("comments", new ArrayList<>())
         .set("commentLikes", new ArrayList<>())
@@ -114,15 +115,6 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
         Query.query(Criteria.where("commentId").is(commentId)));
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }
-
-  @Override
-  public void pullArticleView(UUID userId, UUID articleId) {
-    Query query = Query.query(Criteria.where("_id").is(userId));
-    Update update = new Update().pull("articleViews",
-        Query.query(Criteria.where("articleId").is(articleId)));
-    mongoTemplate.updateFirst(query, update, UserActivity.class);
-  }
-
 
   @Override
   public void pullArticleViewsByArticleId(UUID articleId) {

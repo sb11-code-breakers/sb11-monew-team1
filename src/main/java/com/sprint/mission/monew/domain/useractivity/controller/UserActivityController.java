@@ -21,16 +21,6 @@ public class UserActivityController implements UserActivityApi {
   private final UserActivityService userActivityService;
 
   @Override
-  @DeleteMapping("/{userId}/article-views/{articleId}")
-  public ResponseEntity<Void> deleteArticleView(
-      @PathVariable UUID userId,
-      @PathVariable UUID articleId,
-      @RequestHeader("Monew-Request-User-ID") UUID requestUserId) {
-    userActivityService.deleteArticleView(userId, articleId, requestUserId);
-    return ResponseEntity.noContent().build();
-  }
-
-  @Override
   @GetMapping("/{userId}")
   public ResponseEntity<UserActivity> getUserActivity(
       @PathVariable UUID userId,

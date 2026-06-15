@@ -278,24 +278,6 @@ class UserActivityEventListenerTest {
   }
 
   @Nested
-  @DisplayName("ArticleViewDeletedEvent")
-  class ArticleViewDeleted {
-    @Test
-    @DisplayName("ArticleViewDeletedEvent를 받으면 pullArticleView를 호출한다")
-    void ArticleViewDeletedEvent를_받으면_pullArticleView를_호출한다() {
-      // given
-      UUID userId = UUID.randomUUID();
-      UUID articleId = UUID.randomUUID();
-
-      // when
-      listener.handle(new ArticleViewDeletedEvent(userId, articleId));
-
-      // then
-      verify(userActivityMongoRepository).pullArticleView(userId, articleId);
-    }
-  }
-
-  @Nested
   @DisplayName("ArticleViewedEvent")
   class ArticleViewed {
     @Test
