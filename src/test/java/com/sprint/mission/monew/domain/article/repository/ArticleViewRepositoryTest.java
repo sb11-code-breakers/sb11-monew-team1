@@ -9,6 +9,7 @@ import com.sprint.mission.monew.domain.article.entity.ArticleSource;
 import com.sprint.mission.monew.domain.article.entity.ArticleView;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,7 +20,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
@@ -41,42 +41,6 @@ class ArticleViewRepositoryTest {
     return articleRepository.save(
         Article.create(ArticleSource.NAVER, "https://example.com/" + UUID.randomUUID(),
             "기사 제목", Instant.now(), "요약"));
-  }
-
-  @Nested
-  @DisplayName("insertIfAbsent")
-  class InsertIfAbsent {
-
-    @Test
-    @DisplayName("처음 등록하면 1을 반환하고 레코드가 삽입된다")
-    void 처음_등록하면_1을_반환하고_레코드가_삽입된다() {
-      // given
-      Article article = saveArticle();
-      UUID userId = UUID.randomUUID();
-
-      // when
-      int result = articleViewRepository.insertIfAbsent(userId, article.getId());
-
-      // then
-      assertThat(result).isEqualTo(1);
-      assertThat(articleViewRepository.findByArticleIdAndUserId(article.getId(), userId)).isPresent();
-    }
-
-    @Test
-    @DisplayName("이미 등록된 기록이 있으면 0을 반환하고 중복 삽입되지 않는다")
-    void 이미_등록된_기록이_있으면_0을_반환하고_중복_삽입되지_않는다() {
-      // given
-      Article article = saveArticle();
-      UUID userId = UUID.randomUUID();
-      articleViewRepository.save(ArticleView.create(userId, article));
-
-      // when
-      int result = articleViewRepository.insertIfAbsent(userId, article.getId());
-
-      // then
-      assertThat(result).isEqualTo(0);
-      assertThat(articleViewRepository.count()).isEqualTo(1);
-    }
   }
 
   @Nested
@@ -106,6 +70,20 @@ class ArticleViewRepositoryTest {
 
       // when & then
       assertThat(articleViewRepository.existsByArticleIdAndUserId(article.getId(), otherUserId))
+          .isFalse();
+    }
+
+    @Test
+    @DisplayName("같은 사용자라도 다른 기사의 조회 이력은 false를 반환한다")
+    void 같은_사용자라도_다른_기사의_조회_이력은_false를_반환한다() {
+      // given
+      Article article1 = saveArticle();
+      Article article2 = saveArticle();
+      UUID userId = UUID.randomUUID();
+      articleViewRepository.save(ArticleView.create(userId, article1));
+
+      // when & then
+      assertThat(articleViewRepository.existsByArticleIdAndUserId(article2.getId(), userId))
           .isFalse();
     }
 
@@ -168,6 +146,73 @@ class ArticleViewRepositoryTest {
 
       // then
       assertThat(result).containsExactly(article1.getId());
+    }
+
+    @Test
+    @DisplayName("여러 기사를 모두 조회했으면 모든 기사 ID를 반환한다")
+    void 여러_기사를_모두_조회했으면_모든_기사_ID를_반환한다() {
+      // given
+      Article article1 = saveArticle();
+      Article article2 = saveArticle();
+      UUID userId = UUID.randomUUID();
+      articleViewRepository.save(ArticleView.create(userId, article1));
+      articleViewRepository.save(ArticleView.create(userId, article2));
+
+      // when
+      Set<UUID> result = articleViewRepository.findArticleIdsByArticleIdsAndUserId(
+          List.of(article1.getId(), article2.getId()), userId);
+
+      // then
+      assertThat(result).containsExactlyInAnyOrder(article1.getId(), article2.getId());
+    }
+  }
+
+  @Nested
+  @DisplayName("findByArticleIdAndUserId")
+  class FindByArticleIdAndUserId {
+
+    @Test
+    @DisplayName("조회 이력이 없으면 Optional.empty를 반환한다")
+    void 조회_이력이_없으면_Optional_empty를_반환한다() {
+      // given
+      Article article = saveArticle();
+      UUID userId = UUID.randomUUID();
+
+      // when & then
+      assertThat(articleViewRepository.findByArticleIdAndUserId(article.getId(), userId))
+          .isEmpty();
+    }
+
+    @Test
+    @DisplayName("다른 사용자의 조회 이력은 Optional.empty를 반환한다")
+    void 다른_사용자의_조회_이력은_Optional_empty를_반환한다() {
+      // given
+      Article article = saveArticle();
+      UUID viewedUserId = UUID.randomUUID();
+      UUID otherUserId = UUID.randomUUID();
+      articleViewRepository.save(ArticleView.create(viewedUserId, article));
+
+      // when & then
+      assertThat(articleViewRepository.findByArticleIdAndUserId(article.getId(), otherUserId))
+          .isEmpty();
+    }
+
+    @Test
+    @DisplayName("조회 이력이 있으면 ArticleView를 반환한다")
+    void 조회_이력이_있으면_ArticleView를_반환한다() {
+      // given
+      Article article = saveArticle();
+      UUID userId = UUID.randomUUID();
+      ArticleView saved = articleViewRepository.save(ArticleView.create(userId, article));
+
+      // when
+      Optional<ArticleView> result = articleViewRepository.findByArticleIdAndUserId(
+          article.getId(), userId);
+
+      // then
+      assertThat(result).isPresent();
+      assertThat(result.get().getId()).isEqualTo(saved.getId());
+      assertThat(result.get().getUserId()).isEqualTo(userId);
     }
   }
 }

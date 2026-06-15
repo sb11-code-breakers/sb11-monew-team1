@@ -1,15 +1,12 @@
 package com.sprint.mission.monew.domain.useractivity.controller;
 
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.willDoNothing;
 import static org.mockito.BDDMockito.willThrow;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.sprint.mission.monew.domain.user.document.UserSession;
-import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserSessionRepository;
 import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
@@ -47,59 +44,6 @@ class UserActivityControllerTest {
     UserSession session = UserSession.create(userId, "127.0.0.1", "1acaf8f7bdf7054e8279b8a17955fc66", 30);
     sessionToken = session.getId();
     given(userSessionRepository.findById(sessionToken)).willReturn(Optional.of(session));
-  }
-
-  @Nested
-  @DisplayName("DELETE /api/user-activities/{userId}/article-views/{articleId} — 기사 조회 내역 단건 삭제")
-  class DeleteArticleView {
-
-    @Test
-    @DisplayName("성공 시 204를 반환한다")
-    void 성공_시_204를_반환한다() throws Exception {
-      // given
-      UUID articleId = UUID.randomUUID();
-      willDoNothing().given(userActivityService).deleteArticleView(userId, articleId, userId);
-
-      // when & then
-      mockMvc.perform(
-              delete("/api/user-activities/{userId}/article-views/{articleId}", userId, articleId)
-                  .header("Monew-Request-User-ID", sessionToken)
-          )
-          .andExpect(status().isNoContent());
-    }
-
-    @Test
-    @DisplayName("본인이 아닌 userId면 403을 반환한다")
-    void 본인이_아닌_userId면_403을_반환한다() throws Exception {
-      // given
-      UUID otherUserId = UUID.randomUUID();
-      UUID articleId = UUID.randomUUID();
-      willThrow(UserAccessDeniedException.forUser(userId))
-          .given(userActivityService).deleteArticleView(otherUserId, articleId, userId);
-
-      // when & then
-      mockMvc.perform(
-              delete("/api/user-activities/{userId}/article-views/{articleId}", otherUserId, articleId)
-                  .header("Monew-Request-User-ID", sessionToken)
-          )
-          .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("존재하지 않는 userId면 404를 반환한다")
-    void 존재하지_않는_userId면_404를_반환한다() throws Exception {
-      // given
-      UUID articleId = UUID.randomUUID();
-      willThrow(UserNotFoundException.withId(userId))
-          .given(userActivityService).deleteArticleView(userId, articleId, userId);
-
-      // when & then
-      mockMvc.perform(
-              delete("/api/user-activities/{userId}/article-views/{articleId}", userId, articleId)
-                  .header("Monew-Request-User-ID", sessionToken)
-          )
-          .andExpect(status().isNotFound());
-    }
   }
 
   @Nested
