@@ -39,7 +39,8 @@ public class NotificationService {
   }
 
   @Transactional(propagation = Propagation.REQUIRES_NEW)
-  public void createArticleNotifications(List<UUID> recipientIds, String message, ResourceType resourceType, UUID resourceId) {
+  public void createArticleNotifications(List<UUID> recipientIds, String message,
+      ResourceType resourceType, UUID resourceId) {
     if (recipientIds.isEmpty()) {
       return;
     }

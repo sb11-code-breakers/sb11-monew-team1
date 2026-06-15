@@ -45,11 +45,14 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("UserCreatedEvent를 받으면 email, nickname 포함 UserActivity 도큐먼트를 생성한다")
     void UserCreatedEvent를_받으면_email과_nickname_포함_UserActivity를_생성한다() {
+      // given
       UUID userId = UUID.randomUUID();
       Instant now = Instant.now();
 
+      // when
       listener.handle(new UserCreatedEvent(userId, "test@test.com", "테스트유저", now));
 
+      // then
       verify(userActivityMongoRepository).createUserActivity(activityCaptor.capture());
       UserActivity captured = activityCaptor.getValue();
       assertThat(captured.getId()).isEqualTo(userId);
@@ -64,8 +67,13 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("UserDeletedEvent를 받으면 anonymize와 anonymizeCommentLikesByCommentUserId를 모두 호출한다")
     void UserDeletedEvent를_받으면_anonymize와_anonymizeCommentLikes를_호출한다() {
+      // given
       UUID userId = UUID.randomUUID();
+
+      // when
       listener.handle(new UserDeletedEvent(userId));
+
+      // then
       verify(userActivityMongoRepository).anonymize(userId);
       verify(userActivityMongoRepository).anonymizeCommentLikesByCommentUserId(userId);
     }
@@ -77,8 +85,13 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("UserNicknameUpdatedEvent를 받으면 MongoDB nickname을 업데이트한다")
     void UserNicknameUpdatedEvent를_받으면_MongoDB_nickname을_업데이트한다() {
+      // given
       UUID userId = UUID.randomUUID();
+
+      // when
       listener.handle(new UserNicknameUpdatedEvent(userId, "새닉네임"));
+
+      // then
       verify(userActivityMongoRepository).updateNickname(userId, "새닉네임");
     }
   }
@@ -89,6 +102,7 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("SubscriptionCreatedEvent를 받으면 {interestId, interestName, keywords, subscriberCount, subscribedAt} 추출 및 push")
     void SubscriptionCreatedEvent를_받으면_interestId와_keywords를_push한다() {
+      // given
       UUID userId = UUID.randomUUID();
       UUID subscriptionId = UUID.randomUUID();
       UUID interestId = UUID.randomUUID();
@@ -99,10 +113,12 @@ class UserActivityEventListenerTest {
 
       SubscriptionCreatedEvent event = new SubscriptionCreatedEvent(
           userId, subscriptionId, interestId, interestName, keywords, subscriberCount, subscribedAt);
+
+      // when
       listener.handle(event);
 
+      // then
       verify(userActivityMongoRepository).pushSubscription(eq(userId), subscriptionCaptor.capture());
-
       RecentSubscription captured = subscriptionCaptor.getValue();
       assertThat(captured.getInterestId()).isEqualTo(interestId);
       assertThat(captured.getInterestName()).isEqualTo(interestName);
@@ -118,9 +134,14 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("SubscriptionCancelledEvent를 받으면 pullSubscription을 호출한다")
     void SubscriptionCancelledEvent를_받으면_pullSubscription을_호출한다() {
+      // given
       UUID userId = UUID.randomUUID();
       UUID targetId = UUID.randomUUID();
+
+      // when
       listener.handle(new SubscriptionCancelledEvent(userId, targetId));
+
+      // then
       verify(userActivityMongoRepository).pullSubscription(userId, targetId);
     }
   }
@@ -131,6 +152,7 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("CommentCreatedEvent를 받으면 {commentId, articleId, articleTitle, userId, userNickname, content, likeCount, createdAt} 추출 및 push")
     void CommentCreatedEvent를_받으면_모든_필드를_push한다() {
+      // given
       UUID userId = UUID.randomUUID();
       UUID commentId = UUID.randomUUID();
       UUID articleId = UUID.randomUUID();
@@ -140,10 +162,12 @@ class UserActivityEventListenerTest {
       Instant createdAt = Instant.now();
 
       CommentCreatedEvent event = new CommentCreatedEvent(userId, commentId, articleId, articleTitle, content, userNickname, 0L, createdAt);
+
+      // when
       listener.handle(event);
 
+      // then
       verify(userActivityMongoRepository).pushComment(eq(userId), commentCaptor.capture());
-
       RecentComment captured = commentCaptor.getValue();
       assertThat(captured.getId()).isEqualTo(commentId);
       assertThat(captured.getArticleId()).isEqualTo(articleId);
@@ -162,11 +186,14 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("CommentUpdatedEvent를 받으면 MongoDB comments 배열의 content를 업데이트한다")
     void CommentUpdatedEvent를_받으면_content를_업데이트한다() {
+      // given
       UUID commentId = UUID.randomUUID();
       String newContent = "수정된 댓글 내용";
 
+      // when
       listener.handle(new CommentUpdatedEvent(commentId, newContent));
 
+      // then
       verify(userActivityMongoRepository).updateCommentContent(commentId, newContent);
     }
   }
@@ -177,11 +204,14 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("CommentDeletedEvent를 받으면 작성자의 comments 배열에서 해당 댓글을 pull한다")
     void CommentDeletedEvent를_받으면_작성자의_comments에서_pull한다() {
+      // given
       UUID authorId = UUID.randomUUID();
       UUID commentId = UUID.randomUUID();
 
+      // when
       listener.handle(new CommentDeletedEvent(authorId, commentId));
 
+      // then
       verify(userActivityMongoRepository).pullComment(authorId, commentId);
     }
   }
@@ -192,6 +222,7 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("CommentLikedEvent를 받으면 모든 필드 추출 및 push")
     void CommentLikedEvent를_받으면_모든_필드를_push한다() {
+      // given
       UUID userId = UUID.randomUUID();
       UUID commentId = UUID.randomUUID();
       UUID articleId = UUID.randomUUID();
@@ -210,10 +241,11 @@ class UserActivityEventListenerTest {
           commentLikeCount, commentCreatedAt
       );
 
+      // when
       listener.handle(event);
 
+      // then
       verify(userActivityMongoRepository).pushCommentLike(eq(userId), commentLikeCaptor.capture());
-
       RecentCommentLike captured = commentLikeCaptor.getValue();
       assertThat(captured.getCommentId()).isEqualTo(commentId);
       assertThat(captured.getArticleId()).isEqualTo(articleId);
@@ -233,10 +265,33 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("CommentLikeRemovedEvent를 받으면 pullCommentLike를 호출한다")
     void CommentLikeRemovedEvent를_받으면_pullCommentLike를_호출한다() {
+      // given
       UUID userId = UUID.randomUUID();
       UUID commentId = UUID.randomUUID();
+
+      // when
       listener.handle(new CommentLikeRemovedEvent(userId, commentId));
+
+      // then
       verify(userActivityMongoRepository).pullCommentLike(userId, commentId);
+    }
+  }
+
+  @Nested
+  @DisplayName("ArticleViewDeletedEvent")
+  class ArticleViewDeleted {
+    @Test
+    @DisplayName("ArticleViewDeletedEvent를 받으면 pullArticleView를 호출한다")
+    void ArticleViewDeletedEvent를_받으면_pullArticleView를_호출한다() {
+      // given
+      UUID userId = UUID.randomUUID();
+      UUID articleId = UUID.randomUUID();
+
+      // when
+      listener.handle(new ArticleViewDeletedEvent(userId, articleId));
+
+      // then
+      verify(userActivityMongoRepository).pullArticleView(userId, articleId);
     }
   }
 
@@ -246,6 +301,7 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("ArticleViewedEvent를 받으면 모든 필드 추출 및 push")
     void ArticleViewedEvent를_받으면_모든_필드를_push한다() {
+      // given
       UUID userId = UUID.randomUUID();
       UUID articleViewId = UUID.randomUUID();
       UUID articleId = UUID.randomUUID();
@@ -257,10 +313,11 @@ class UserActivityEventListenerTest {
           10L, 100L
       );
 
+      // when
       listener.handle(event);
 
+      // then
       verify(userActivityMongoRepository).pushArticleView(eq(userId), articleViewCaptor.capture());
-
       RecentArticleView captured = articleViewCaptor.getValue();
       assertThat(captured.getArticleId()).isEqualTo(articleId);
       assertThat(captured.getArticleTitle()).isEqualTo("오늘의 뉴스");
@@ -279,9 +336,13 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("ArticleDeletedEvent를 받으면 연쇄 삭제(Cascade) pull 3개 메서드를 호출한다")
     void ArticleDeletedEvent를_받으면_cascade_pull_3개를_호출한다() {
+      // given
       UUID articleId = UUID.randomUUID();
+
+      // when
       listener.handle(new ArticleDeletedEvent(articleId));
 
+      // then
       verify(userActivityMongoRepository).pullArticleViewsByArticleId(articleId);
       verify(userActivityMongoRepository).pullCommentsByArticleId(articleId);
       verify(userActivityMongoRepository).pullCommentLikesByArticleId(articleId);
@@ -294,8 +355,13 @@ class UserActivityEventListenerTest {
     @Test
     @DisplayName("InterestDeletedEvent를 받으면 pullSubscriptionsByInterestId를 호출한다")
     void InterestDeletedEvent를_받으면_pullSubscriptionsByInterestId를_호출한다() {
+      // given
       UUID interestId = UUID.randomUUID();
+
+      // when
       listener.handle(new InterestDeletedEvent(interestId));
+
+      // then
       verify(userActivityMongoRepository).pullSubscriptionsByInterestId(interestId);
     }
   }

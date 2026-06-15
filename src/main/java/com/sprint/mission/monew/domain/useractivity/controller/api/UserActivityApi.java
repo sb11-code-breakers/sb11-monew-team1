@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 
 
-
 @Tag(name = "활동 내역 관리", description = "사용자 활동 내역 관련 API")
 public interface UserActivityApi {
 

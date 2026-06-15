@@ -6,8 +6,8 @@ import com.sprint.mission.monew.domain.article.exception.ArticleNotFoundExceptio
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.comment.dto.CommentCreateRequest;
 import com.sprint.mission.monew.domain.comment.dto.CommentQueryCondition;
-import com.sprint.mission.monew.domain.comment.dto.CommentUpdateRequest;
 import com.sprint.mission.monew.domain.comment.dto.CommentResponse;
+import com.sprint.mission.monew.domain.comment.dto.CommentUpdateRequest;
 import com.sprint.mission.monew.domain.comment.entity.Comment;
 import com.sprint.mission.monew.domain.comment.exception.CommentAccessDeniedException;
 import com.sprint.mission.monew.domain.comment.exception.CommentNotFoundException;
@@ -17,20 +17,15 @@ import com.sprint.mission.monew.domain.comment.repository.CommentRepository;
 import com.sprint.mission.monew.domain.user.entity.User;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
-import java.time.Instant;
-import java.util.List;
-import java.util.Set;
+import com.sprint.mission.monew.domain.useractivity.listener.CommentCreatedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.CommentDeletedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.CommentUpdatedEvent;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-// 💡 [수정] 스프링 이벤트 발행 및 댓글 작성 이벤트 클래스 import 추가
-import org.springframework.context.ApplicationEventPublisher;
-import com.sprint.mission.monew.domain.useractivity.listener.CommentCreatedEvent;
-import com.sprint.mission.monew.domain.useractivity.listener.CommentUpdatedEvent;
-import com.sprint.mission.monew.domain.useractivity.listener.CommentDeletedEvent;
 
 @Slf4j
 @Service
@@ -43,7 +38,7 @@ public class CommentService {
   private final UserRepository userRepository;
   private final CommentLikeRepository commentLikeRepository;
   private final CommentMapper commentMapper;
-  private final ApplicationEventPublisher eventPublisher; // 💡 [수정] 이벤트 퍼블리셔 주입 추가
+  private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
   public CommentResponse create(CommentCreateRequest request) {
@@ -61,7 +56,8 @@ public class CommentService {
     Comment savedComment = commentRepository.save(comment);
     articleRepository.increaseCommentCount(request.articleId());
 
-    log.debug("CommentCreatedEvent 발행 | commentId={}, userId={}", savedComment.getId(), user.getId());
+    log.debug("CommentCreatedEvent 발행 | commentId={}, userId={}", savedComment.getId(),
+        user.getId());
     eventPublisher.publishEvent(new CommentCreatedEvent(
         user.getId(),
         savedComment.getId(),
@@ -146,9 +142,11 @@ public class CommentService {
   public CursorPageResponse<CommentResponse> getComments(CommentQueryCondition condition,
       UUID requestId) {
     log.debug("댓글 목록 조회 시작 | articleId={}, orderBy={}, direction={}, limit={}, userId={}",
-        condition.articleId(), condition.orderBy(), condition.direction(), condition.limit(), requestId);
+        condition.articleId(), condition.orderBy(), condition.direction(), condition.limit(),
+        requestId);
 
-    CursorPageResponse<CommentResponse> response = commentRepository.getComments(condition, requestId);
+    CursorPageResponse<CommentResponse> response = commentRepository.getComments(condition,
+        requestId);
 
     log.info("댓글 목록 조회 완료 | count={}, hasNext={}, nextCursor={}",
         response.content().size(), response.hasNext(), response.nextCursor());

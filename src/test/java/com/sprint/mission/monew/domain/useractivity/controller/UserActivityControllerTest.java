@@ -56,9 +56,11 @@ class UserActivityControllerTest {
     @Test
     @DisplayName("성공 시 204를 반환한다")
     void 성공_시_204를_반환한다() throws Exception {
+      // given
       UUID articleId = UUID.randomUUID();
       willDoNothing().given(userActivityService).deleteArticleView(userId, articleId, userId);
 
+      // when & then
       mockMvc.perform(
               delete("/api/user-activities/{userId}/article-views/{articleId}", userId, articleId)
                   .header("Monew-Request-User-ID", sessionToken)
@@ -69,11 +71,13 @@ class UserActivityControllerTest {
     @Test
     @DisplayName("본인이 아닌 userId면 403을 반환한다")
     void 본인이_아닌_userId면_403을_반환한다() throws Exception {
+      // given
       UUID otherUserId = UUID.randomUUID();
       UUID articleId = UUID.randomUUID();
       willThrow(UserAccessDeniedException.forUser(userId))
           .given(userActivityService).deleteArticleView(otherUserId, articleId, userId);
 
+      // when & then
       mockMvc.perform(
               delete("/api/user-activities/{userId}/article-views/{articleId}", otherUserId, articleId)
                   .header("Monew-Request-User-ID", sessionToken)
@@ -84,10 +88,12 @@ class UserActivityControllerTest {
     @Test
     @DisplayName("존재하지 않는 userId면 404를 반환한다")
     void 존재하지_않는_userId면_404를_반환한다() throws Exception {
+      // given
       UUID articleId = UUID.randomUUID();
       willThrow(UserNotFoundException.withId(userId))
           .given(userActivityService).deleteArticleView(userId, articleId, userId);
 
+      // when & then
       mockMvc.perform(
               delete("/api/user-activities/{userId}/article-views/{articleId}", userId, articleId)
                   .header("Monew-Request-User-ID", sessionToken)

@@ -45,7 +45,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-// 💡 [수정] 스프링 이벤트 발행 기능 및 생성한 이벤트 클래스 import 추가
 import org.springframework.context.ApplicationEventPublisher;
 import com.sprint.mission.monew.domain.useractivity.listener.UserCreatedEvent;
 import com.sprint.mission.monew.domain.useractivity.listener.UserDeletedEvent;
@@ -83,7 +82,8 @@ public class UserService {
     User saved = userRepository.save(user);
 
     log.debug("UserCreatedEvent 발행 | userId={}, nickname={}", saved.getId(), saved.getNickname());
-    eventPublisher.publishEvent(new UserCreatedEvent(saved.getId(), saved.getEmail(), saved.getNickname(), Instant.now()));
+    eventPublisher.publishEvent(
+        new UserCreatedEvent(saved.getId(), saved.getEmail(), saved.getNickname(), Instant.now()));
 
     EmailVerification verification = EmailVerification.create(saved.getId());
     EmailVerification savedVerification = emailVerificationRepository.save(verification);

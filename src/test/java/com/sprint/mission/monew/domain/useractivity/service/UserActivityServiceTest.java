@@ -52,8 +52,10 @@ class UserActivityServiceTest {
     @Test
     @DisplayName("requestUserId가 userId와 다르면 403 예외가 발생한다")
     void requestUserId가_userId와_다르면_403_예외가_발생한다() {
+      // given
       UUID requestUserId = UUID.randomUUID();
 
+      // when & then
       assertThatThrownBy(() -> userActivityService.deleteArticleView(userId, UUID.randomUUID(), requestUserId))
           .isInstanceOf(UserAccessDeniedException.class);
     }
@@ -61,8 +63,10 @@ class UserActivityServiceTest {
     @Test
     @DisplayName("존재하지 않는 userId면 예외가 발생한다")
     void 존재하지_않는_userId면_예외가_발생한다() {
+      // given
       given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.empty());
 
+      // when & then
       assertThatThrownBy(() -> userActivityService.deleteArticleView(userId, UUID.randomUUID(), userId))
           .isInstanceOf(UserNotFoundException.class);
     }
@@ -70,12 +74,15 @@ class UserActivityServiceTest {
     @Test
     @DisplayName("성공 시 ArticleViewDeletedEvent를 발행한다")
     void 성공_시_ArticleViewDeletedEvent를_발행한다() {
+      // given
       UUID articleId = UUID.randomUUID();
       User mockUser = User.create("test@test.com", "테스트유저", "password123!");
       given(userRepository.findByIdAndDeletedAtIsNull(userId)).willReturn(Optional.of(mockUser));
 
+      // when
       userActivityService.deleteArticleView(userId, articleId, userId);
 
+      // then
       ArgumentCaptor<ArticleViewDeletedEvent> captor = ArgumentCaptor.forClass(ArticleViewDeletedEvent.class);
       then(eventPublisher).should().publishEvent(captor.capture());
       assertThat(captor.getValue().userId()).isEqualTo(userId);

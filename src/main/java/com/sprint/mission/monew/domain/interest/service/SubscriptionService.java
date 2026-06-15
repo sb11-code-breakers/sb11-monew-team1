@@ -15,7 +15,6 @@ import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
 import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import com.sprint.mission.monew.domain.useractivity.listener.SubscriptionCancelledEvent;
 import com.sprint.mission.monew.domain.useractivity.listener.SubscriptionCreatedEvent;
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +34,7 @@ public class SubscriptionService {
   private final UserRepository userRepository;
   private final SubscriptionRepository subscriptionRepository;
   private final SubscriptionMapper subscriptionMapper;
-  private final ApplicationEventPublisher eventPublisher; // 💡 [수정] 이벤트 퍼블리셔 주입 추가
+  private final ApplicationEventPublisher eventPublisher;
 
   @Transactional
   public SubscriptionResponse subscribe(UUID interestId, UUID userId) {
@@ -55,9 +54,11 @@ public class SubscriptionService {
       SubscriptionResponse response = subscriptionMapper.toResponse(saved, newSubscriberCount);
       interestRepository.increaseSubscriberCount(interestId);
 
-      log.debug("SubscriptionCreatedEvent 발행 | userId={}, subscriptionId={}, interestId={}", userId, saved.getId(), interestId);
+      log.debug("SubscriptionCreatedEvent 발행 | userId={}, subscriptionId={}, interestId={}", userId,
+          saved.getId(), interestId);
       eventPublisher.publishEvent(new SubscriptionCreatedEvent(
-          userId, saved.getId(), interestId, interest.getName(), keywords, newSubscriberCount, saved.getCreatedAt()
+          userId, saved.getId(), interestId, interest.getName(), keywords, newSubscriberCount,
+          saved.getCreatedAt()
       ));
 
       log.info("관심사 구독 완료 | interestId={}, userId={}", interestId, userId);

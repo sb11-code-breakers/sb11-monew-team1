@@ -21,9 +21,6 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
 
   private final MongoTemplate mongoTemplate;
 
-  // ==========================================
-  // 1. 라이프사이클 & 개인정보 처리
-  // ==========================================
 
   @Override
   public void createUserActivity(UserActivity userActivity) {
@@ -53,13 +50,11 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
   public void anonymizeCommentLikesByCommentUserId(UUID userId) {
     // 상대방의 도큐먼트에 남은 내 흔적(userId)을 찾아 좋아요 기록 자체를 삭제
     Query query = new Query(Criteria.where("commentLikes.commentUserId").is(userId));
-    Update update = new Update().pull("commentLikes", Query.query(Criteria.where("commentUserId").is(userId)));
+    Update update = new Update().pull("commentLikes",
+        Query.query(Criteria.where("commentUserId").is(userId)));
     mongoTemplate.updateMulti(query, update, UserActivity.class);
   }
 
-  // ==========================================
-  // 2. 활동 추가 (맨 앞에 넣고 10개 유지 - Genius Move!)
-  // ==========================================
 
   @Override
   public void updateCommentContent(UUID commentId, String content) {
@@ -96,9 +91,6 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
     mongoTemplate.upsert(query, update, UserActivity.class);
   }
 
-  // ==========================================
-  // 3. 개별 단건 삭제 (Pull)
-  // ==========================================
 
   @Override
   public void pullComment(UUID userId, UUID commentId) {
@@ -110,53 +102,57 @@ public class UserActivityCustomMongoRepositoryImpl implements UserActivityCustom
   @Override
   public void pullSubscription(UUID userId, UUID interestId) {
     Query query = Query.query(Criteria.where("_id").is(userId));
-    Update update = new Update().pull("subscriptions", Query.query(Criteria.where("interestId").is(interestId)));
+    Update update = new Update().pull("subscriptions",
+        Query.query(Criteria.where("interestId").is(interestId)));
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }
 
   @Override
   public void pullCommentLike(UUID userId, UUID commentId) {
     Query query = Query.query(Criteria.where("_id").is(userId));
-    Update update = new Update().pull("commentLikes", Query.query(Criteria.where("commentId").is(commentId)));
+    Update update = new Update().pull("commentLikes",
+        Query.query(Criteria.where("commentId").is(commentId)));
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }
 
   @Override
   public void pullArticleView(UUID userId, UUID articleId) {
     Query query = Query.query(Criteria.where("_id").is(userId));
-    Update update = new Update().pull("articleViews", Query.query(Criteria.where("articleId").is(articleId)));
+    Update update = new Update().pull("articleViews",
+        Query.query(Criteria.where("articleId").is(articleId)));
     mongoTemplate.updateFirst(query, update, UserActivity.class);
   }
 
-  // ==========================================
-  // 4. 연쇄 삭제 (Cascade Delete)
-  // ==========================================
 
   @Override
   public void pullArticleViewsByArticleId(UUID articleId) {
     Query query = new Query();
-    Update update = new Update().pull("articleViews", Query.query(Criteria.where("articleId").is(articleId)));
+    Update update = new Update().pull("articleViews",
+        Query.query(Criteria.where("articleId").is(articleId)));
     mongoTemplate.updateMulti(query, update, UserActivity.class);
   }
 
   @Override
   public void pullCommentsByArticleId(UUID articleId) {
     Query query = new Query();
-    Update update = new Update().pull("comments", Query.query(Criteria.where("articleId").is(articleId)));
+    Update update = new Update().pull("comments",
+        Query.query(Criteria.where("articleId").is(articleId)));
     mongoTemplate.updateMulti(query, update, UserActivity.class);
   }
 
   @Override
   public void pullCommentLikesByArticleId(UUID articleId) {
     Query query = new Query();
-    Update update = new Update().pull("commentLikes", Query.query(Criteria.where("articleId").is(articleId)));
+    Update update = new Update().pull("commentLikes",
+        Query.query(Criteria.where("articleId").is(articleId)));
     mongoTemplate.updateMulti(query, update, UserActivity.class);
   }
 
   @Override
   public void pullSubscriptionsByInterestId(UUID interestId) {
     Query query = new Query();
-    Update update = new Update().pull("subscriptions", Query.query(Criteria.where("interestId").is(interestId)));
+    Update update = new Update().pull("subscriptions",
+        Query.query(Criteria.where("interestId").is(interestId)));
     mongoTemplate.updateMulti(query, update, UserActivity.class);
   }
 }

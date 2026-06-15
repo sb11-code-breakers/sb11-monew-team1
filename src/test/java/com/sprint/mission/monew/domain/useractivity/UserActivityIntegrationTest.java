@@ -89,6 +89,7 @@ public class UserActivityIntegrationTest {
     @Test
     @DisplayName("존재하지 않는 userId면 404와 에러 응답을 반환한다")
     void 존재하지_않는_userId면_404와_에러_응답을_반환한다() throws Exception {
+      // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", ghostUserId)
               .header("Monew-Request-User-ID", ghostSessionToken))
           .andExpect(status().isNotFound())
@@ -99,9 +100,11 @@ public class UserActivityIntegrationTest {
     @Test
     @DisplayName("soft-delete된 userId면 404를 반환한다")
     void soft_delete된_userId면_404를_반환한다() throws Exception {
+      // given
       user.softDelete();
       userRepository.save(user);
 
+      // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
               .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isNotFound());
@@ -110,6 +113,7 @@ public class UserActivityIntegrationTest {
     @Test
     @DisplayName("성공 시 200과 활동 내역을 반환한다")
     void 성공_시_200과_활동_내역을_반환한다() throws Exception {
+      // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
               .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())
@@ -125,11 +129,13 @@ public class UserActivityIntegrationTest {
     @Test
     @DisplayName("구독 관심사가 있으면 응답에 포함된다")
     void 구독_관심사가_있으면_응답에_포함된다() throws Exception {
+      // given
       userActivityMongoRepository.pushSubscription(user.getId(),
           RecentSubscription.of(UUID.randomUUID(), UUID.randomUUID(), "인공지능",
               List.of("AI"), 1L, Instant.now())
       );
 
+      // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
               .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())
@@ -140,11 +146,13 @@ public class UserActivityIntegrationTest {
     @Test
     @DisplayName("최근 작성한 댓글이 있으면 응답에 포함된다")
     void 최근_작성한_댓글이_있으면_응답에_포함된다() throws Exception {
+      // given
       userActivityMongoRepository.pushComment(user.getId(),
           RecentComment.of(UUID.randomUUID(), article.getId(), article.getTitle(),
               user.getId(), user.getNickname(), "테스트 댓글", 0L, Instant.now())
       );
 
+      // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
               .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())
@@ -155,6 +163,7 @@ public class UserActivityIntegrationTest {
     @Test
     @DisplayName("최근 좋아요한 댓글이 있으면 응답에 포함된다")
     void 최근_좋아요한_댓글이_있으면_응답에_포함된다() throws Exception {
+      // given
       UUID commentId = UUID.randomUUID();
       userActivityMongoRepository.pushCommentLike(user.getId(),
           RecentCommentLike.of(UUID.randomUUID(), Instant.now(),
@@ -163,6 +172,7 @@ public class UserActivityIntegrationTest {
               1L, Instant.now().minusSeconds(60))
       );
 
+      // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
               .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())
@@ -173,6 +183,7 @@ public class UserActivityIntegrationTest {
     @Test
     @DisplayName("최근 본 기사가 있으면 응답에 포함된다")
     void 최근_본_기사가_있으면_응답에_포함된다() throws Exception {
+      // given
       userActivityMongoRepository.pushArticleView(user.getId(),
           RecentArticleView.of(UUID.randomUUID(), user.getId(), Instant.now(),
               article.getId(), article.getSource().name(), article.getSourceUrl(),
@@ -180,6 +191,7 @@ public class UserActivityIntegrationTest {
               0L, 1L)
       );
 
+      // when & then
       mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
               .header("Monew-Request-User-ID", sessionToken))
           .andExpect(status().isOk())

@@ -34,7 +34,8 @@ public class ArticleService {
   private final ArticleViewMapper articleViewMapper;
   private final ApplicationEventPublisher eventPublisher;
 
-  public CursorPageResponse<ArticleResponse> search(ArticleQueryCondition condition, UUID requestUserId) {
+  public CursorPageResponse<ArticleResponse> search(ArticleQueryCondition condition,
+      UUID requestUserId) {
     return articleRepository.search(condition, requestUserId);
   }
 

@@ -22,7 +22,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// 💡 [수정] 몽고DB 활동 기록 백엔드로 흘러갈 좋아요 등록/취소 이벤트 import 추가
 import com.sprint.mission.monew.domain.useractivity.listener.CommentLikedEvent;
 import com.sprint.mission.monew.domain.useractivity.listener.CommentLikeRemovedEvent;
 import java.time.Instant;
@@ -54,17 +53,14 @@ public class CommentLikeService {
             .findById(commentId)
             .orElseThrow(() -> CommentNotFoundException.withId(commentId));
 
-    // 💡 [수정] ⚠️ 지연 로딩 트랩 방어선
-    // 아래 `increaseLikeCount`가 실행되면 영속성 컨텍스트가 날아가므로,
-    // 몽고DB에 보낼 기사 ID, 기사 제목, 댓글 생성일을 안전하게 미리 변수로 뽑아둡니다.
     UUID articleId = comment.getArticle().getId();
     String articleTitle = comment.getArticle().getTitle();
     Instant commentCreatedAt = comment.getCreatedAt();
-    // comment.user는 ON DELETE SET NULL로 null일 수 있음
+
     UUID commentUserId = comment.getUser() != null ? comment.getUser().getId() : null;
     String commentUserNickname = comment.getUser() != null ? comment.getUser().getNickname() : null;
     String commentContent = comment.getContent();
-    // increaseLikeCount는 @Modifying(clearAutomatically=true)라 이후 comment.getLikeCount()가 stale해짐
+
     long nextLikeCount = comment.getLikeCount() + 1;
 
     CommentLike commentLike = CommentLike.create(user, comment);
