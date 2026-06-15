@@ -51,8 +51,11 @@ services:
     # ddl-auto=validate 이므로 앱 기동 전 스키마가 존재해야 한다 → 최초 부팅 시 1회 적용
     volumes:
       - ../src/main/resources/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    # host 5433 → container 5432. 로컬에 이미 postgres(5432)가 떠 있으면 그게 localhost:5432를
+    # 가로채 seed/extract-ids가 엉뚱한 DB로 붙는다 → 5433으로 분리해 충돌을 원천 차단.
+    # (앱→DB는 도커 네트워크 postgres:5432라 영향 없음. 호스트에서 접속만 5433.)
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U monew -d monew" ]
       interval: 5s

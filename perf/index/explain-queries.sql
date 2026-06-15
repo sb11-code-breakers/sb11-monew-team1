@@ -2,7 +2,7 @@
 -- 도구는 k6가 아니라 PostgreSQL 실행계획. 첫 페이지 vs 깊은 페이지 플랜·buffers 비교가 핵심.
 --
 -- 실행:
---   psql "postgresql://monew:monew@localhost:5432/monew" -f perf/index/explain-queries.sql
+--   psql "postgresql://monew:monew@localhost:5433/monew" -f perf/index/explain-queries.sql
 --   (시드 + ANALYZE 완료 상태에서. 측정 전 통계 최신화는 아래 0단계가 수행)
 --
 -- 인기 기사·깊은 커서는 \gset 으로 자동 선정·추출 → 수정 없이 그대로 실행된다.

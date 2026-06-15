@@ -9,7 +9,7 @@
 --   3) explain-queries.sql 다시 측정 → Sort 사라지고 Index Scan 되는지, buffers 평탄해지는지 비교
 --
 -- 적용:
---   psql "postgresql://monew:monew@localhost:5432/monew" -f perf/index/candidate-indexes.sql
+--   psql "postgresql://monew:monew@localhost:5433/monew" -f perf/index/candidate-indexes.sql
 
 -- ── I1/I2: 키셋 정렬을 받칠 복합 인덱스 (부분 인덱스로 소프트딜리트 제외까지 흡수) ──
 -- 댓글: article_id + createdAt 정렬 + id tie-break

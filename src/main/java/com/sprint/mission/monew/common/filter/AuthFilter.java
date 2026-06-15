@@ -23,12 +23,15 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class AuthFilter implements Filter {
 
   private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
@@ -96,7 +99,6 @@ public class AuthFilter implements Filter {
         return;
       }
 
-      // Monew-Request-User-ID 헤더를 어드민 경로에서 정적 토큰으로 재사용 (의도된 설계)
       if (isAdminOnly(request.getMethod(), request.getRequestURI())) {
         String token = request.getHeader("Monew-Request-User-ID");
         if (token == null || !token.equals(adminToken)) {

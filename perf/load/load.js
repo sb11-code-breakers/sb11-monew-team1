@@ -20,16 +20,22 @@ import {
   notifications, userActivity,
 } from '../speed/read.js';
 import { createComment, like, articleView } from '../speed/write.js';
+import { loginPool } from '../speed/common.js';
 
-// 복합(현실 트래픽 믹스) — 읽기 80% : 쓰기 20%
-export function mix() {
+// 측정 전 1회: 테스트 유저 로그인 → 세션 토큰 풀({token,userId}). exec 함수(mix 포함)가 data로 받는다.
+export function setup() {
+  return { pool: loginPool() };
+}
+
+// 복합(현실 트래픽 믹스) — 읽기 80% : 쓰기 20%. data를 각 함수로 그대로 흘려준다.
+export function mix(data) {
   const r = Math.random();
-  if (r < 0.40) articleSearch();        // 기사 목록/검색 40%
-  else if (r < 0.60) commentList();     // 댓글 목록      20%
-  else if (r < 0.80) notifications();   // 알림 폴링      20%
-  else if (r < 0.90) like();            // 좋아요         10%
-  else if (r < 0.95) createComment();   // 댓글 작성       5%
-  else articleView();                   // 조회수          5%
+  if (r < 0.40) articleSearch(data);        // 기사 목록/검색 40%
+  else if (r < 0.60) commentList(data);     // 댓글 목록      20%
+  else if (r < 0.80) notifications(data);   // 알림 폴링      20%
+  else if (r < 0.90) like(data);            // 좋아요         10%
+  else if (r < 0.95) createComment(data);   // 댓글 작성       5%
+  else articleView(data);                   // 조회수          5%
 }
 
 // k6 scenario.exec 는 메인 스크립트에서 export된 함수명을 참조 → 전부 재export.
@@ -115,6 +121,9 @@ function buildScenario() {
 
 export const options = {
   scenarios: { [PATTERN]: buildScenario() },
+  // 합격선이 p95·p99 둘 다 보는데 summary-export 기본 통계엔 p99가 없다 → p99를 명시 포함해
+  // 결과 JSON에 숫자로 남긴다(미포함 시 threshold 통과여부만 남고 값은 유실).
+  summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
   // 합격선. abortOnFail 미설정(기본 false) → stress에서 포화로 FAIL이 떠도 끝까지 돌려
   // 단계별 출력에서 "어느 VU/RPS부터 무너지는지" 포화점을 읽는다(stress는 FAIL이 정상 관측).
   thresholds: {

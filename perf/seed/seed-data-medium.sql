@@ -6,11 +6,11 @@
 --
 -- 실행:
 --   docker compose -f perf/docker-compose.yml up -d postgres
---   psql "postgresql://monew:monew@localhost:5432/monew" -f perf/seed/seed-data-medium.sql
+--   psql "postgresql://monew:monew@localhost:5433/monew" -f perf/seed/seed-data-medium.sql
 --
 -- 재실행 주의: email/source_url이 i 기반 결정값이라 빈 DB에서 1회만 실행한다.
 --   다시 채우려면 아래 정리문을 먼저 수동 실행(주석 해제):
---   TRUNCATE comment_likes, comments, article_views, articles, users RESTART IDENTITY CASCADE;
+--   TRUNCATE comment_likes, comments, article_views, articles, subscriptions, interests, users RESTART IDENTITY CASCADE;
 
 -- gen_random_uuid() 사용 (PostgreSQL 13+ 코어 내장). 구버전이면: CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
@@ -20,19 +20,34 @@
 SELECT setseed(0.42);
 
 -- ── 1. 유저 1만 ────────────────────────────────────────────────
--- password: 유효한 BCrypt 형식 해시 1개를 전 유저가 공유한다.
---   대량 시드에서 1만 번 BCrypt 해싱은 느리기만 하고 의미 없어, 고정 해시 재사용이 업계 표준.
---   측정 엔드포인트는 Monew-Request-User-ID 헤더로 인증해 비밀번호를 검증하지 않으므로 값 자체는 무의미(NOT NULL 충족용).
---   로그인 "성공"까지 측정할 일이 생기면 그때만 BCryptPasswordEncoder로 만든 '알려진 평문'의 해시로 교체한다.
+-- password: '알려진 평문'의 BCrypt 해시 1개를 전 유저가 공유한다.
+--   k6가 setup()에서 실제 로그인(POST /api/users/login)으로 세션 토큰을 발급받아 인증을 통과하므로,
+--   비밀번호 평문을 알아야 로그인이 된다. 전 유저 공통 평문 = "loadtest1234" (의 bcrypt 해시).
+--   1만 번 BCrypt 해싱은 느리기만 하고 의미 없어, 고정 해시 재사용이 업계 표준.
+--   해시 교체 시: htpasswd -bnBC 10 "" <평문>  또는  new BCryptPasswordEncoder().encode("<평문>") 로 생성.
 \echo '[seed] 1/4 users 1만 적재...'
 INSERT INTO users (id, email, nickname, password, email_verified, created_at)
 SELECT gen_random_uuid(),
        'user' || i || '@load.test',
        'loaduser' || i,
-       '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', -- 고정 placeholder 해시 (검증 안 함)
+       '$2a$10$Cc9bd37qy3urqOSDzYYg8eCDP8eatPT0APr8H9DsbYRG.SbjcSGpi', -- bcrypt("loadtest1234") — 전 유저 공통 평문
        true,
        now()
 FROM generate_series(1, 10000) AS s(i);
+
+-- ── 1.5 관심사 50개 (동시성 C3용) ──────────────────────────────
+-- C3(구독 중복) 측정은 구독할 관심사가 있어야 setup()을 통과한다. subscriptions 행은 C3가
+-- 직접 POST로 만들므로 여기선 interests만 채운다.
+-- jamo_length는 NOT NULL이라 값이 필요 — 퍼지 검색 랭킹용 컬럼이고 C3는 UNIQUE(user,interest)
+-- 제약만 검증하므로 정확한 자모 분해 대신 char_length(name)로 채워도 측정에 무방하다.
+\echo '[seed] 1.5 interests 50개 적재(C3용)...'
+INSERT INTO interests (id, name, jamo_length, subscriber_count, created_at)
+SELECT gen_random_uuid(),
+       '관심사' || i,
+       char_length('관심사' || i),
+       0,
+       now()
+FROM generate_series(1, 50) AS s(i);
 
 -- ── 2. 기사 10만 ───────────────────────────────────────────────
 -- source는 CHECK(NAVER/HANKYUNG/CHOSUN/YONHAP) 통과값으로 분산. source_url은 i로 유니크.
@@ -96,6 +111,7 @@ WHERE a.id = sub.article_id;
 -- ── 6. 통계 갱신 (필수) ───────────────────────────────────────
 -- ANALYZE를 안 하면 시드해도 플래너가 풀스캔으로 측정될 수 있다.
 ANALYZE users;
+ANALYZE interests;
 ANALYZE articles;
 ANALYZE comments;
 ANALYZE comment_likes;

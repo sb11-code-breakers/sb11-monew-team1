@@ -13,12 +13,18 @@ import {
   notifications, userActivity, interests, sources,
 } from './read.js';
 import { createComment, like, articleView } from './write.js';
+import { loginPool } from './common.js';
 
 // k6 scenario의 exec는 "테스트 스크립트(run.js)에서 export된 함수명"을 참조하므로 재export.
 export {
   articleSearch, articleSearchKeyword, articleGet, commentList, commentListDeep,
   notifications, userActivity, interests, sources, createComment, like, articleView,
 };
+
+// 측정 전 1회: 테스트 유저 로그인 → 세션 토큰 풀({token,userId}). 모든 exec 함수가 data로 받는다.
+export function setup() {
+  return { pool: loginPool() };
+}
 
 const VUS = Number(__ENV.VUS || 5);
 const DURATION_S = Number(__ENV.DURATION_S || 180);
@@ -50,6 +56,9 @@ targets.forEach((exec, i) => {
 
 export const options = {
   scenarios,
+  // 합격선이 p95·p99 둘 다 보는데 summary-export 기본 통계엔 p99가 없다 → p99를 명시 포함해
+  // 결과 JSON에 숫자로 남긴다(미포함 시 threshold 통과여부만 남고 값은 유실).
+  summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max'],
   // 합격선 — phase:measure만, 워밍업 제외. 분류별 p95/p99.
   thresholds: {
     'http_req_failed{phase:measure}': ['rate<0.01'],

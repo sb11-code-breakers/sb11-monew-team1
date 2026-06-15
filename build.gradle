@@ -45,6 +45,8 @@ dependencies {
     implementation 'software.amazon.awssdk:ses'
     implementation 'software.amazon.awssdk:cloudwatchlogs'
     implementation 'org.springframework.retry:spring-retry'
+    implementation 'com.bucket4j:bucket4j_jdk17-core:8.19.0'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
 
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'

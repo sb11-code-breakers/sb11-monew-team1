@@ -8,9 +8,9 @@
 #   → 미리 풀로 뽑아두고 k6에서 무작위로 골라 쓴다.
 #
 # 산출 파일(.gitignore 대상 — 스크립트만 커밋, csv는 환경 의존이라 추적 안 함):
-#   user_ids.csv      : userId            (한 줄당 1개)
 #   article_ids.csv   : articleId         (인기 기사 + 한산/일반 기사 혼합 → 변동성 관찰)
 #   comment_ids.csv   : commentId,articleId
+# (userId는 더 이상 추출하지 않는다 — k6 setup()이 로그인으로 세션 토큰을 발급받아 인증한다.)
 #
 # 사용:
 #   docker compose -f perf/docker-compose.yml up -d postgres   # 시드 먼저(seed-data-medium.sql)
@@ -20,7 +20,7 @@
 set -euo pipefail
 
 # 기본값: perf/docker-compose.yml 의 postgres. 필요시 환경변수로 덮어쓴다.
-DB_URL="${DB_URL:-postgresql://monew:monew@localhost:5432/monew}"
+DB_URL="${DB_URL:-postgresql://monew:monew@localhost:5433/monew}"  # 5433 = perf/docker-compose.yml의 host 매핑(5432 충돌 회피)
 LIMIT="${LIMIT:-500}"                                   # 풀 크기(엔드포인트별 무작위 추출 대상)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUT_DIR="${OUT_DIR:-$SCRIPT_DIR}"                       # 기본: 이 스크립트와 같은 perf/ 디렉토리
@@ -35,13 +35,6 @@ psql_csv() { psql "$DB_URL" -tA -F',' -c "$1"; }
 # DB_URL의 user:password를 마스킹해 로그/CI 아티팩트에 자격증명이 남지 않게 한다.
 REDACTED_DB_URL="$(sed -E 's#(://[^:/@]+):[^@]*@#\1:***@#' <<< "$DB_URL")"
 echo "[extract] DB=$REDACTED_DB_URL  LIMIT=$LIMIT  OUT_DIR=$OUT_DIR"
-
-# ── 유저 ──────────────────────────────────────────────────────
-psql_csv "
-  SELECT id FROM users
-  WHERE deleted_at IS NULL
-  ORDER BY random() LIMIT $LIMIT
-" > "$OUT_DIR/user_ids.csv"
 
 # ── 기사: 인기(댓글 많은) + 일반/한산 혼합 ───────────────────
 # 인기 기사만 뽑으면 깊은 커서·정렬 비용이 항상 크게 나오고, 한산 기사만 뽑으면 안 드러난다 → 섞는다.
@@ -75,7 +68,7 @@ psql_csv "
 
 # ── 결과 요약 ─────────────────────────────────────────────────
 echo "[extract] 완료:"
-for f in user_ids article_ids comment_ids; do
+for f in article_ids comment_ids; do
   printf '  %-16s %s 행\n' "$f.csv" "$(grep -c . "$OUT_DIR/$f.csv" || true)"
 done
 echo "[extract] k6 스크립트가 이 csv들을 open() 한다. 시드를 다시 채웠으면 이 스크립트도 다시 실행할 것."

@@ -67,3 +67,9 @@ perf/results/
 *_ids.csv
 k6/*.csv
 perf/*.csv
+# k6 summary-export 결과 (속도·부하·동시성) — 스크립트(.js)는 추적, 산출물(.json)만 무시
+perf/speed/*.json
+perf/load/*.json
+perf/concurrency/*.json
+# 인덱스 EXPLAIN before/after 덤프
+perf/index-*.txt
