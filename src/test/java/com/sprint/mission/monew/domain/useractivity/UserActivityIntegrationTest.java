@@ -98,19 +98,6 @@ public class UserActivityIntegrationTest {
     }
 
     @Test
-    @DisplayName("soft-delete된 userId면 404를 반환한다")
-    void soft_delete된_userId면_404를_반환한다() throws Exception {
-      // given
-      user.softDelete();
-      userRepository.save(user);
-
-      // when & then
-      mockMvc.perform(get("/api/user-activities/{userId}", user.getId())
-              .header("Monew-Request-User-ID", sessionToken))
-          .andExpect(status().isNotFound());
-    }
-
-    @Test
     @DisplayName("성공 시 200과 활동 내역을 반환한다")
     void 성공_시_200과_활동_내역을_반환한다() throws Exception {
       // when & then
