@@ -2,7 +2,6 @@ package com.sprint.mission.monew.domain.useractivity.service;
 
 import com.sprint.mission.monew.domain.user.exception.UserAccessDeniedException;
 import com.sprint.mission.monew.domain.user.exception.UserNotFoundException;
-import com.sprint.mission.monew.domain.user.repository.UserRepository;
 import com.sprint.mission.monew.domain.useractivity.document.UserActivity;
 import com.sprint.mission.monew.domain.useractivity.repository.UserActivityMongoRepository;
 import java.util.UUID;
@@ -17,7 +16,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class UserActivityService {
 
-  private final UserRepository userRepository;
   private final UserActivityMongoRepository userActivityMongoRepository;
 
   public UserActivity getUserActivity(UUID userId, UUID requestUserId) {
@@ -26,9 +24,6 @@ public class UserActivityService {
     if (!userId.equals(requestUserId)) {
       throw UserAccessDeniedException.forUser(requestUserId);
     }
-
-    userRepository.findByIdAndDeletedAtIsNull(userId)
-        .orElseThrow(() -> UserNotFoundException.withId(userId));
 
     UserActivity activity = userActivityMongoRepository.findById(userId)
         .orElseThrow(() -> UserNotFoundException.withId(userId));
