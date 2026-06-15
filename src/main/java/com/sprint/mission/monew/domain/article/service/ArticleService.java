@@ -1,8 +1,8 @@
 package com.sprint.mission.monew.domain.article.service;
 
 import com.sprint.mission.monew.common.dto.CursorPageResponse;
-import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleQueryCondition;
+import com.sprint.mission.monew.domain.article.dto.ArticleResponse;
 import com.sprint.mission.monew.domain.article.dto.ArticleViewResponse;
 import com.sprint.mission.monew.domain.article.entity.Article;
 import com.sprint.mission.monew.domain.article.entity.ArticleView;
@@ -11,16 +11,15 @@ import com.sprint.mission.monew.domain.article.mapper.ArticleMapper;
 import com.sprint.mission.monew.domain.article.mapper.ArticleViewMapper;
 import com.sprint.mission.monew.domain.article.repository.ArticleRepository;
 import com.sprint.mission.monew.domain.article.repository.ArticleViewRepository;
+import com.sprint.mission.monew.domain.useractivity.listener.ArticleDeletedEvent;
+import com.sprint.mission.monew.domain.useractivity.listener.ArticleViewedEvent;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import org.springframework.context.ApplicationEventPublisher;
-import com.sprint.mission.monew.domain.useractivity.listener.ArticleViewedEvent;
-import com.sprint.mission.monew.domain.useractivity.listener.ArticleDeletedEvent;
 
 @Slf4j
 @Service

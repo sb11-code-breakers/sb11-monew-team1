@@ -18,13 +18,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class RssNewsParser {
 
-  @Value("${monew.rss.hankyung-url:https://www.hankyung.com/feed/all-news}")
+  @Value("${monew.rss.hankyung-url}")
   private String hankyungUrl;
 
-  @Value("${monew.rss.chosun-url:https://www.chosun.com/arc/outboundfeeds/rss/?outputType=xml}")
+  @Value("${monew.rss.chosun-url}")
   private String chosunUrl;
 
-  @Value("${monew.rss.yonhap-url:https://www.yna.co.kr/rss/news.xml}")
+  @Value("${monew.rss.yonhap-url}")
   private String yonhapUrl;
 
   public List<RssArticleDto> parse(ArticleSource source) {

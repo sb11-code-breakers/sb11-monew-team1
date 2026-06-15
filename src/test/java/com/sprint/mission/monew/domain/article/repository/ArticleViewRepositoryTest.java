@@ -44,6 +44,42 @@ class ArticleViewRepositoryTest {
   }
 
   @Nested
+  @DisplayName("insertIfAbsent")
+  class InsertIfAbsent {
+
+    @Test
+    @DisplayName("처음 등록하면 1을 반환하고 레코드가 삽입된다")
+    void 처음_등록하면_1을_반환하고_레코드가_삽입된다() {
+      // given
+      Article article = saveArticle();
+      UUID userId = UUID.randomUUID();
+
+      // when
+      int result = articleViewRepository.insertIfAbsent(userId, article.getId());
+
+      // then
+      assertThat(result).isEqualTo(1);
+      assertThat(articleViewRepository.findByArticleIdAndUserId(article.getId(), userId)).isPresent();
+    }
+
+    @Test
+    @DisplayName("이미 등록된 기록이 있으면 0을 반환하고 중복 삽입되지 않는다")
+    void 이미_등록된_기록이_있으면_0을_반환하고_중복_삽입되지_않는다() {
+      // given
+      Article article = saveArticle();
+      UUID userId = UUID.randomUUID();
+      articleViewRepository.save(ArticleView.create(userId, article));
+
+      // when
+      int result = articleViewRepository.insertIfAbsent(userId, article.getId());
+
+      // then
+      assertThat(result).isEqualTo(0);
+      assertThat(articleViewRepository.count()).isEqualTo(1);
+    }
+  }
+
+  @Nested
   @DisplayName("existsByArticleIdAndUserId")
   class ExistsByArticleIdAndUserId {
 

@@ -103,6 +103,8 @@ CREATE INDEX IF NOT EXISTS idx_articles_comment_count ON articles (comment_count
 CREATE INDEX IF NOT EXISTS idx_articles_view_count ON articles (view_count);
 CREATE INDEX IF NOT EXISTS idx_articles_deleted_at ON articles (deleted_at)
     WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_articles_publish_created_id ON articles (publish_date DESC, created_at DESC, id DESC)
+    WHERE deleted_at IS NULL;
 
 
 -- =====================
@@ -169,6 +171,7 @@ CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments (user_id);
 CREATE INDEX IF NOT EXISTS idx_comments_like_count ON comments (like_count);
 CREATE INDEX IF NOT EXISTS idx_comments_deleted_at ON comments (deleted_at)
     WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_comments_article_created_id ON comments (article_id, created_at DESC, id DESC);
 
 
 -- =====================

@@ -21,7 +21,7 @@ import org.springframework.web.client.RestClient;
 public class NaverNewsClient {
 
   private static final String NEWS_URL =
-      "https://openapi.naver.com/v1/search/news.json?query={query}&display={display}&sort=date";
+      "https://openapi.naver.com/v1/search/news.json?query={query}&display={display}&sort=date&start={start}";
 
   // "dd MMM yyyy HH:mm:ss Z" — 요일 접두어는 파싱 전에 제거해 검증 오류 방지
   private static final DateTimeFormatter NAVER_DATE_FORMATTER =
@@ -29,21 +29,19 @@ public class NaverNewsClient {
 
   private final RestClient restClient;
 
-  @Value("${monew.naver.client-id:}")
+  @Value("${monew.naver.client-id}")
   private String clientId;
 
-  @Value("${monew.naver.client-secret:}")
+  @Value("${monew.naver.client-secret}")
   private String clientSecret;
 
-  @Value("${monew.naver.query:뉴스}")
-  private String query;
-
-  @Value("${monew.naver.display:100}")
+  @Value("${monew.naver.display}")
   private int display;
 
-  public List<NaverNewsItem> fetchNews() {
+  public List<NaverNewsItem> fetchNews(String keyword, int page) {
+    int start = display * (page - 1) + 1;
     NaverNewsResponse response = restClient.get()
-        .uri(NEWS_URL, query, display)
+        .uri(NEWS_URL, keyword, display, start)
         .header("X-Naver-Client-Id", clientId)
         .header("X-Naver-Client-Secret", clientSecret)
         .retrieve()

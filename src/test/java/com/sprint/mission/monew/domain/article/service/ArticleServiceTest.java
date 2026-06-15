@@ -290,59 +290,65 @@ class ArticleServiceTest {
     }
 
     @Test
-    @DisplayName("이미 조회한 기사이면 기존 ArticleView를 반환하고 viewCount를 증가시키지 않는다")
-    void 이미_조회한_기사이면_기존_뷰를_반환하고_viewCount를_증가시키지_않는다() {
+    @DisplayName("신규 등록이면 viewCount를 증가시키고 현재 뷰를 반환한다")
+    void 신규_등록이면_viewCount를_증가시키고_현재_뷰를_반환한다() {
       // given
       Article article = makeArticle(ArticleSource.NAVER);
-      ArticleView existingView = ArticleView.create(requestUserId, article);
+      ArticleView view = ArticleView.create(requestUserId, article);
+      int freshViewCount = 1;
       ArticleViewResponse dto = new ArticleViewResponse(
-          existingView.getId(), requestUserId, existingView.getCreatedAt(),
+          view.getId(), requestUserId, view.getCreatedAt(),
           article.getId(), ArticleSource.NAVER, article.getSourceUrl(),
           article.getTitle(), article.getPublishDate(), article.getSummary(),
-          0, 0);
+          0, freshViewCount);
 
       given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+      given(articleViewRepository.insertIfAbsent(eq(requestUserId), eq(article.getId()))).willReturn(1);
       given(articleViewRepository.findByArticleIdAndUserId(eq(article.getId()), eq(requestUserId)))
-          .willReturn(Optional.of(existingView));
-      given(articleViewMapper.toResponse(eq(existingView), anyInt())).willReturn(dto);
+          .willReturn(Optional.of(view));
+      given(articleRepository.findViewCountById(eq(article.getId()))).willReturn(freshViewCount);
+      given(articleViewMapper.toResponse(eq(view), eq(freshViewCount))).willReturn(dto);
 
       // when
       ArticleViewResponse result = articleService.registerView(article.getId(), requestUserId);
 
       // then
       assertThat(result).isEqualTo(dto);
+      verify(articleViewRepository).insertIfAbsent(eq(requestUserId), eq(article.getId()));
+      verify(articleRepository).increaseViewCount(eq(article.getId()));
+      verify(articleRepository).findViewCountById(eq(article.getId()));
       verify(articleViewRepository, never()).save(any());
-      verify(articleRepository, never()).increaseViewCount(any());
     }
 
     @Test
-    @DisplayName("처음 조회하는 기사이면 ArticleView를 저장하고 viewCount를 증가시킨다")
-    void 처음_조회하는_기사이면_뷰를_저장하고_viewCount를_증가시킨다() {
+    @DisplayName("동시 경합 패자이면 viewCount를 증가시키지 않고 현재 뷰를 반환한다")
+    void 동시_경합_패자이면_viewCount를_증가시키지_않고_현재_뷰를_반환한다() {
       // given
       Article article = makeArticle(ArticleSource.NAVER);
-      ArticleView newView = ArticleView.create(requestUserId, article);
+      ArticleView view = ArticleView.create(requestUserId, article);
+      int freshViewCount = 3; // 경합 승자가 이미 올린 DB 최신값
       ArticleViewResponse dto = new ArticleViewResponse(
-          newView.getId(), requestUserId, newView.getCreatedAt(),
+          view.getId(), requestUserId, view.getCreatedAt(),
           article.getId(), ArticleSource.NAVER, article.getSourceUrl(),
           article.getTitle(), article.getPublishDate(), article.getSummary(),
-          0, 1);
+          0, freshViewCount);
 
       given(articleRepository.findById(eq(article.getId()))).willReturn(Optional.of(article));
+      given(articleViewRepository.insertIfAbsent(eq(requestUserId), eq(article.getId()))).willReturn(0);
       given(articleViewRepository.findByArticleIdAndUserId(eq(article.getId()), eq(requestUserId)))
-          .willReturn(Optional.empty());
-      given(articleViewRepository.save(any(ArticleView.class))).willReturn(newView);
-      given(articleViewMapper.toResponse(eq(newView), anyInt())).willReturn(dto);
-
-      int viewCountBefore = article.getViewCount();
+          .willReturn(Optional.of(view));
+      given(articleRepository.findViewCountById(eq(article.getId()))).willReturn(freshViewCount);
+      given(articleViewMapper.toResponse(eq(view), eq(freshViewCount))).willReturn(dto);
 
       // when
       ArticleViewResponse result = articleService.registerView(article.getId(), requestUserId);
 
       // then
       assertThat(result).isEqualTo(dto);
-      verify(articleViewRepository).save(any(ArticleView.class));
-      verify(articleRepository).increaseViewCount(eq(article.getId()));
-      verify(articleViewMapper).toResponse(eq(newView), eq(viewCountBefore + 1));
+      verify(articleViewRepository).insertIfAbsent(eq(requestUserId), eq(article.getId()));
+      verify(articleRepository, never()).increaseViewCount(any());
+      verify(articleRepository).findViewCountById(eq(article.getId()));
+      verify(articleViewRepository, never()).save(any());
     }
   }
 

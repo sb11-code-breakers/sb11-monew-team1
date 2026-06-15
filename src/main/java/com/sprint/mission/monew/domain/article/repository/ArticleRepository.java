@@ -40,6 +40,9 @@ public interface ArticleRepository extends JpaRepository<Article, UUID>, Article
       @Param("lastId") UUID lastId,
       Pageable pageable);
 
+  @Query("select a.viewCount from Article a where a.id = :articleId")
+  int findViewCountById(@Param("articleId") UUID articleId);
+
   @Modifying(clearAutomatically = true, flushAutomatically = true)
   @Query("""
       update Article a set a.viewCount = a.viewCount + 1
